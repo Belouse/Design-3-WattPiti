@@ -4,9 +4,10 @@
 import pyb
 import machine
 import time
+import USB_communication
 
 # Define pin 
-MuxS0Pin = machine.Pin('Y12')
+MuxS0Pin = machine.Pin('Y12')   #Real pin is "Y7"
 MuxS1Pin = machine.Pin('Y8')
 MuxS2Pin = machine.Pin('X11')
 MuxS3Pin = machine.Pin('X12')
@@ -21,7 +22,11 @@ LambdaV4Pin = pyb.ADC(machine.Pin('X3'))    #pin SYN on PCB
 while True:
     value = ThermiqueVinPin.read()
     print(value)
-    time.sleep(value/1000)
+    time.sleep(0.05)
     
-    MuxS0Pin(0 if MuxS0Pin() else 1)
+
+
+
+
+
 
