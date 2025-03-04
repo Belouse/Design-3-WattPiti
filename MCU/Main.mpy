@@ -1,24 +1,27 @@
 # MicroPython code for Pyboard V1.1
+# Could be test at https://micropython.org/unicorn/
 
-from pyb import Pin, ADC
+import pyb
+import machine
 import time
 
 # Define pin 
-MuxS0Pin = Pin('Y7', Pin.OUT_PP)
-MuxS1Pin = Pin('Y8', Pin.OUT_PP)
-MuxS2Pin = Pin('X11', Pin.OUT_PP)
-MuxS3Pin = Pin('X12', Pin.OUT_PP)
+MuxS0Pin = machine.Pin('Y12')
+MuxS1Pin = machine.Pin('Y8')
+MuxS2Pin = machine.Pin('X11')
+MuxS3Pin = machine.Pin('X12')
 
-ThermiqueVinPin = ADC(Pin('X22'))
-LambdaV1Pin = ADC(Pin('X19'))
-LambdaV2Pin = ADC(Pin('X20'))
-LambdaV3Pin = ADC(Pin('X21'))
-LambdaV4Pin = ADC(Pin('X21'))
+ThermiqueVinPin = pyb.ADC(machine.Pin('Y4'))    #Real pin is "X22"
+LambdaV1Pin = pyb.ADC(machine.Pin('X19'))
+LambdaV2Pin = pyb.ADC(machine.Pin('X20'))
+LambdaV3Pin = pyb.ADC(machine.Pin('X21'))
+LambdaV4Pin = pyb.ADC(machine.Pin('X3'))    #pin SYN on PCB
 
 # Test read value
 while True:
     value = ThermiqueVinPin.read()
     print(value)
-    time.sleep(1)
-
+    time.sleep(value/1000)
+    
+    MuxS0Pin(0 if MuxS0Pin() else 1)
 
