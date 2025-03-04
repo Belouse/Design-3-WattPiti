@@ -1,3 +1,24 @@
+# MicroPython code for Pyboard V1.1
+
+from pyb import Pin, ADC
+import time
+
+# Define pin 
+MuxS0Pin = Pin('Y7', Pin.OUT_PP)
+MuxS1Pin = Pin('Y8', Pin.OUT_PP)
+MuxS2Pin = Pin('X11', Pin.OUT_PP)
+MuxS3Pin = Pin('X12', Pin.OUT_PP)
+
+ThermiqueVinPin = ADC(Pin('X22'))
+LambdaV1Pin = ADC(Pin('X19'))
+LambdaV2Pin = ADC(Pin('X20'))
+LambdaV3Pin = ADC(Pin('X21'))
+LambdaV4Pin = ADC(Pin('X21'))
+
+# Test read value
+while True:
+    value = ThermiqueVinPin.read()
+    print(value)
+    time.sleep(1)
 
 
-print("hello World")
