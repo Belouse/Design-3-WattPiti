@@ -46,6 +46,24 @@ def interpolate_circle(matrix, position, radius, center=(0, 0), resolution=300, 
     
     return X, Y, Z
 
+def plot_interpolation_2d(X, Y, Z, original_points=None):
+    """
+    Affiche la surface interpolée en 2D.
+    
+    Paramètres:
+      - X, Y, Z : grilles de coordonnées et valeurs interpolées
+      - original_points : tableau numpy de forme (n_points, 3) contenant [x, y, z] des données d'origine (optionnel)
+      - title : titre du graphique
+    """
+    plt.figure()
+    plt.pcolormesh(X, Y, Z, cmap='turbo', shading='auto')
+    if original_points is not None:
+        plt.scatter(original_points[:, 0], original_points[:, 1], c=original_points[:, 2], cmap='turbo', edgecolors='w', marker="s")
+    plt.colorbar(label='Température (°C)')
+    plt.title("Interpolation/extrapolation dans un cercle")
+    plt.show()
+
+
 def plot_interpolation_3d(X, Y, Z, original_points=None, title='Interpolation dans le cercle'):
     """
     Affiche la surface interpolée en 3D.
@@ -84,8 +102,8 @@ def plot_matrix_color(matrix):
     plt.colorbar()
     plt.show()
 
-# -------------------- Exemple d'utilisation --------------------
 
+# -------------------- Exemple d'utilisation --------------------
 if __name__ == '__main__':
     # Définition d'une grille de positions 4x4 (en mm)
     position_xy = np.array([
@@ -102,7 +120,7 @@ if __name__ == '__main__':
 
 
     # Génération des températures sur la grille et ajout de bruit
-    Temp = gaussian(position_xy[:, :, 0], position_xy[:, :, 1], x_0=5, y_0=5)
+    Temp = gaussian(position_xy[:, :, 0], position_xy[:, :, 1], x_0=-2.5, y_0=5)
     noise_level = 50
     Temp = Temp + np.random.normal(0, noise_level, Temp.shape)
     
@@ -112,8 +130,10 @@ if __name__ == '__main__':
     
     # Affichage de la surface 
     plot_matrix_color(Temp)
+    plot_interpolation_2d(X, Y, Z, original_points=np.concatenate([position_xy, Temp[:, :, None]], axis=2).reshape(-1, 3))
     plot_interpolation_3d(X, Y, Z, title="Interpolation/extrapolation dans un cercle")
-    
+  
+
     # Recherche du maximum de l'interpolation
     max_x, max_y, max_value = find_max_interpolation(X, Y, Z)
     print("Maximum interpolé à (x, y) = ({:.2f}, {:.2f}) avec une valeur de {:.2f}".format(max_x, max_y, max_value))
