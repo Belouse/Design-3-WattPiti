@@ -64,7 +64,7 @@ def plot_interpolation_2d(X, Y, Z, original_points=None):
     plt.show()
 
 
-def plot_interpolation_3d(X, Y, Z, original_points=None, title='Interpolation dans le cercle'):
+def plot_3d(X, Y, Z, original_points=None, title='Interpolation dans le cercle'):
     """
     Affiche la surface interpolée en 3D.
     
@@ -122,8 +122,8 @@ if __name__ == '__main__':
         [[-10.5, -10.5],[-3.5, -10.5],[3.5, -10.5], [10.5, -10.5]]
     ])
     
-    laser_origin = {"x":-2.5, "y":5}
-    rayon = 15
+    laser_origin = {"x":0, "y":0}
+    rayon = 30
     # Fonction gaussienne centrée en (x_0, y_0) et normalisée entre 0 et 3000
     def gaussian(x, y, x_0=0, y_0=0):
         return 3000 * np.exp(-0.5 * ((x - x_0)**2 + (y - y_0)**2) / 10**2)
@@ -131,26 +131,27 @@ if __name__ == '__main__':
     # Affichage de la fonction continue gaussienne originale en 3D
     X, Y = np.meshgrid(np.linspace(-rayon, rayon, 300), np.linspace(-rayon, rayon, 300))
     Z = gaussian(X, Y, x_0=laser_origin['x'], y_0=laser_origin['y'])
-    plot_interpolation_3d(X, Y, Z, title="Fonction gaussienne originale")
+    plot_3d(X, Y, Z, title="Fonction gaussienne originale")
 
     #maximum de la fonction gaussienne originale
     max_x, max_y, max_value = find_max_interpolation(X, Y, Z)
     print("Maximum de la fonction gaussienne originale à (x, y) = ({:.2f}, {:.2f}) avec une valeur de {:.2f}".format(max_x, max_y, max_value))
 
+
     # Génération des températures sur la grille et ajout de bruit
     Temp = gaussian(position_xy[:, :, 0], position_xy[:, :, 1], x_0=laser_origin['x'], y_0=laser_origin['y'])
-    noise_level = 50
+    noise_level = 0
     Temp = Temp + np.random.normal(0, noise_level, Temp.shape)
     
     
     # Interpolation/extrapolation dans un cercle de rayon 12.5 mm centré en (0,0)
-    X, Y, Z = interpolate_circle(Temp, position_xy, radius=rayon, center=(0, 0), resolution=300)
+    X, Y, Z = interpolate_circle(Temp, position_xy, radius=rayon, center=(0, 0), resolution=300, rbf_function='multiquadric')
     
     
     # Affichage de la surface 
     plot_matrix_color(Temp)
     plot_interpolation_2d(X, Y, Z, original_points=np.concatenate([position_xy, Temp[:, :, None]], axis=2).reshape(-1, 3))
-    plot_interpolation_3d(X, Y, Z, title="Interpolation/extrapolation dans un cercle")
+    plot_3d(X, Y, Z, title="Interpolation/extrapolation dans un cercle")
   
 
     # Recherche du maximum de l'interpolation
