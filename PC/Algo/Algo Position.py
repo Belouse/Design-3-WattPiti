@@ -105,6 +105,15 @@ def plot_matrix_color(matrix):
 
 # -------------------- Exemple d'utilisation --------------------
 if __name__ == '__main__':
+    """
+    Exemple d'utilisation de l'interpolation/extrapolation dans un cercle.
+
+    En premier, montre la fonction originale gaussienne en 3D.
+    Ensuite, génère des températures sur une grille 4x4 avec ajout de bruit.
+    Réalise l'interpolation/extrapolation dans un cercle de rayon 12.5 mm.
+    Plot les résultats en 2D et 3D.
+    """
+
     # Définition d'une grille de positions 4x4 (en mm)
     position_xy = np.array([
         [[-10.5, 10.5], [-3.5, 10.5], [3.5, 10.5], [10.5, 10.5]],
@@ -113,20 +122,30 @@ if __name__ == '__main__':
         [[-10.5, -10.5],[-3.5, -10.5],[3.5, -10.5], [10.5, -10.5]]
     ])
     
+    laser_origin = {"x":-2.5, "y":5}
+    rayon = 15
     # Fonction gaussienne centrée en (x_0, y_0) et normalisée entre 0 et 3000
     def gaussian(x, y, x_0=0, y_0=0):
         return 3000 * np.exp(-0.5 * ((x - x_0)**2 + (y - y_0)**2) / 10**2)
     
+    # Affichage de la fonction continue gaussienne originale en 3D
+    X, Y = np.meshgrid(np.linspace(-rayon, rayon, 300), np.linspace(-rayon, rayon, 300))
+    Z = gaussian(X, Y, x_0=laser_origin['x'], y_0=laser_origin['y'])
+    plot_interpolation_3d(X, Y, Z, title="Fonction gaussienne originale")
 
+    #maximum de la fonction gaussienne originale
+    max_x, max_y, max_value = find_max_interpolation(X, Y, Z)
+    print("Maximum de la fonction gaussienne originale à (x, y) = ({:.2f}, {:.2f}) avec une valeur de {:.2f}".format(max_x, max_y, max_value))
 
     # Génération des températures sur la grille et ajout de bruit
-    Temp = gaussian(position_xy[:, :, 0], position_xy[:, :, 1], x_0=-2.5, y_0=5)
+    Temp = gaussian(position_xy[:, :, 0], position_xy[:, :, 1], x_0=laser_origin['x'], y_0=laser_origin['y'])
     noise_level = 50
     Temp = Temp + np.random.normal(0, noise_level, Temp.shape)
     
     
     # Interpolation/extrapolation dans un cercle de rayon 12.5 mm centré en (0,0)
-    X, Y, Z = interpolate_circle(Temp, position_xy, radius=25, center=(0, 0), resolution=300)
+    X, Y, Z = interpolate_circle(Temp, position_xy, radius=rayon, center=(0, 0), resolution=300)
+    
     
     # Affichage de la surface 
     plot_matrix_color(Temp)
