@@ -70,7 +70,7 @@ class InterfaceWattpiti(tk.Tk):
 
         #Création d'une entrée pour la fréquence d'échantillonnage
         freqVar = tk.StringVar()
-        freqVar.trace_add("write", self.freq)
+        freqVar.trace_add("write", self.freq_value)
         self.freqEntry = ttk.Entry(self, textvariable = freqVar)
         self.freqEntry.place(x =445, y = 50)
         
@@ -80,7 +80,7 @@ class InterfaceWattpiti(tk.Tk):
 
         #Création d'une entrée pour le temps d'acquisition
         timeVar = tk.StringVar()
-        timeVar.trace_add("write", self.time)
+        timeVar.trace_add("write", self.time_value)
         self.timeEntry = ttk.Entry(self, textvariable = timeVar)
         self.timeEntry.place(x= 445, y=100)
 
@@ -101,7 +101,7 @@ class InterfaceWattpiti(tk.Tk):
 
         # Création d'une entrée pour le nom du fichier
         self.fileNameVar = tk.StringVar()
-        self.fileNameVar.trace_add("write", self.saveData)
+        self.fileNameVar.trace_add("write", self.save_data)
         self.fileName = ttk.Entry(self, textvariable = self.fileNameVar)
         self.fileName.place(x = 800, y =50)
 
@@ -111,8 +111,8 @@ class InterfaceWattpiti(tk.Tk):
 
         #Création d'un radio bouton pour le format de fichier
         formatVar = tk.StringVar()
-        self.fileFormatCsv = tk.Radiobutton(self, text = ".CSV", variable = formatVar, value = 1, command = self.fileFormat, background = "#DCDCDC")
-        self.fileFormatXlsx = tk.Radiobutton(self, text=".XLSX", variable = formatVar, value = 2, command = self.fileFormat, background = "#DCDCDC")
+        self.fileFormatCsv = tk.Radiobutton(self, text = ".CSV", variable = formatVar, value = 1, command = self.file_format, background = "#DCDCDC")
+        self.fileFormatXlsx = tk.Radiobutton(self, text=".XLSX", variable = formatVar, value = 2, command = self.file_format, background = "#DCDCDC")
         self.fileFormatCsv.place(x=800, y=100)
         self.fileFormatXlsx.place(x=900, y=100)
 
@@ -146,6 +146,38 @@ class InterfaceWattpiti(tk.Tk):
         self.saveButton.place(x= 950, y = 150)
 
 
+
+
+        #Création d'un frame pour les résultats de la simulation
+        self.resultsFrame = ttk.Frame(self, width=400, height=200, borderwidth=3, style = "frameLabelStyle.TLabelframe")
+        self.resultsFrame.grid(row = 1, column = 0, columnspan=2, padx=5, pady=5, sticky = "nsew")
+        self.resultsFrame.grid_propagate(False)
+
+        #Création d'un label pour les résultats de la simulation
+        self.resultsLabel = ttk.Label(self.resultsFrame, text="Résultats de la simulation",style='frameLabelStyle.TLabelframe.Label')
+        self.resultsLabel.grid(row=0, column=1, padx=5, pady=5, sticky="nsew")
+
+
+        #Création d'un display pour la puissance instantanée
+        self.powerVar = tk.StringVar()
+        self.powerVar.set("00.00")
+
+        self.powerDisplayLabel = ttk.Label(self, text= "Puissance instantanée (W):", font = ("Inter", 14, "bold"))
+        self.powerDisplayLabel.place(x=10, y=280)                                                           
+        self.powerDisplay = ttk.Label(self, textvariable = self.powerVar , font = ("Inter", 24, "bold"))
+        self.powerDisplay.place(x=300, y = 270)
+
+        #Création d'un display pour la longueur d'onde
+        self.wavelenghtVar = tk.StringVar()
+        self.wavelenghtVar.set("000.0")
+
+        self.wavelenghtDisplayLabel = ttk.Label(self, text= "Longueur d'onde (nm):", font = ("Inter", 14, "bold"))
+        self.wavelenghtDisplayLabel.place(x=10, y=340)                                                           
+        self.wavelenghtDisplay = ttk.Label(self, textvariable = self.wavelenghtVar , font = ("Inter", 24, "bold"))
+        self.wavelenghtDisplay.place(x=300, y = 330)
+
+
+
     #Fonction du bouton pour démarrer la simulation
     def click_start(self):
         pass
@@ -159,18 +191,21 @@ class InterfaceWattpiti(tk.Tk):
         pass
 
     #Fonction pour la fréquence d'échantillonnage
-    def freq(self):
+    def freq_value(self):
         pass
 
     #Fonction pour le temps d'acquisition
-    def time(self):
+    def time_value(self):
         pass
 
     #Fonction pour le nom du fichier
-    def saveData(self):
+    def save_data(self):
         pass
     
-    def fileFormat(self):
+    def file_format(self):
+        pass
+
+    def power_value(self):
         pass
 
 if __name__ == "__main__":
