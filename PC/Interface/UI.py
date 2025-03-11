@@ -149,7 +149,7 @@ class InterfaceWattpiti(tk.Tk):
 
 
         #Création d'un frame pour les résultats de la simulation
-        self.resultsFrame = ttk.Frame(self, width=500, height=200, borderwidth=3, style = "frameLabelStyle.TLabelframe")
+        self.resultsFrame = ttk.Frame(self, width=250, height=200, borderwidth=3, style = "frameLabelStyle.TLabelframe")
         self.resultsFrame.grid(row = 0, column = 4, padx=5, pady=5, sticky = "nsew")
         self.resultsFrame.grid_propagate(False)
 
@@ -206,11 +206,11 @@ class InterfaceWattpiti(tk.Tk):
 
 
         ###Création d'un graphique de la position centrale du faisceau
-        self.posPlotFrame = ttk.Frame(self, width=750, height=600, borderwidth=3, style = "frameLabelStyle.TLabelframe")
+        self.posPlotFrame = ttk.Frame(self, width=793, height=600, borderwidth=3, style = "frameLabelStyle.TLabelframe")
         self.posPlotFrame.grid(row = 2, column= 4 , columnspan = 3, rowspan = 1, padx = 5, pady = 5, sticky = "nsew")
 
         self.posPlotLabel = ttk.Label(self, text= "Position centrale du faisceau", style = "frameLabelStyle.TLabelframe.Label")
-        self.posPlotLabel.place(x = 10, y = 230)
+        self.posPlotLabel.place(x = 1130, y = 230)
 
 
 
