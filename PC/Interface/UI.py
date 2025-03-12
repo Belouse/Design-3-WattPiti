@@ -47,7 +47,7 @@ class InterfaceWattpiti(tk.Tk):
         self.configFrame.grid_propagate(False)
 
         # Création d'un titre pour les paramètres de configuration
-        self.labelConfig = ttk.Label(self.configFrame, text="Configuration de la simulation", style = 'frameLabelStyle.TLabelframe.Label')
+        self.labelConfig = ttk.Label(self.configFrame, text="Configuration de la prise de données", style = 'frameLabelStyle.TLabelframe.Label')
         self.labelConfig.grid(row=0, column=1, padx=5, pady=5, sticky = "nsew")
 
         #Création d'un bouton pour démarrer la simulation
@@ -154,7 +154,7 @@ class InterfaceWattpiti(tk.Tk):
         self.resultsFrame.grid_propagate(False)
 
         #Création d'un label pour les résultats de la simulation
-        self.resultsLabel = ttk.Label(self.resultsFrame, text="Résultats de la simulation",style='frameLabelStyle.TLabelframe.Label')
+        self.resultsLabel = ttk.Label(self.resultsFrame, text="Résultats de la prise de données",style='frameLabelStyle.TLabelframe.Label')
         self.resultsLabel.grid(row=0, column=1, padx=5, pady=5, sticky="nsew")
 
 
