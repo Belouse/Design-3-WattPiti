@@ -2,6 +2,11 @@ import tkinter as tk
 from tkinter import ttk
 import os
 from PIL import ImageTk, Image
+import matplotlib.pyplot as plt
+from matplotlib.figure import Figure 
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,  
+NavigationToolbar2Tk) 
+import numpy as np
 
 class InterfaceWattpiti(tk.Tk):
     def __init__(self):
@@ -197,20 +202,47 @@ class InterfaceWattpiti(tk.Tk):
         self.positionYLabel.place(x = 1450, y = 149)
 
 
-        ###Création d'un graphique de la puissance en fonction du temps
+        ###Création du frame pour le graphique de la puissance en fonction du temps
         self.powerPlotFrame = ttk.Frame(self, width=1100, height=600, borderwidth=3, style = "frameLabelStyle.TLabelframe")
         self.powerPlotFrame.grid(row = 2, column= 0 , columnspan = 3, rowspan = 1, padx = 5, pady = 5, sticky = "nsew")
 
         self.powerPlotLabel = ttk.Label(self, text= "Graphique de la puissance en fonction du temps", style = "frameLabelStyle.TLabelframe.Label")
         self.powerPlotLabel.place(x = 10, y = 230)
 
+        #Création du graphique pour la puissance en fonction du temps
+        self.powerFig = Figure(figsize = (10.5, 5), dpi = 100)
+        self.axPow = self.powerFig.add_subplot(111)
+        self.axPow.set_xlabel("Temps (s)")
+        self.axPow.set_ylabel("Puissance (W)")
 
-        ###Création d'un graphique de la position centrale du faisceau
+        self.powerCanvas = FigureCanvasTkAgg(self.powerFig, master = self)
+        self.powerCanvas.draw()
+        self.powerPlot = self.powerCanvas.get_tk_widget()
+        self.powerPlot.place(x=20, y=280)
+
+
+
+        ###Création du frame du graphique de la position centrale du faisceau
         self.posPlotFrame = ttk.Frame(self, width=793, height=600, borderwidth=3, style = "frameLabelStyle.TLabelframe")
         self.posPlotFrame.grid(row = 2, column= 4 , columnspan = 3, rowspan = 1, padx = 5, pady = 5, sticky = "nsew")
 
         self.posPlotLabel = ttk.Label(self, text= "Position centrale du faisceau", style = "frameLabelStyle.TLabelframe.Label")
         self.posPlotLabel.place(x = 1130, y = 230)
+
+        #Création du graphique pour la position centrale du faisceau
+        self.posFig = Figure(figsize = (5, 5), dpi = 100)
+        self.axPos = self.posFig.add_subplot(111)
+        self.axPos.set_xlabel("Position x (mm)")
+        self.axPos.set_ylabel("Position y (mm)")
+
+        self.posCanvas = FigureCanvasTkAgg(self.posFig, master = self)
+        self.posPlot = self.posCanvas.get_tk_widget()
+        self.posPlot.place(x = 1180, y = 280)
+
+
+
+
+
 
 
 
