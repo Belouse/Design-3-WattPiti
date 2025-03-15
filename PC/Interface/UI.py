@@ -14,7 +14,8 @@ class InterfaceWattpiti(tk.Tk):
 
         #création de l'interface
         self.title("Puissance-mètre Wattpiti")
-        self.geometry("{0}x{1}+0+0".format(self.winfo_screenwidth(), self.winfo_screenheight()))
+        #self.geometry("{0}x{1}+0+0".format(self.winfo_screenwidth(), self.winfo_screenheight()))
+        self.geometry("1000x1000")
         self.configure(background="white")
 
         #Style des FrameLabels pour l'interface
@@ -96,7 +97,7 @@ class InterfaceWattpiti(tk.Tk):
 
 
         # Création d'un cadre pour les options d'enregistrement
-        self.optionsFrame = ttk.Frame(self, width=460, height=200, borderwidth=3, style='frameLabelStyle.TLabelframe')
+        self.optionsFrame = ttk.Frame(self, width=400, height=200, borderwidth=3, style='frameLabelStyle.TLabelframe')
         self.optionsFrame.grid(row=0, column=2, pady=5, padx=5, sticky="nsew", columnspan = 2)
         self.optionsFrame.grid_propagate(False)
 
@@ -148,13 +149,13 @@ class InterfaceWattpiti(tk.Tk):
         saveButtonStyle = ttk.Style()
         saveButtonStyle.configure("saveButtonStyle.TButton", background = "#B2DEF7", relief = "raised", font = ("Inter", 10, "bold"))
         self.saveButton = ttk.Button(self, text="Enregistrer", style="saveButtonStyle.TButton")
-        self.saveButton.place(x= 990, y = 150)
+        self.saveButton.place(x= 930, y = 150)
 
 
 
 
         #Création d'un frame pour les résultats de la simulation
-        self.resultsFrame = ttk.Frame(self, width=250, height=200, borderwidth=3, style = "frameLabelStyle.TLabelframe")
+        self.resultsFrame = ttk.Frame(self, width=400, height=200, borderwidth=3, style = "frameLabelStyle.TLabelframe")
         self.resultsFrame.grid(row = 0, column = 4, padx=5, pady=5, sticky = "nsew")
         self.resultsFrame.grid_propagate(False)
 
@@ -168,18 +169,18 @@ class InterfaceWattpiti(tk.Tk):
         self.powerVar.set("00.00")
 
         self.powerDisplayLabel = ttk.Label(self, text= "Puissance instantanée (W):", font = ("Inter", 14, "bold"))
-        self.powerDisplayLabel.place(x=1150, y=58)                                                           
+        self.powerDisplayLabel.place(x=1050, y=58)                                                           
         self.powerDisplay = ttk.Label(self, textvariable = self.powerVar , font = ("Inter", 24, "bold"))
-        self.powerDisplay.place(x=1430, y =50)
+        self.powerDisplay.place(x=1330, y =50)
 
         #Création d'un display pour la longueur d'onde
         self.wavelenghtVar = tk.StringVar()
         self.wavelenghtVar.set("000.0")
 
         self.wavelenghtDisplayLabel = ttk.Label(self, text= "Longueur d'onde (nm):", font = ("Inter", 14, "bold"))
-        self.wavelenghtDisplayLabel.place(x=1150, y=108)                                                           
+        self.wavelenghtDisplayLabel.place(x=1050, y=108)                                                           
         self.wavelenghtDisplay = ttk.Label(self, textvariable = self.wavelenghtVar , font = ("Inter", 24, "bold"))
-        self.wavelenghtDisplay.place(x= 1430, y = 100)
+        self.wavelenghtDisplay.place(x= 1330, y = 100)
 
         #Création d'un display pour la position centrale du faisceau
         self.positionXVar = tk.StringVar()
@@ -188,29 +189,29 @@ class InterfaceWattpiti(tk.Tk):
         self.positionYVar.set("0")
 
         self.positionDisplayLabel = ttk.Label(self, text="Position (mm):", font = ("Inter", 14, "bold"))
-        self.positionDisplayLabel.place(x = 1150, y = 158)
+        self.positionDisplayLabel.place(x = 1050, y = 158)
         
         self.positionXDisplay = ttk.Label(self, textvariable= self.positionXVar, font = ("Inter", 24, "bold"))
-        self.positionXDisplay.place(x = 1400, y= 150)
+        self.positionXDisplay.place(x = 1290, y= 150)
         self.positionYDisplay = ttk.Label(self, textvariable=self.positionYVar, font = ("Inter", 24, "bold"))
-        self.positionYDisplay.place(x = 1500, y= 150)
+        self.positionYDisplay.place(x = 1390, y= 150)
 
         self.positionXLabel = ttk.Label(self, text = "x :", font= ("Inter", 24, "bold"))
-        self.positionXLabel.place(x = 1350, y = 149)
+        self.positionXLabel.place(x = 1240, y = 149)
 
         self.positionYLabel = ttk.Label(self, text = "y :", font= ("Inter", 24, "bold"))
-        self.positionYLabel.place(x = 1450, y = 149)
+        self.positionYLabel.place(x = 1340, y = 149)
 
 
         ###Création du frame pour le graphique de la puissance en fonction du temps
-        self.powerPlotFrame = ttk.Frame(self, width=1100, height=600, borderwidth=3, style = "frameLabelStyle.TLabelframe")
+        self.powerPlotFrame = ttk.Frame(self, width=850, height=600, borderwidth=3, style = "frameLabelStyle.TLabelframe")
         self.powerPlotFrame.grid(row = 2, column= 0 , columnspan = 3, rowspan = 1, padx = 5, pady = 5, sticky = "nsew")
 
         self.powerPlotLabel = ttk.Label(self, text= "Graphique de la puissance en fonction du temps", style = "frameLabelStyle.TLabelframe.Label")
         self.powerPlotLabel.place(x = 10, y = 230)
 
         #Création du graphique pour la puissance en fonction du temps
-        self.powerFig = Figure(figsize = (10.5, 5), dpi = 100)
+        self.powerFig = Figure(figsize = (8, 5), dpi = 100)
         self.axPow = self.powerFig.add_subplot(111)
         self.axPow.set_xlabel("Temps (s)")
         self.axPow.set_ylabel("Puissance (W)")
@@ -223,11 +224,12 @@ class InterfaceWattpiti(tk.Tk):
 
 
         ###Création du frame du graphique de la position centrale du faisceau
-        self.posPlotFrame = ttk.Frame(self, width=793, height=600, borderwidth=3, style = "frameLabelStyle.TLabelframe")
-        self.posPlotFrame.grid(row = 2, column= 4 , columnspan = 3, rowspan = 1, padx = 5, pady = 5, sticky = "nsew")
+        self.posPlotFrame = ttk.Frame(self, width=575, height=600, borderwidth=3, style = "frameLabelStyle.TLabelframe")
+        #self.posPlotFrame.grid(row = 2, column= 4 , columnspan = 3, rowspan = 1, padx = 5, pady = 5, sticky = "nsew")
+        self.posPlotFrame.place(x = 860, y = 217)
 
         self.posPlotLabel = ttk.Label(self, text= "Position centrale du faisceau", style = "frameLabelStyle.TLabelframe.Label")
-        self.posPlotLabel.place(x = 1130, y = 230)
+        self.posPlotLabel.place(x = 870, y = 230)
 
         #Création du graphique pour la position centrale du faisceau
         self.posFig = Figure(figsize = (5, 5), dpi = 100)
@@ -237,7 +239,7 @@ class InterfaceWattpiti(tk.Tk):
 
         self.posCanvas = FigureCanvasTkAgg(self.posFig, master = self)
         self.posPlot = self.posCanvas.get_tk_widget()
-        self.posPlot.place(x = 1180, y = 280)
+        self.posPlot.place(x = 900, y = 280)
 
 
 
