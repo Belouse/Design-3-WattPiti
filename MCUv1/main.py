@@ -9,6 +9,7 @@ from ThermalMatrixClass import ThermalMatrix
 # Start up of the MCU
 print("Pyboard start up...")
 startIndicator() # lights will blink on the MCU to show that the code excution is starting
+
 # pins
 photoDiode1Pin = "X19"
 photoDiode2Pin = "X20"
@@ -28,12 +29,10 @@ photoDiode2 = PhotoDiode(photoDiode2Pin)
 photoDiode3 = PhotoDiode(photoDiode3Pin)
 photoDiode4 = PhotoDiode(photoDiode4Pin)
 
-
 # Initialization of the thermal matrix
 mux = Mux(muxPin1, muxPin2, muxPin3, muxPin4)
 thermalMatrix = ThermalMatrix(thermalMatrixPin, mux)
 delayBetweenReadings = 100 # µsec
-
 
 # Initialization of the serial port for communication with a computer
 serialPort = MCUSerialPort()
@@ -49,7 +48,6 @@ while True:
     photoDiodeReadings = [readingPhotoDiode1,readingPhotoDiode2, readingPhotoDiode3, readingPhotoDiode4]
 
     thermalReadings = thermalMatrix.readMatrix(delay=delayBetweenReadings)
-
     i2cReadings = [1000,1000,1000]
 
     formattedData = jsonFormatter.format_data(thermalReadings, photoDiodeReadings, i2cReadings)
