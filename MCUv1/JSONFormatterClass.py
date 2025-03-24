@@ -5,15 +5,14 @@
 
 import json
 import time
-import serial
-from enum import Enum
+# import serial
+# from enum import Enum
 
-class Data(Enum):
-    time          = "time"
-    thermique     = "thermique"
-    wavelength    = "wavelength"
-    i2c_uv        = "I2C_UV"
-    i2c_vis       = "I2C_Vis"
+# class Data(Enum):
+#     time          = "time"
+#     thermal       = "thermal"
+#     photodiode    = "photodiode"
+#     i2c           = "I2C"
 
 
 class JSONFormatter():
@@ -24,27 +23,59 @@ class JSONFormatter():
 
     def __init__(self):
         self.data = {
-            Data.time.value: 0,
-            Data.thermique.value: {},
-            Data.wavelength.value: {},
-            Data.i2c_uv.value: {},
-            Data.i2c_vis.value: {}
+            "time": 0,
+            "thermal": {},
+            "photodiode": {},
+            "I2C": {},
         }
-        
-    def set_data(self, thermique_Value, wavelength_Value, i2c_uv, i2c_vis):
+
+        self.photodiodes_names = ["MTPD2601T-100", "MTPD3001D3-030 sans verre", "MTPD3001D3-030 avec verre", "019-101-411"]
+        self.i2c_sensors_names = ["LTR-390-UV-01", "VEML6040A3OG", "MCP9808"]
+
+
+    def format_data(self, thermal_readings, photodiode_readings, i2c_readings):
+
+        thermal_dic = self.format_thermal_readings(thermal_readings)
+        photodiode_dic = self.format_photodiode_readings(photodiode_readings)
+        i2c_dic = self.format_i2c_sensors_readings(i2c_readings)
+
         self.data = {
-            Data.time.value: time.time(),
-            Data.thermique.value: thermique_Value,
-            Data.wavelength.value: wavelength_Value,
-            Data.i2c_uv.value: i2c_uv,
-            Data.i2c_vis.value: i2c_vis
+            "time": time.time(),
+            "thermal": thermal_dic,
+            "photodiode": photodiode_dic,
+            "I2C": i2c_dic
         }
 
-    def to_json(self):
-        return json.dumps(self.data)
-
-    def get_data(self):
         return self.data
+
+
+    def get_last_data(self):
+        return self.data
+
+
+    def format_photodiode_readings(self, list_of_readings):
+        keys = self.photodiodes_names
+        values = list_of_readings
+        dic = dict(zip(keys, values))
+
+        return dic
+
+
+    def format_i2c_sensors_readings(self, list_of_readings):
+        keys = self.i2c_sensors_names
+        values = list_of_readings
+        dic = dict(zip(keys, values))
+
+        return dic
+
+
+    def format_thermal_readings(self, list_of_readings):
+        keys = [i for i in range(1,17)]
+        values = list_of_readings
+        dic = dict(zip(keys, values))
+
+        return dic
+
 
 
 # Example data to send
