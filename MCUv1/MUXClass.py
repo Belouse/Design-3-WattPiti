@@ -18,12 +18,7 @@ class Mux():
         for i in range(4):
             value = (sensorNumber >> i) & 1
             self.pins[i].value(value)  # Extract bit i and set pin
-            print(value, end='')
 
-# mux = Mux("X9", "X10", "X11", "X12")
-# for i in range(1,17):   
-#     mux.channelSensor(i)
-#     print("\n")
 
 
 
