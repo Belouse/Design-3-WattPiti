@@ -3,7 +3,9 @@ from FileManagerClass import FileManager
 from AlgorithmManagerClass import AlgorithmManager
 from SerialPortClass import SerialPort
 from UI import InterfaceWattpiti
-
+from PC.Algo.AlgoPosition import AlgoPosition
+from PC.Algo.AlgoPuissance import AlgoPower
+from PC.Algo.AlgoLambda import AlgoWavelength
 
 if __name__ == "__main__":
     serial_port = SerialPort()
