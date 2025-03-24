@@ -2,6 +2,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import Rbf
 
+class AlgoPosition():
+
+    def __init(self):
+      pass
+
+    def calculatePosition(self, data):
+      # thur la place est à toi
+
+      position = (0,0)
+      return position
+
+
 def interpolate_circle(matrix, position, radius, center=(0, 0), resolution=300, rbf_function='gaussian'):
     """
     Réalise l'interpolation et extrapolation des données sur une grille couvrant un cercle.
