@@ -1,6 +1,6 @@
 
 
-def AlgoPower():
+class AlgoPower():
 
     def __init__(self):
         pass
