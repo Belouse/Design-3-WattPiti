@@ -36,7 +36,7 @@ class AlgoPower:
         # Génération des températures gaussiennes
         gaussian_temps = gaussian(radial_positions, a, b, c)
 
-        # Modèle pour le calcul de la puissance --> trouvé avec curvfit des courbes à Tom
+        # Modèle pour le calcul de la puissance --> trouvé avec curvfit des courbes à Tom (*pas précis*)
         def calculate_laser_power(T_r, r):
             return (T_r - T0) / (2.70 * np.exp(-0.0018 * r**2))
 
