@@ -7,8 +7,14 @@ class AlgoPosition():
     def __init(self):
       pass
 
-    def calculatePosition(self, data):
+    def calculatePosition(self, dataContainer):
+      """
+      data: DataContainer object (see class declaration for details)
+      """
+
       # thur la place est à toi
+
+
 
       position = (0,0)
       return position
