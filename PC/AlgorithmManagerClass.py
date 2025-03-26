@@ -1,6 +1,6 @@
-from Algo.AlgoPosition import AlgoPosition
-from Algo.AlgoPuissance import AlgoPower
-from Algo.AlgoLambda import AlgoWavelength
+from AlgoPosition import AlgoPosition
+from AlgoPuissance import AlgoPower
+from AlgoLambda import AlgoWavelength
 
 class AlgorithmManager():
     """

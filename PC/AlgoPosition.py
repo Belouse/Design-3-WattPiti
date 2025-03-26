@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import Rbf
+from DataContainerClass import DataContainer
 
 class AlgoPosition():
 
@@ -9,7 +10,9 @@ class AlgoPosition():
 
     def calculatePosition(self, dataContainer):
       """
-      data: DataContainer object (see class declaration for details)
+      dataContainer: DataContainer object (see class declaration for details)
+
+      Fonction qui retourne un tuple (x,y) ici seulement pour ne pas interrompre le main svp
       """
 
       # thur la place est à toi

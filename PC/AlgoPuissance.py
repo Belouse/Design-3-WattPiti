@@ -1,17 +1,33 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from dataclasses import dataclass
-
-@dataclass
-class SensorOutput:
-    temperature: np.ndarray
+from DataContainerClass import DataContainer
 
 class AlgoPower:
     def __init__(self):
         pass
 
-    def calculatePower(self, data):
-        temperatures = data.temperature
+    def calculatePower(self, dataContainer):
+        """
+        dataContainer: DataContainer object (see class declaration for details)
+        
+        algo qui sort une puissance ici... pas de graphiques ici svp, cette fonction là est appelée dans le script main pour tester
+        l'interface, donc on veut bien avoir une valeur ici sans interrompre le code:)
+        """
+
+        power = 5
+
+        return power
+
+
+
+    def calculatePowerTest(self, dataContainer):
+        """
+        
+        Fonction de test ici qui n'interrompt pas le main...
+        
+        """
+        temperatures = dataContainer.temperature
         thermistor_temps = temperatures[:-1]  # 16 premières valeurs
         T0 = temperatures[-1]                 # Température de référence (17e élément)
 
@@ -72,10 +88,10 @@ class AlgoPower:
         return total_power
 
 # Exemple d'utilisation
-sensor_data = SensorOutput(
+sensor_data = DataContainer(
     temperature=np.array([50, 48, 46, 44, 42, 40, 38, 36, 34, 32, 
-                          30, 28, 26, 24, 22, 20, 30])  # Dernier élément = température de référence
+                            30, 28, 26, 24, 22, 20, 30])  # Dernier élément = température de référence
 )
-
-algo = AlgoPower()
-algo.calculatePower(sensor_data)
+if __name__ == "__main__":
+    algo = AlgoPower()
+    algo.calculatePowerTest(sensor_data)
