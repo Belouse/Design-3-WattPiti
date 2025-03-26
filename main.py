@@ -6,7 +6,7 @@ from UI import InterfaceWattpiti
 from PC.Algo.AlgoPosition import AlgoPosition
 from PC.Algo.AlgoPuissance import AlgoPower
 from PC.Algo.AlgoLambda import AlgoWavelength
-
+from PC.DataContainerClass import DataContainer
 if __name__ == "__main__":
     serial_port = SerialPort()
 
@@ -14,8 +14,6 @@ if __name__ == "__main__":
 
     algorithm_manager = AlgorithmManager(data)
 
-    file_manager = FileManager()
-    file_manager.save_data(data)
 
     position = algorithm_manager.calculate_position()
     power = algorithm_manager.calculate_power()

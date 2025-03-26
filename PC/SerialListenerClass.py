@@ -7,10 +7,10 @@ class SerialListener():
     def __init__(self, portName):
         self.port = serial.Serial(portName, 115200)
 
-    def updatePort(self, portName):
+    def updatePortName(self, portName):
         self.port = serial.Serial(portName, 115200)
     
-    def readData(self, numberOfData):
+    def readData(self, numberOfData, printExecutionTime):
         dataRead = []
         start = time.time()
         while len(dataRead) < numberOfData:
@@ -21,11 +21,7 @@ class SerialListener():
                     dataRead.append(data)
                 except json.JSONDecodeError:
                     pass
-        print(f"Temps d'execution de la réception de données {time.time() - start}")
+        if printExecutionTime:
+            print(f"Temps d'execution de la réception de données {time.time() - start}")
+
         return dataRead
-
-
-portName = "/dev/cu.usbmodem3976347232332"
-serialPort = SerialListener(portName)
-data = serialPort.readData(30)
-print(data)

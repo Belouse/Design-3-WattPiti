@@ -6,13 +6,12 @@ class AlgoWavelength():
         pass
         #importer le réseau de neurones???
     
-    def calculateWavelength(self, data):
+    def calculateWavelength(self, dataContainer):
         """
-        
-        data: np.array([capteur1, capteur2, ...])
+        data: DataContainer object (see class declaration for details)
+        """
 
-        """
-        
+
         # la magie se passe ici...
 
         wavelength = 1000
