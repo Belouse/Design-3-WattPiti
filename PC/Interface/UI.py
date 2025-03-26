@@ -7,6 +7,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,  
 NavigationToolbar2Tk) 
 import numpy as np
+import time
 
 class InterfaceWattpiti(tk.Tk):
     def __init__(self):
@@ -107,7 +108,6 @@ class InterfaceWattpiti(tk.Tk):
 
         # Création d'une entrée pour le nom du fichier
         self.fileNameVar = tk.StringVar()
-        self.fileNameVar.trace_add("write", self.save_data)
         self.fileName = ttk.Entry(self, textvariable = self.fileNameVar)
         self.fileName.place(x = 800, y =50)
 
@@ -116,9 +116,9 @@ class InterfaceWattpiti(tk.Tk):
         self.labelFileName.place(x=670, y=50)
 
         #Création d'un radio bouton pour le format de fichier
-        formatVar = tk.StringVar()
-        self.fileFormatCsv = tk.Radiobutton(self, text = ".CSV", variable = formatVar, value = 1, command = self.file_format, background = "#DCDCDC")
-        self.fileFormatXlsx = tk.Radiobutton(self, text=".XLSX", variable = formatVar, value = 2, command = self.file_format, background = "#DCDCDC")
+        self.formatVar = tk.StringVar()
+        self.fileFormatCsv = tk.Radiobutton(self, text = ".CSV", variable = self.formatVar, value = 1, command = self.file_format, background = "#DCDCDC")
+        self.fileFormatXlsx = tk.Radiobutton(self, text=".XLSX", variable = self.formatVar, value = 2, command = self.file_format, background = "#DCDCDC")
         self.fileFormatCsv.place(x=800, y=100)
         self.fileFormatXlsx.place(x=900, y=100)
 
@@ -148,7 +148,7 @@ class InterfaceWattpiti(tk.Tk):
         #Création d'un bouton pour enregister les données
         saveButtonStyle = ttk.Style()
         saveButtonStyle.configure("saveButtonStyle.TButton", background = "#B2DEF7", relief = "raised", font = ("Inter", 10, "bold"))
-        self.saveButton = ttk.Button(self, text="Enregistrer", style="saveButtonStyle.TButton")
+        self.saveButton = ttk.Button(self, text="Enregistrer", style="saveButtonStyle.TButton", command = self.save_data)
         self.saveButton.place(x= 930, y = 150)
 
 
@@ -253,7 +253,16 @@ class InterfaceWattpiti(tk.Tk):
 
     #Fonction du bouton pour démarrer la simulation
     def click_start(self):
-        pass
+        timeValue = self.timeEntry.get()
+        
+        start_time = time.time()
+        elapsed_time = 0
+
+        while elapsed_time < float(timeValue):
+            elapsed_time = time.time() - start_time
+            self.startButton['state'] == tk.DISABLED
+            time.sleep(0.1)  # Sleep for a short duration to avoid high CPU usage
+        
 
     #Fonction du bouton pour arrêter la simulation
     def click_stop(self):
@@ -271,9 +280,26 @@ class InterfaceWattpiti(tk.Tk):
     def time_value(self):
         pass
 
-    #Fonction pour le nom du fichier
+    #Fonction pour enregistrer les données
     def save_data(self):
-        pass
+
+        #Enregistrer les données dans un fichier txt
+        if int(self.formatVar.get()) == 1:
+            file_name = self.fileNameVar.get()
+            if not file_name.endswith('.csv'):
+                file_name += '.csv'
+            
+            with open(file_name, 'w') as file:
+                file.write("Puissance (W),Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
+                file.write(f"{self.powerVar.get()},{self.wavelenghtVar.get()},{self.positionXVar.get()},{self.positionYVar.get()}\n")
+
+        #Enregistrer les données dans un fichier xlsx
+        else:
+            file_name = self.fileNameVar.get()
+            if not file_name.endswith('.xlsx'):
+                file_name += '.xlsx'
+            
+            pass
     
     #Fonction pour le format du fichier enregistré
     def file_format(self):
