@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import Rbf
 from DataContainerClass import DataContainer
+import pandas as pd
 
 class AlgoPosition():
 
@@ -14,8 +15,6 @@ class AlgoPosition():
 
       Fonction qui retourne un tuple (x,y) ici seulement pour ne pas interrompre le main svp
       """
-
-      # thur la place est à toi
 
 
 
@@ -135,7 +134,10 @@ if __name__ == '__main__':
     Plot les résultats en 2D et 3D.
     """
 
-    # Définition d'une grille de positions 4x4 (en mm)
+
+    csv_simulation_1 = "Thermique\Simulation 03-26\Offset_1_10W_parsed.csv"
+
+    # Define the grid size and spacing
     position_xy = np.array([
         [[-10.5, 10.5], [-3.5, 10.5], [3.5, 10.5], [10.5, 10.5]],
         [[-10.5, 3.5],  [-3.5, 3.5],  [3.5, 3.5],  [10.5, 3.5]],
@@ -143,8 +145,66 @@ if __name__ == '__main__':
         [[-10.5, -10.5],[-3.5, -10.5],[3.5, -10.5], [10.5, -10.5]]
     ])
     
+
+
+    # Read the CSV file into a DataFrame
+    df = pd.read_csv(csv_simulation_1)
+
+    # create de X, Y arrays with the themperature values
+    x_simulation_1 = df['COORDINATES.X']
+    y_simulation_1 = df['COORDINATES.Y']
+    temp_simulation_1 = df['NDTEMP.T']
+
+    heatsink_temperature = 39
+
+    #plot the data in 3d
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(x_simulation_1, y_simulation_1, temp_simulation_1, c=temp_simulation_1, cmap='turbo')
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Temperature (°C)')
+    fig.suptitle('Temperature distribution')
+    plt.show()
+    
+
+    # transform the temp <class 'pandas.core.series.Series'> to a numpy array
+    x_simulation_1 = x_simulation_1.to_numpy()
+    y_simulation_1 = y_simulation_1.to_numpy()
+    temp_simulation_1 = temp_simulation_1.to_numpy()
+
+    #print(temp_simulation_1)
+
+    # fin the maximum of the temperature and print the position
+    temp_max = np.max(temp_simulation_1)
+    indexe_max = np.unravel_index(np.argmax(temp_simulation_1), temp_simulation_1.shape)
+    print(max(temp_simulation_1))
+    print(indexe_max[0])
+    print("position max data =", (x_simulation_1[indexe_max[0]], y_simulation_1[indexe_max[0]])  )
+    
+    # loop throuhgt the x and y arrays and return the 16 temprature where the position match the position_xy
+    # create a 4x4 matrix with the temperature values
+    temp_simulation_2 = np.zeros((4, 4))
+    for i in range(4):
+        for j in range(4):
+            # find the row where the x and y are the CLOSEST the position_xy
+            index = np.argmin(np.abs(x_simulation_1 - position_xy[i][j][0]) + np.abs(y_simulation_1 - position_xy[i][j][1]))
+            #print("index", index, "position xy", position_xy[i][j], "x", x_simulation_1[index], "y", y_simulation_1[index])
+            # get the temperature value at the index
+            temp_simulation_2[i][j] = temp_simulation_1[index]
+
+
+    # print the temperature matrix
+    #print("Température à chaque position :")
+    #print(position_xy)
+    #print("Température (°C) :")
+    #print(temp_simulation_2)
+
+    
+    """ 
+    # Fonction généré gaussienne
     laser_origin = {"x":0, "y":0}
-    rayon = 30
+    
     # Fonction gaussienne centrée en (x_0, y_0) et normalisée entre 0 et 3000
     def gaussian(x, y, x_0=0, y_0=0):
         return 3000 * np.exp(-0.5 * ((x - x_0)**2 + (y - y_0)**2) / 10**2)
@@ -161,18 +221,24 @@ if __name__ == '__main__':
 
     # Génération des températures sur la grille et ajout de bruit
     Temp = gaussian(position_xy[:, :, 0], position_xy[:, :, 1], x_0=laser_origin['x'], y_0=laser_origin['y'])
-    noise_level = 0
-    Temp = Temp + np.random.normal(0, noise_level, Temp.shape)
+    print(Temp) """
+
+    # Prend la coubre de température dans le dossier /Thermique/Simulation 03-26/Test Lecture CSV.py
+    Temp = temp_simulation_2 - heatsink_temperature
+    print("Temps", Temp)
+
+    rayon = 30
+    noise_level = 1
     
     
     # Interpolation/extrapolation dans un cercle de rayon 12.5 mm centré en (0,0)
-    X, Y, Z = interpolate_circle(Temp, position_xy, radius=rayon, center=(0, 0), resolution=300, rbf_function='multiquadric')
+    X, Y, Z = interpolate_circle(Temp, position_xy, radius=rayon, center=(0, 0), resolution=100, rbf_function='gaussian')
     
     
     # Affichage de la surface 
-    plot_matrix_color(Temp)
-    plot_interpolation_2d(X, Y, Z, original_points=np.concatenate([position_xy, Temp[:, :, None]], axis=2).reshape(-1, 3))
-    plot_3d(X, Y, Z, title="Interpolation/extrapolation dans un cercle")
+    plot_matrix_color(Temp+heatsink_temperature)
+    plot_interpolation_2d(X, Y, Z+heatsink_temperature, original_points=np.concatenate([position_xy, Temp[:, :, None]], axis=2).reshape(-1, 3))
+    plot_3d(X, Y, Z+heatsink_temperature, title="Interpolation/extrapolation dans un cercle")
   
 
     # Recherche du maximum de l'interpolation
