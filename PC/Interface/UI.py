@@ -75,24 +75,26 @@ class InterfaceWattpiti(tk.Tk):
         self.resetButton = ttk.Button(self, text='Reset', style = "resetButtonStyle.TButton", command=self.click_reset)
         self.resetButton.place(x=370, y=150)
 
-        #Création d'une entrée pour la fréquence d'échantillonnage
-        freqVar = tk.StringVar()
-        freqVar.trace_add("write", self.freq_value)
-        self.freqEntry = ttk.Entry(self, textvariable = freqVar)
-        self.freqEntry.place(x =445, y = 50)
-        
-        #Création d'un label pour la fréquence d'échantillonnage
-        self.labelFreq = ttk.Label(self, text="Fréquence d'échantillonnage (Hz):", style = "labelStyle.TLabel")
+
+        #Création d'une liste déroulante pour choisir le port
+        self.portList = ["COM1", "COM2", "COM3", "COM4"]
+        self.portComboBox = ttk.Combobox(self, values=self.portList)
+        self.portComboBox.place(x = 445, y=50)
+        self.portComboBox.current(0)
+
+        #Création d'un label pour le choix du port
+        self.labelFreq = ttk.Label(self, text="Choix du port:", style = "labelStyle.TLabel")
         self.labelFreq.place(x=250, y = 50)
 
-        #Création d'une entrée pour le temps d'acquisition
+
+        #Création d'une entrée pour le temps de moyennage
         timeVar = tk.StringVar()
         timeVar.trace_add("write", self.time_value)
         self.timeEntry = ttk.Entry(self, textvariable = timeVar)
         self.timeEntry.place(x= 445, y=100)
 
         #Création d'un label pour le temps d'acquisition
-        self.labelTime = ttk.Label(self, text="Temps d'acquisition (s):", style= "labelStyle.TLabel")
+        self.labelTime = ttk.Label(self, text="Temps de moyennage (s):", style= "labelStyle.TLabel")
         self.labelTime.place(x = 250, y = 100)
 
 
@@ -115,6 +117,7 @@ class InterfaceWattpiti(tk.Tk):
         self.labelFileName = ttk.Label(self, text = "Nom du fichier:", style = "labelStyle.TLabel")
         self.labelFileName.place(x=670, y=50)
 
+        """
         #Création d'un radio bouton pour le format de fichier
         self.formatVar = tk.StringVar()
         self.fileFormatCsv = tk.Radiobutton(self, text = ".CSV", variable = self.formatVar, value = 1, command = self.file_format, background = "#DCDCDC")
@@ -125,29 +128,30 @@ class InterfaceWattpiti(tk.Tk):
         #Création d'un label pour les radio buttons du format du fichier
         self.labelFormatChoice = ttk.Label(self, text = "Format du fichier:", style = "labelStyle.TLabel")
         self.labelFormatChoice.place(x=670, y=103)
-        
+        """
         #Création d'un label pour le choix des données à enregistrer
         self.LabelDataChoice = ttk.Label(self, text = "Données à enregistrer:", style = "labelStyle.TLabel")
-        self.LabelDataChoice.place(x = 670, y= 130)
+        self.LabelDataChoice.place(x = 670, y= 100)
+        
 
 
         #Création d'un checkbox pour le choix des données à enregistrer
         #Longueur d'onde
-        wavelengthCheckButtonBool = tk.BooleanVar()
-        self.wavelengthCheckButton = ttk.Checkbutton(self, text= "Longueur d'onde", variable = wavelengthCheckButtonBool)
-        self.wavelengthCheckButton.place(x=810, y=150)
+        self.wavelengthCheckButtonBool = tk.BooleanVar()
+        self.wavelengthCheckButton = ttk.Checkbutton(self, text= "Longueur d'onde", variable = self.wavelengthCheckButtonBool)
+        self.wavelengthCheckButton.place(x=810, y=120)
         #Puissance
-        powerCheckButtonBool = tk.BooleanVar()
-        self.powerCheckButton = ttk.Checkbutton(self, text="Puissance", variable = powerCheckButtonBool)
-        self.powerCheckButton.place(x=810, y = 130)
+        self.powerCheckButtonBool = tk.BooleanVar()
+        self.powerCheckButton = ttk.Checkbutton(self, text="Puissance", variable = self.powerCheckButtonBool)
+        self.powerCheckButton.place(x=810, y = 100)
         #Position
-        positionCheckButtonBool = tk.BooleanVar()
-        self.positionCheckButton = ttk.Checkbutton(self, text="Position", variable = positionCheckButtonBool)
-        self.positionCheckButton.place(x = 810, y = 170)
+        self.positionCheckButtonBool = tk.BooleanVar()
+        self.positionCheckButton = ttk.Checkbutton(self, text="Position", variable = self.positionCheckButtonBool)
+        self.positionCheckButton.place(x = 810, y = 140)
 
         #Création d'un bouton pour enregister les données
-        saveButtonStyle = ttk.Style()
-        saveButtonStyle.configure("saveButtonStyle.TButton", background = "#B2DEF7", relief = "raised", font = ("Inter", 10, "bold"))
+        self.saveButtonStyle = ttk.Style()
+        self.saveButtonStyle.configure("saveButtonStyle.TButton", background = "#B2DEF7", relief = "raised", font = ("Inter", 10, "bold"))
         self.saveButton = ttk.Button(self, text="Enregistrer", style="saveButtonStyle.TButton", command = self.save_data)
         self.saveButton.place(x= 930, y = 150)
 
@@ -241,6 +245,11 @@ class InterfaceWattpiti(tk.Tk):
         self.posPlot = self.posCanvas.get_tk_widget()
         self.posPlot.place(x = 900, y = 280)
 
+        #Création d'un frame pour les erreurs
+        self.errorFrame = ttk.Frame(self, width=400, height=100, borderwidth=3, style = "frameLabelStyle.TLabelframe")
+        self.errorFrame.grid(row = 3, column = 0, padx=5, pady=5, sticky = "nsew", columnspan = 2)
+        self.errorFrame.grid_propagate(False)
+
 
 
 
@@ -282,24 +291,49 @@ class InterfaceWattpiti(tk.Tk):
 
     #Fonction pour enregistrer les données
     def save_data(self):
+        self.choiceArray = [self.powerCheckButtonBool.get(),self.wavelengthCheckButtonBool.get(), self.positionCheckButtonBool.get()]
 
         #Enregistrer les données dans un fichier txt
-        if int(self.formatVar.get()) == 1:
-            file_name = self.fileNameVar.get()
-            if not file_name.endswith('.csv'):
-                file_name += '.csv'
-            
+        
+        file_name = self.fileNameVar.get()
+        if not file_name.endswith('.csv'):
+            file_name += '.csv'
+
+        if self.choiceArray == [True, True, True]:
             with open(file_name, 'w') as file:
                 file.write("Puissance (W),Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
                 file.write(f"{self.powerVar.get()},{self.wavelenghtVar.get()},{self.positionXVar.get()},{self.positionYVar.get()}\n")
+        
+        elif self.choiceArray == [True, True, False]:
+            with open(file_name, 'w') as file:
+                file.write("Puissance (W),Longueur d'onde (nm)\n")
+                file.write(f"{self.powerVar.get()},{self.wavelenghtVar.get()}\n")
+        
+        elif self.choiceArray == [True, False, True]:
+            with open(file_name, 'w') as file:
+                file.write("Puissance (W),Position x (mm),Position y (mm)\n")   
 
-        #Enregistrer les données dans un fichier xlsx
-        else:
-            file_name = self.fileNameVar.get()
-            if not file_name.endswith('.xlsx'):
-                file_name += '.xlsx'
-            
-            pass
+        elif self.choiceArray == [False, True, True]:
+            with open(file_name, 'w') as file:
+                file.write("Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
+        
+        elif self.choiceArray == [True, False, False]:
+            with open(file_name, 'w') as file:
+                file.write("Puissance (W)\n")
+                file.write(f"{self.powerVar.get()}\n")
+        
+        elif self.choiceArray == [False, True, False]:
+            with open(file_name, 'w') as file:
+                file.write("Longueur d'onde (nm)\n")
+                file.write(f"{self.wavelenghtVar.get()}\n")
+
+        elif self.choiceArray == [False, False, True]:
+            with open(file_name, 'w') as file:
+                file.write("Position x (mm),Position y (mm)\n")
+
+        elif self.choiceArray == [False, False, False]:
+            self.error_handling("ERREUR: Aucune donnée pour l'enregistrement n'a été sélectionnée.")
+
     
     #Fonction pour le format du fichier enregistré
     def file_format(self):
@@ -316,6 +350,16 @@ class InterfaceWattpiti(tk.Tk):
     #Fonction pour la valeur de la position lue
     def position_value(self):
         pass
+
+    def error_handling(self, message):
+        #Création d'un label pour les erreurs
+        self.errorLabel = ttk.Label(self, text = message, style = "labelStyle.TLabel")
+        self.errorLabel.place(x = 10, y = 870)
+        self.errorFrame.grid_propagate(False)
+    
+    def erase_error(self):
+        #Effacer le message d'erreur
+        self.errorLabel.destroy()
 
 if __name__ == "__main__":
     app = InterfaceWattpiti()
