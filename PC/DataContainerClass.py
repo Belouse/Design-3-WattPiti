@@ -37,6 +37,15 @@ class DataContainer:
                     dataContainer = DataContainer() # objet qui serait créé dans le code ou passé en argument
                     arrayTemperature = dataContainer.temperature # pour accéder à l'attribut temperature de l'objet
     """
+
+    # The position x,y of each thermal captor, should not change during execution
+    thermal_captor_position = np.array([
+        [[-10.5, 10.5], [-3.5, 10.5], [3.5, 10.5], [10.5, 10.5]],
+        [[-10.5, 3.5],  [-3.5, 3.5],  [3.5, 3.5],  [10.5, 3.5]],
+        [[-10.5, -3.5], [-3.5, -3.5], [3.5, -3.5], [10.5, -3.5]],
+        [[-10.5, -10.5],[-3.5, -10.5],[3.5, -10.5], [10.5, -10.5]]
+        ])
+    
     temperature: np.ndarray  = field(default_factory=lambda: np.array([]))
     wavelengthCounts: np.ndarray  = field(default_factory=lambda: np.array([]))
     position: tuple = (0,0)
