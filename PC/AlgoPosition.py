@@ -6,10 +6,11 @@ import pandas as pd
 
 class AlgoPosition():
 
-    def __init(self):
+    def __init__(self):
 
       # Le rayon pour faire l'extrapolation
       self.rayon = 30
+      pass
 
     def calculatePosition(self, dataContainer):
       """
@@ -21,16 +22,18 @@ class AlgoPosition():
       
       temp = dataContainer.temperature
 
-      
-      # Create the 4x4 matrix and substract the lowest value
+      # Create the 4x4 matrix 
       temp = temp[:16].reshape(4, 4)
       lowest_temp = np.min(temp)
+      # need to substract the lowest value so the extrapolation is done around z=0, need to re-add this value at the end
       temp = temp - lowest_temp
 
       X, Y, Z = AlgoPosition.interpolate_circle(temp, dataContainer.thermalCaptorPosition, radius=self.rayon, center=(0, 0), resolution=300, rbf_function='gaussian')
-      max_x, max_y, max_value = AlgoPosition.find_max_interpolation(X, Y, Z)
+      print("type(X)", type(X))
+      max_x, max_y, max_temp = AlgoPosition.find_max_interpolation(X, Y, Z)
       position = (max_x,max_y)
-
+      dataContainer.interpolatedTemperatureGrid = np.stack((X, Y, Z+lowest_temp), axis=0)
+      dataContainer.max_temperature = max_temp+lowest_temp
       return position
     
 
@@ -80,7 +83,7 @@ class AlgoPosition():
     
 
 
-    def plot_interpolation_2d(X, Y, Z, original_points=None):
+    def plot_2d(X, Y, Z, original_points=None):
       """
       Affiche la surface interpolée en 2D.
       
