@@ -27,11 +27,9 @@ class AlgoPosition():
       lowest_temp = np.min(temp)
       temp = temp - lowest_temp
 
-      X, Y, Z = AlgoPosition.interpolate_circle(temp, dataContainer.captor_position, radius=self.rayon, center=(0, 0), resolution=300, rbf_function='gaussian')
+      X, Y, Z = AlgoPosition.interpolate_circle(temp, dataContainer.thermalCaptorPosition, radius=self.rayon, center=(0, 0), resolution=300, rbf_function='gaussian')
       max_x, max_y, max_value = AlgoPosition.find_max_interpolation(X, Y, Z)
       position = (max_x,max_y)
-
-      
 
       return position
     

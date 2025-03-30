@@ -39,15 +39,18 @@ class DataContainer:
     """
 
     # The position x,y of each thermal captor, should not change during execution
-    thermal_captor_position = np.array([
+    thermalCaptorPosition: np.ndarray = field(default_factory=lambda: np.array([
         [[-10.5, 10.5], [-3.5, 10.5], [3.5, 10.5], [10.5, 10.5]],
         [[-10.5, 3.5],  [-3.5, 3.5],  [3.5, 3.5],  [10.5, 3.5]],
         [[-10.5, -3.5], [-3.5, -3.5], [3.5, -3.5], [10.5, -3.5]],
         [[-10.5, -10.5],[-3.5, -10.5],[3.5, -10.5], [10.5, -10.5]]
-        ])
+        ]))
     
     temperature: np.ndarray  = field(default_factory=lambda: np.array([]))
+    interpolated_temperature_grid: np.ndarray = field(default_factory=lambda: np.array([]))
+    max_temperature: float = 0.0
     wavelengthCounts: np.ndarray  = field(default_factory=lambda: np.array([]))
     position: tuple = (0,0)
     power : float = 1
     wavelength: float = 1000
+
