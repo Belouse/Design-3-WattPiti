@@ -54,7 +54,7 @@ if __name__ == '__main__':
     print(Temp) """
 
 
-    csv_simulation_1 = "C:/Users/Éloi Blouin/Documents/GitHub/Design-3-WattPiti/Thermique/SimulationCSV/Offset_1_10W_parsed.csv"
+    csv_simulation_1 = "Thermique\SimulationCSV\Offset_1_10W_parsed.csv"
 
     # Define the grid size and spacing
     position_xy = np.array([
@@ -94,13 +94,17 @@ if __name__ == '__main__':
 
     #print(temp_simulation_1)
 
-    # fin the maximum of the temperature and print the position
+    # find the maximum of the temperature and print the position
     temp_max = np.max(temp_simulation_1)
     indexe_max = np.unravel_index(np.argmax(temp_simulation_1), temp_simulation_1.shape)
     print(max(temp_simulation_1))
     print(indexe_max[0])
     print("position max data =", ((float(x_simulation_1[indexe_max[0]]), float(y_simulation_1[indexe_max[0]])) )) 
     
+    # find the minimum of the temperature 
+    temp_min = np.min(temp_simulation_1)
+
+
     # loop throuhgt the x and y arrays and return the 16 temprature where the position match the position_xy
     # create a 4x4 matrix with the temperature values
     temp_simulation_2 = np.zeros((4, 4))
@@ -123,17 +127,20 @@ if __name__ == '__main__':
 
 
     # Prend la coubre de température dans le dossier /Thermique/Simulation 03-26/Test Lecture CSV.py
-    Temp = temp_simulation_2 - heatsink_temperature
-    #print("Temps", Temp)
+    #print("heatsink_temperature=", heatsink_temperature)
+    #print("temp_min=" , temp_min)
+    noise_level = 1
+    Temp = temp_simulation_2 - temp_min + -noise_level+noise_level*np.random.rand(4,4)
+    print("Temps", Temp)
 
     rayon = 30
-    noise_level = 1
+    
     
     
     # Interpolation/extrapolation dans un cercle de rayon 12.5 mm centré en (0,0)
     X, Y, Z = AlgoPosition.interpolate_circle(Temp, position_xy, radius=rayon, center=(0, 0), resolution=300, rbf_function='gaussian')
     
-    
+    print(len(X))
     # Affichage de la surface 
     AlgoPosition.plot_matrix_color(Temp+heatsink_temperature)
     AlgoPosition.plot_interpolation_2d(X, Y, Z+heatsink_temperature, original_points=np.concatenate([position_xy, Temp[:, :, None]], axis=2).reshape(-1, 3))
