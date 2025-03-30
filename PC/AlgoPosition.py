@@ -7,7 +7,9 @@ import pandas as pd
 class AlgoPosition():
 
     def __init(self):
-      pass
+
+      # Le rayon pour faire l'extrapolation
+      self.rayon = 30
 
     def calculatePosition(self, dataContainer):
       """
@@ -15,10 +17,22 @@ class AlgoPosition():
 
       Fonction qui retourne un tuple (x,y) ici seulement pour ne pas interrompre le main svp
       """
+      
+      
+      temp = dataContainer.temperature
 
+      
+      # Create the 4x4 matrix and substract the lowest value
+      temp = temp[:16].reshape(4, 4)
+      lowest_temp = np.min(temp)
+      temp = temp - lowest_temp
 
+      X, Y, Z = AlgoPosition.interpolate_circle(temp, dataContainer.captor_position, radius=self.rayon, center=(0, 0), resolution=300, rbf_function='gaussian')
+      max_x, max_y, max_value = AlgoPosition.find_max_interpolation(X, Y, Z)
+      position = (max_x,max_y)
 
-      position = (0,0)
+      
+
       return position
     
 
