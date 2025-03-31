@@ -8,10 +8,18 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
 NavigationToolbar2Tk) 
 import numpy as np
 import time
+from DataContainerClass import DataContainer
+from AlgoPosition import AlgoPosition
+
 
 class InterfaceWattpiti(tk.Tk):
     def __init__(self):
         super().__init__()
+
+
+        #Importation des classes externes pour stocker les données
+        self.data = DataContainer()
+        self.algoPosition = AlgoPosition()
 
         #création de l'interface
         self.title("Puissance-mètre Wattpiti")
@@ -117,18 +125,6 @@ class InterfaceWattpiti(tk.Tk):
         self.labelFileName = ttk.Label(self, text = "Nom du fichier:", style = "labelStyle.TLabel")
         self.labelFileName.place(x=670, y=50)
 
-        """
-        #Création d'un radio bouton pour le format de fichier
-        self.formatVar = tk.StringVar()
-        self.fileFormatCsv = tk.Radiobutton(self, text = ".CSV", variable = self.formatVar, value = 1, command = self.file_format, background = "#DCDCDC")
-        self.fileFormatXlsx = tk.Radiobutton(self, text=".XLSX", variable = self.formatVar, value = 2, command = self.file_format, background = "#DCDCDC")
-        self.fileFormatCsv.place(x=800, y=100)
-        self.fileFormatXlsx.place(x=900, y=100)
-
-        #Création d'un label pour les radio buttons du format du fichier
-        self.labelFormatChoice = ttk.Label(self, text = "Format du fichier:", style = "labelStyle.TLabel")
-        self.labelFormatChoice.place(x=670, y=103)
-        """
         #Création d'un label pour le choix des données à enregistrer
         self.LabelDataChoice = ttk.Label(self, text = "Données à enregistrer:", style = "labelStyle.TLabel")
         self.LabelDataChoice.place(x = 670, y= 100)
@@ -225,6 +221,10 @@ class InterfaceWattpiti(tk.Tk):
         self.powerPlot = self.powerCanvas.get_tk_widget()
         self.powerPlot.place(x=20, y=280)
 
+        #Création d'un bouton pour afficher le graphique de la puissance en fonction du temps
+        self.powerPlotButton = ttk.Button(self, text="Afficher le graphique", command=self.power_plot, style = "saveButtonStyle.TButton")
+        self.powerPlotButton.place(x = 400, y = 235)
+
 
 
         ###Création du frame du graphique de la position centrale du faisceau
@@ -240,6 +240,10 @@ class InterfaceWattpiti(tk.Tk):
         self.axPos = self.posFig.add_subplot(111)
         self.axPos.set_xlabel("Position x (mm)")
         self.axPos.set_ylabel("Position y (mm)")
+
+        #Création d'un bouton pour afficher le graphique
+        self.posPlotButton = ttk.Button(self, text="Afficher le graphique", command=self.pos_plot, style = "saveButtonStyle.TButton")
+        self.posPlotButton.place(x = 1100, y = 235)
 
         self.posCanvas = FigureCanvasTkAgg(self.posFig, master = self)
         self.posPlot = self.posCanvas.get_tk_widget()
@@ -262,15 +266,11 @@ class InterfaceWattpiti(tk.Tk):
 
     #Fonction du bouton pour démarrer la simulation
     def click_start(self):
-        timeValue = self.timeEntry.get()
-        
-        start_time = time.time()
-        elapsed_time = 0
-
-        while elapsed_time < float(timeValue):
-            elapsed_time = time.time() - start_time
-            self.startButton['state'] == tk.DISABLED
-            time.sleep(0.1)  # Sleep for a short duration to avoid high CPU usage
+        #Changer la valeur des variables de la classe DataContainer
+        self.positionXVar.set(str(self.data.position[0]))
+        self.positionYVar.set(str(self.data.position[1]))
+        self.powerVar.set(str(self.data.power))
+        self.wavelenghtVar.set(str(self.data.wavelength))
         
 
     #Fonction du bouton pour arrêter la simulation
@@ -299,6 +299,7 @@ class InterfaceWattpiti(tk.Tk):
         if not file_name.endswith('.csv'):
             file_name += '.csv'
 
+        #Mettre des conditions selon les choix de l'utilisateur
         if self.choiceArray == [True, True, True]:
             with open(file_name, 'w') as file:
                 file.write("Puissance (W),Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
@@ -361,6 +362,26 @@ class InterfaceWattpiti(tk.Tk):
         #Effacer le message d'erreur
         self.errorLabel.destroy()
 
+    def power_plot(self):
+        pass
+
+    def pos_plot(self):
+        #Fonction pour afficher le graphique de la position centrale du faisceau
+        self.data.temperature = np.array([39.4394989,  40.51720047, 40.40250015, 39.22230148, 41.09389877, 43.10359955, 42.76750183, 40.5965004,43.02610016, 48.70330048, 47.12360001, 41.83250046,42.22079849, 58.96350098, 50.47050095, 40.92689896, 0])
+        self.axPos.clear()
+        self.axPos.set_xlabel("Position x (mm)")
+        self.axPos.set_ylabel("Position y (mm)")
+        AlgoPosition.calculatePosition(self.algoPosition, self.data)
+        contour = self.axPos.contourf(self.data.interpolatedTemperatureGrid[0], 
+                          self.data.interpolatedTemperatureGrid[1], 
+                          self.data.interpolatedTemperatureGrid[2], 
+                          levels=100,
+                          cmap='viridis')
+        self.posCanvas.draw()
+        self.posCanvas.get_tk_widget().update()
+
+
 if __name__ == "__main__":
     app = InterfaceWattpiti()
     app.mainloop()
+    data = DataContainer()
