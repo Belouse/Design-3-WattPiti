@@ -1,4 +1,4 @@
-from JSONFormatterClass import JSONFormatter
+from MCUv1.JSONFormatterClass import JSONFormatter
 
 
 class SerialPort():
