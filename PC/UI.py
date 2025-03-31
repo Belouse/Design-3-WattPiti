@@ -266,6 +266,7 @@ class InterfaceWattpiti(tk.Tk):
 
     #Fonction du bouton pour démarrer la simulation
     def click_start(self):
+
         #Changer la valeur des variables de la classe DataContainer
         self.positionXVar.set(str(self.data.position[0]))
         self.positionYVar.set(str(self.data.position[1]))
@@ -298,6 +299,12 @@ class InterfaceWattpiti(tk.Tk):
         file_name = self.fileNameVar.get()
         if not file_name.endswith('.csv'):
             file_name += '.csv'
+        # Créer un dossier "savedData" s'il n'existe pas
+        save_dir = os.path.join(os.path.dirname(__file__), "savedData")
+        os.makedirs(save_dir, exist_ok=True)
+        
+        # Chemin complet du fichier
+        file_name = os.path.join(save_dir, file_name)
 
         #Mettre des conditions selon les choix de l'utilisateur
         if self.choiceArray == [True, True, True]:
@@ -375,7 +382,7 @@ class InterfaceWattpiti(tk.Tk):
         contour = self.axPos.contourf(self.data.interpolatedTemperatureGrid[0], 
                           self.data.interpolatedTemperatureGrid[1], 
                           self.data.interpolatedTemperatureGrid[2], 
-                          levels=100,
+                          levels=50,
                           cmap='viridis')
         self.posCanvas.draw()
         self.posCanvas.get_tk_widget().update()
@@ -384,4 +391,3 @@ class InterfaceWattpiti(tk.Tk):
 if __name__ == "__main__":
     app = InterfaceWattpiti()
     app.mainloop()
-    data = DataContainer()
