@@ -4,6 +4,7 @@ import os
 from PIL import ImageTk, Image
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure 
+from matplotlib.patches import patches
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,  
 NavigationToolbar2Tk) 
 import numpy as np
@@ -402,8 +403,13 @@ class InterfaceWattpiti(tk.Tk):
         contour = self.axPos.contourf(self.data.interpolatedTemperatureGrid[0], 
                           self.data.interpolatedTemperatureGrid[1], 
                           self.data.interpolatedTemperatureGrid[2], 
-                          levels=50,
-                          cmap='viridis')
+                          levels=100,
+                          cmap='turbo')
+        
+        for row in self.data.thermalCaptorPosition:
+            for (x, y) in row:
+                rect = patches.Rectangle((x - 1.5, y - 1.5), 0.75, 0.75, linewidth=1.5, edgecolor='white', facecolor='none', alpha=0.5)
+                self.axPos.add_patch(rect)
         self.posCanvas.draw()
         self.posCanvas.get_tk_widget().update()
 
