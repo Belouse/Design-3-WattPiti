@@ -19,8 +19,9 @@ class AlgoPosition():
 
       Fonction qui retourne un tuple (x,y) ici seulement pour ne pas interrompre le main svp
       """
-      
-      
+
+      # To use mean
+      #temp = self.moyennage_temperature(100)      
       temp = dataContainer.temperature
 
       # Create the 4x4 matrix 
@@ -167,3 +168,9 @@ class AlgoPosition():
         plt.matshow(matrix, cmap='turbo')
         plt.colorbar()
         plt.show()
+
+
+    def moyennage_temperature(n):
+      first_n_vectors = DataContainer.rawTemperatureMatrix[:n, :]
+      mean_data = np.mean(first_n_vectors, axis=0)
+      return mean_data
