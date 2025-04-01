@@ -100,7 +100,7 @@ class AlgoPosition():
           plt.scatter(original_points[:, 0], original_points[:, 1], c=original_points[:, 2], cmap='turbo', edgecolors='w', marker="s")
       plt.colorbar(label='Température (°C)')
       plt.title("Interpolation/extrapolation dans un cercle")
-      plt.show()
+      #plt.show()
 
       
     def plot_2d_v2(X, Y, Z, original_points=None, rect_size=1.0):

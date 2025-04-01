@@ -60,6 +60,7 @@ while True:
     wavelengthReadings = [readingPhotoDiode1,
                             readingPhotoDiode2, 
                             readingPhotoDiode3,
+                            readingPhotoDiode4,
                             vemlRed,
                             vemlGreen,
                             vemlWhite,
