@@ -3,10 +3,10 @@ from SerialListenerClass import SerialListener
 
 
 class SerialManager():
-    def __init__(self, portName, dataContainer):
+    def __init__(self, portName, dataContainer, maxData=100):
         self.serialListener = SerialListener(portName)
         self.dataContainer = dataContainer
-
+        self.maxData = maxData
 
     def formatData(self, serialData):
         thermaldata = []
@@ -31,11 +31,11 @@ class SerialManager():
         return thermalArray, wavelengthCountsArray
 
 
-    def updateDataToContainer(self, temperatureArray, wavelengthCountsArray):
+    def updateProcessedDataToContainer(self, temperatureArray, wavelengthCountsArray):
         self.dataContainer.temperature = temperatureArray
         self.dataContainer.wavelengthCounts = wavelengthCountsArray
 
-    def convertCountsToTemperature(self, thermalArray):
+    def convertCountsToTemperature(self, thermalData):
         # conversion gain from counts to ˚C [˚C/counts]
         gains = np.array([0.01, #sensor 1
                         0.01,   #sensor 2
@@ -56,15 +56,48 @@ class SerialManager():
                         1       # heatsink temperature sensor (already in ˚C)
                         ])
 
-        return thermalArray * gains
+        # will work if thermalData is a vector or a matrix
+        return thermalData * gains
+
 
 
     def updateDataFromMCU(self, numberOfData, printExecutionTime=True):
         rawData = self.serialListener.readData(numberOfData, printExecutionTime)
         thermalCountsMatrix, wavelengthCountsMatrix = self.formatData(rawData)
+        temperatureMatrix = self.convertCountsToTemperature(thermalCountsMatrix)
+
+
         thermalCountsArray, wavelengthArray = self.processData(thermalCountsMatrix, wavelengthCountsMatrix)
         temperatureArray = self.convertCountsToTemperature(thermalCountsArray)
-        self.updateDataToContainer(temperatureArray, wavelengthArray)
+
+        self.updateRawDataToDataContainer(temperatureMatrix, wavelengthCountsMatrix)
+        self.updateProcessedDataToContainer(temperatureArray, wavelengthArray)
 
 
+    def updateRawDataToDataContainer(self, temperatureMatrix, wavelengthCountsMatrix):
+        oldRawTemperatureMatrix = self.dataContainer.rawTemperatureMatrix
+        oldRawWavelengthMatrix = self.dataContainer.rawWavelengthMatrix
 
+
+        # thermal data
+        if oldRawTemperatureMatrix.size > 1:
+            # if the thermal matrix is not empty, add new data to old ones
+            self.dataContainer.rawTemperatureMatrix = np.vstack([temperatureMatrix, oldRawTemperatureMatrix])
+        else:
+            # assign the new one to the DataContainer field
+            self.dataContainer.rawTemperatureMatrix = temperatureMatrix
+
+        # wavelength data 
+        if oldRawWavelengthMatrix.size > 1:
+            # if the wavelength matrix is not empty, add new data to old ones
+            self.dataContainer.rawWavelengthMatrix = np.vstack([wavelengthCountsMatrix, oldRawWavelengthMatrix])
+        else:
+            # assign the new one to the DataContainer field
+            self.dataContainer.rawWavelengthMatrix = wavelengthCountsMatrix
+
+        # remove rows if there are more than self.maxData
+        if self.dataContainer.rawTemperatureMatrix.shape[0] > self.maxData:
+            self.dataContainer.rawTemperatureMatrix = self.dataContainer.rawTemperatureMatrix[:self.maxData]
+
+        if self.dataContainer.rawWavelengthMatrix.shape[0] > self.maxData:
+            self.dataContainer.rawWavelengthMatrix = self.dataContainer.rawWavelengthMatrix[:self.maxData]

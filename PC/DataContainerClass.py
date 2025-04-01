@@ -21,7 +21,10 @@ class DataContainer:
 
     position: tuple (x,y)
     power : float
-    wav3length float
+    wavelength float
+
+    rawTemperatureMatrix: array numpy 2D stockant les données sans moyennage [temperature array1, temperature array2, ...]
+    rawWavelengthMatrix: array numpy 2D stockant les données sans moyennage [wavelengthCounts array1, wavelengthCountsarray2, ...]
 
 
     Cet objet permet de contenir les données importantes et de les mettre à jour à chaque mise
@@ -53,4 +56,7 @@ class DataContainer:
     position: tuple = (0,0)
     power : float = 1
     wavelength: float = 1000
+
+    rawTemperatureMatrix: np.ndarray = field(default_factory=lambda: np.zeros([]))
+    rawWavelengthMatrix: np.ndarray = field(default_factory=lambda: np.zeros([]))
 
