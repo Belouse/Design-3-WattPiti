@@ -10,6 +10,7 @@ import numpy as np
 import time
 from DataContainerClass import DataContainer
 from AlgoPosition import AlgoPosition
+import serial.tools.list_ports
 
 
 class InterfaceWattpiti(tk.Tk):
@@ -85,9 +86,13 @@ class InterfaceWattpiti(tk.Tk):
 
 
         #Création d'une liste déroulante pour choisir le port
-        self.portList = ["COM1", "COM2", "COM3", "COM4"]
-        self.portComboBox = ttk.Combobox(self, values=self.portList)
-        self.portComboBox.place(x = 445, y=50)
+        self.ports = serial.tools.list_ports.comports()
+        self.portList = []
+        for port in self.ports:
+            self.portList.append(f"{port.device}, {port.description}")
+        #self.default_port_index = next((i for i, port in enumerate(self.portList) if "COM4 - Lien série sur Bluetooth standard (COM4)" in port), 0)
+        self.portComboBox = ttk.Combobox(self, values=self.portList, width = 35)
+        self.portComboBox.place(x = 350, y=50)
         self.portComboBox.current(0)
 
         #Création d'un label pour le choix du port
@@ -266,6 +271,11 @@ class InterfaceWattpiti(tk.Tk):
 
     #Fonction du bouton pour démarrer la simulation
     def click_start(self):
+        self.startButton.after(1000, self.startButton.config(state="disabled"))
+        self.stopButton.after(1000, self.startButton.config(state="normal"))
+
+        if self.timeEntry.get() == "":
+            self.error_handling("ERREUR: Aucun temps de moyennage n'a été entré.")
 
         #Changer la valeur des variables de la classe DataContainer
         self.positionXVar.set(str(self.data.position[0]))
@@ -296,51 +306,60 @@ class InterfaceWattpiti(tk.Tk):
 
         #Enregistrer les données dans un fichier txt
         
-        file_name = self.fileNameVar.get()
-        if not file_name.endswith('.csv'):
-            file_name += '.csv'
+        self.file_name = self.fileNameVar.get()
+        if self.file_name == "":
+            self.error_handling("ERREUR: Aucun nom de fichier n'a été entré.")
+
+        if not self.file_name.endswith('.csv'):
+            self.file_name += '.csv'
         # Créer un dossier "savedData" s'il n'existe pas
         save_dir = os.path.join(os.path.dirname(__file__), "savedData")
         os.makedirs(save_dir, exist_ok=True)
         
         # Chemin complet du fichier
-        file_name = os.path.join(save_dir, file_name)
+        self.file_name = os.path.join(save_dir, self.file_name)
 
         #Mettre des conditions selon les choix de l'utilisateur
-        if self.choiceArray == [True, True, True]:
-            with open(file_name, 'w') as file:
-                file.write("Puissance (W),Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
-                file.write(f"{self.powerVar.get()},{self.wavelenghtVar.get()},{self.positionXVar.get()},{self.positionYVar.get()}\n")
-        
-        elif self.choiceArray == [True, True, False]:
-            with open(file_name, 'w') as file:
-                file.write("Puissance (W),Longueur d'onde (nm)\n")
-                file.write(f"{self.powerVar.get()},{self.wavelenghtVar.get()}\n")
-        
-        elif self.choiceArray == [True, False, True]:
-            with open(file_name, 'w') as file:
-                file.write("Puissance (W),Position x (mm),Position y (mm)\n")   
+        print(self.file_name)
+        if self.fileNameVar.get() == "":
+            self.error_handling("ERREUR: Aucun nom de fichier n'a été entré.")
 
-        elif self.choiceArray == [False, True, True]:
-            with open(file_name, 'w') as file:
-                file.write("Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
-        
-        elif self.choiceArray == [True, False, False]:
-            with open(file_name, 'w') as file:
-                file.write("Puissance (W)\n")
-                file.write(f"{self.powerVar.get()}\n")
-        
-        elif self.choiceArray == [False, True, False]:
-            with open(file_name, 'w') as file:
-                file.write("Longueur d'onde (nm)\n")
-                file.write(f"{self.wavelenghtVar.get()}\n")
+        else:
+            if self.choiceArray == [True, True, True]:
+                with open(self.file_name, 'w') as file:
+                    file.write("Puissance (W),Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
+                    file.write(f"{self.powerVar.get()},{self.wavelenghtVar.get()},{self.positionXVar.get()},{self.positionYVar.get()}\n")
+            
+            elif self.choiceArray == [True, True, False]:
+                with open(self.file_name, 'w') as file:
+                    file.write("Puissance (W),Longueur d'onde (nm)\n")
+                    file.write(f"{self.powerVar.get()},{self.wavelenghtVar.get()}\n")
+            
+            elif self.choiceArray == [True, False, True]:
+                with open(self.file_name, 'w') as file:
+                    file.write("Puissance (W),Position x (mm),Position y (mm)\n")   
 
-        elif self.choiceArray == [False, False, True]:
-            with open(file_name, 'w') as file:
-                file.write("Position x (mm),Position y (mm)\n")
+            elif self.choiceArray == [False, True, True]:
+                with open(self.file_name, 'w') as file:
+                    file.write("Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
+                
+            elif self.choiceArray == [True, False, False]:
+                with open(self.file_name, 'w') as file:
+                    file.write("Puissance (W)\n")
+                    file.write(f"{self.powerVar.get()}\n")
+            
+            elif self.choiceArray == [False, True, False]:
+                with open(self.file_name, 'w') as file:
+                    file.write("Longueur d'onde (nm)\n")
+                    file.write(f"{self.wavelenghtVar.get()}\n")
 
-        elif self.choiceArray == [False, False, False]:
-            self.error_handling("ERREUR: Aucune donnée pour l'enregistrement n'a été sélectionnée.")
+            elif self.choiceArray == [False, False, True]:
+                with open(self.file_name, 'w') as file:
+                    file.write("Position x (mm),Position y (mm)\n")
+
+            elif self.choiceArray == [False, False, False]:
+                if self.file_name != ".csv":
+                    self.error_handling("ERREUR: Aucune donnée pour l'enregistrement n'a été sélectionnée.")
 
     
     #Fonction pour le format du fichier enregistré
@@ -364,6 +383,7 @@ class InterfaceWattpiti(tk.Tk):
         self.errorLabel = ttk.Label(self, text = message, style = "labelStyle.TLabel")
         self.errorLabel.place(x = 10, y = 870)
         self.errorFrame.grid_propagate(False)
+        self.errorLabel.after(3000, self.erase_error)
     
     def erase_error(self):
         #Effacer le message d'erreur
