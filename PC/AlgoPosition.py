@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 from scipy.interpolate import Rbf
 from DataContainerClass import DataContainer
 import pandas as pd
@@ -99,6 +100,34 @@ class AlgoPosition():
       plt.colorbar(label='Température (°C)')
       plt.title("Interpolation/extrapolation dans un cercle")
       #plt.show()
+
+      
+    def plot_2d_v2(X, Y, Z, original_points=None, rect_size=1.0):
+      """
+      Affiche la surface interpolée en 2D avec des petits rectangles aux positions des points originaux.
+      
+      Paramètres:
+        - X, Y, Z : grilles de coordonnées et valeurs interpolées
+        - original_points : tableau numpy de forme (n_points, 3) contenant [x, y, z] des données d'origine (optionnel)
+        - rect_size : taille des rectangles (optionnel, par défaut 1.0)
+      """
+      plt.figure()
+      plt.pcolormesh(X, Y, Z, cmap='turbo', shading='auto')
+      ax = plt.gca()
+      
+      if original_points is not None:
+          for row in original_points:
+              for point in row:
+                  rect = patches.Rectangle(
+                      (point[0] - rect_size / 2, point[1] - rect_size / 2),
+                      rect_size, rect_size,
+                      linewidth=1, edgecolor='w', facecolor='none'
+                  )
+                  ax.add_patch(rect)
+      
+      plt.colorbar(label='Température (°C)')
+      plt.title("Interpolation/extrapolation dans un cercle")
+      plt.show()
 
 
     def plot_3d(X, Y, Z, original_points=None, title='Interpolation dans le cercle'):
