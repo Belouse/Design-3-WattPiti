@@ -1,4 +1,5 @@
 import numpy as np
+import serial.tools.list_ports
 from SerialListenerClass import SerialListener
 
 
@@ -35,6 +36,7 @@ class SerialManager():
         self.dataContainer.temperature = temperatureArray
         self.dataContainer.wavelengthCounts = wavelengthCountsArray
 
+
     def convertCountsToTemperature(self, thermalData):
         # conversion gain from counts to ˚C [˚C/counts]
         gains = np.array([0.01, #sensor 1
@@ -58,7 +60,6 @@ class SerialManager():
 
         # will work if thermalData is a vector or a matrix
         return thermalData * gains
-
 
 
     def updateDataFromMCU(self, numberOfData, printExecutionTime=True):
@@ -101,3 +102,7 @@ class SerialManager():
 
         if self.dataContainer.rawWavelengthMatrix.shape[0] > self.maxData:
             self.dataContainer.rawWavelengthMatrix = self.dataContainer.rawWavelengthMatrix[:self.maxData]
+
+
+    def updatePortName(self, portName):
+        self.serialListener.updatePortName(portName)
