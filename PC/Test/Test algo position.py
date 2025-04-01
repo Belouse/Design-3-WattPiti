@@ -31,6 +31,7 @@ if __name__ == '__main__':
 
 
     csv_simulation_1 = "Thermique\SimulationCSV\Offset_1_10W_parsed.csv"
+    csv_simulation_2 = "Thermique\SimulationCSV\TestEchelon75W.csv"
 
     # Define the grid size and spacing
     position_xy = np.array([
@@ -43,7 +44,7 @@ if __name__ == '__main__':
 
 
     # Read the CSV file into a DataFrame
-    df = pd.read_csv(csv_simulation_1)
+    df = pd.read_csv(csv_simulation_2)
 
     # create de X, Y arrays with the themperature values
     x_simulation_1 = df['COORDINATES.X']
