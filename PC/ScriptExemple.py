@@ -33,7 +33,7 @@ for i in range(numberOfLoops):
     rawWavelengthMatrix = dataContainer.rawWavelengthMatrix
     rawTemperatureMatrix = dataContainer.rawTemperatureMatrix
 
-    # print(rawTemperatureMatrix)
+    print(rawTemperatureMatrix)
     # print(rawWavelengthMatrix)
 
 
