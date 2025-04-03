@@ -1,366 +1,337 @@
 import os
 import numpy as np
 import pandas as pd
-from scipy.interpolate import interp1d
 from scipy import constants
 import matplotlib.pyplot as plt
 from time import perf_counter
 import torch
-from torch import nn
-from torch.utils.data import DataLoader
+from torch.utils.data import Dataset, DataLoader, random_split
+import torch.nn as nn
 from torchvision import datasets, transforms
+from tqdm import tqdm
+
+from CapteursDataProcess import DataPreProcess
 
 
-start_total_time = perf_counter()
-
-
-class DataPreProcess:
+# -------- Organisation des données dans une classe Dataset PyTorch -------
+class CapteursDataset(Dataset):
     """
-    Classe pour charger et traiter les données des capteurs
+    Dataset pour les données de capteurs et longueurs d'onde.
     """
-    def __init__(self, gains = None, plastic_name: str='Petri'):
+    def __init__(self, sensor_data):
         """
-        Initialisation de l'objet des courbes de réponses
+        Initialise le dataset avec les données de capteurs.
 
-        :param gains: Liste des gains des capteurs. (Default = None)
-        :param plastic_name: Nom du plastique pour la transmission. (Default = 'Petri')
+        :param sensor_data: Dictionnaire contenant les données de capteurs (dict).
         """
+        # Liste des noms des capteurs
+        self.sensor_names = list(sensor_data.keys())
 
-        # Initialiser les courbes des capteurs
-        self.UV1 = None  # Courbe de réponse capteur UV1
-        self.UV2 = None  # Courbe de réponse capteur UV2
-        self.VIS_green = None  # Courbe de réponse capteur VIS_green
-        self.VIS_Blue = None  # Courbe de réponse capteur VIS_Blue
-        self.VIS_red = None  # Courbe de réponse capteur VIS_red
-        self.IR = None  # Courbe de réponse capteur IR
-        self.IR2 = None  # Courbe de réponse capteur IR2
-        self.plastic_transmission = None  # Courbe de transmission du plastique (petri)
+        # Nombre de données (échantillons)
+        self.num_samples = sensor_data[self.sensor_names[0]].shape[0]
 
-        self.plastic_t_file = None  # Courbes de transmission de tous les plastiques
-        self.plastic_name = plastic_name  # Nom du plastique pour la transmission
+        # Nombre de capteurs
+        self.num_sensors = len(self.sensor_names)
 
-        # À corriger !!! Calcul de l'aire de la surface des capteurs I2C pour convertir en Counts/W
-        self.P_IR1_area = 2
-        self.P_IR1xP_area = 2
-        self.P_IR2_area = 2
-        self.P_UV_area = 2
-        self.C_UV_area = 0.28E-3 ** 2
-        self.C_VISG_area = 0.2E-3 ** 2
-        self.C_VISB_area = 0.2E-3 ** 2
-        self.C_VISR_area = 0.2E-3 ** 2
+        # Longueurs d'onde
+        self.wavelengths = sensor_data[self.sensor_names[0]][:, 0]
 
-        # Configurer les gains des capteurs
-        if gains is None:
-            # Valeurs par défaut si aucun gain n'est fourni
-            self.gain_IR1 = 2                       # Gain de la photodiode IR 2500
-            self.gain_IR1xP = 2                     # Gain de la photodiode IR 2500 PMMA
-            self.gain_IR2 = 2                       # Gain de la photodiode IR 1700
-            self.gain_UV = 2                        # Gain de la photodiode UV
-            self.gain_C_UV = 100 / 4e9 * 4095       # Gain du capteur I2C UV
-            self.gain_C_VISG = 100 / 4e11 * 4095    # Gain du capteur I2C VIS channel Green
-            self.gain_C_VISB = 100 / 4e11 * 4095    # Gain du capteur I2C VIS channel Blue
-            self.gain_C_VISR = 100 / 4e11 * 4095    # Gain du capteur I2C VIS channel Red
+        # Matrice des réponses des capteurs (ligne = un wavelength, colonne = un capteur)
+        self.sensor_responses = np.zeros((self.num_samples, self.num_sensors))
+        for i, (sensor_name, data) in enumerate(sensor_data.items()):
+            self.sensor_responses[:, i] = data[:, 1]
+
+        # Convertir en tenseur PyTorch
+        self.wavelengths = torch.tensor(self.wavelengths, dtype=torch.float32)
+        self.sensor_responses = torch.tensor(self.sensor_responses, dtype=torch.float32)
+
+    def __len__(self):
+        """
+        Retourne le nombre d'échantillons dans le dataset.
+        """
+        return self.num_samples
+
+    def __getitem__(self, idx):
+        """
+        Retourne un échantillon du dataset à un indice donné.
+
+        :param idx: Indice de l'échantillon à retourner (int).
+        :return: Tuple : (réponses des capteurs, longueur d'onde) pour l'index donné
+        """
+        return self.sensor_responses[idx], self.wavelengths[idx]
+
+    def get_input_size(self):
+        return self.num_sensors
+
+    def get_sensor_names(self):
+        return self.sensor_names
+
+
+# -------- Préparation des DataLoaders pour l'entraînement et le test -------
+def prepare_dataloaders(dataset, test_size=0.2, batch_size=32, random_seed=42, shuffle=True):
+    """
+    Divise un dataset en ensembles d'entraînement et de test.
+
+    :param dataset: Le Dataset complet (CapteursDataset).
+    :param test_size: Proportion de données de test (float).
+    :param batch_size: Taille des batches pour le DataLoader (int)
+    :param random_seed: Graine pour random (int).
+    :param shuffle: Mélanger les données (bool).
+
+    :return: Tuple : (train_loader, test_loader)
+    """
+    # Définir la graine pour la reproductibilité
+    torch.manual_seed(random_seed)
+
+    # Taille du dataset de test
+    dataset_size = len(dataset)
+    test_count = int(dataset_size * test_size)
+    train_count = dataset_size - test_count
+
+    # Diviser le dataset en ensembles d'entraînement et de test
+    train_dataset, test_dataset = random_split(dataset, [train_count, test_count],
+                                               generator=torch.Generator().manual_seed(random_seed))
+
+
+    # Créer les DataLoaders
+    train_loader = DataLoader(
+        train_dataset,  # Dataset d'entraînement
+        batch_size=batch_size,  # Taille des batches pour calcul des gradients (pas sur tout le dataset), à ajuster au besoin
+        shuffle=shuffle,  # Mélanger les données d'entraînement à chaque époque
+        num_workers=0,  # Augmenter pour paralléliser le chargement des données
+        pin_memory=True  # utile pour un transfert plus rapide vers le GPU
+    )
+
+    test_loader = DataLoader(
+        test_dataset,  # Dataset de test
+        batch_size=batch_size,  # Taille des batches pour calcul des gradients (pas sur tout le dataset)
+        shuffle=False,  # Pas besoin de mélanger les données de test
+        num_workers=0,  # Augmenter pour paralléliser le chargement des données
+        pin_memory=True  # utile pour un transfert plus rapide vers le GPU
+    )
+
+    return train_loader, test_loader
+
+
+# ------------------------- Réseau de neurones -------------------------
+class WavelengthPredictor(nn.Module):
+    """
+    Réseau de neurones pour prédire la longueur d'onde à partir des réponses des capteurs.
+    """
+    def __init__(self):
+        super(WavelengthPredictor, self).__init__()
+
+        num_sensors = 8 # Nombre de capteurs (input size)
+
+        hidden_layer_sizes = (256, 128)
+
+        dropout_rate = 0.2  # Taux de dropout pour régularisation
+
+        # Définition des couches
+        self.layers = nn.Sequential(
+            # Première hidden layer
+            nn.Linear(num_sensors, hidden_layer_sizes[0]),  # 8 in -> 64 out
+            nn.ReLU(),                                      # Fonction d'activation ReLU
+            # nn.BatchNorm1d(hidden_layer_sizes[0]),
+            nn.Dropout(dropout_rate),                       # Dropout pour régularisation
+
+            # Deuxième hidden layer
+            nn.Linear(hidden_layer_sizes[0], hidden_layer_sizes[1]),
+            nn.ReLU(),
+            # nn.BatchNorm1d(hidden_layer_sizes[1]),
+            nn.Dropout(dropout_rate),
+
+            # Couche de sortie
+            nn.Linear(hidden_layer_sizes[-1], 1)
+        )
+
+    def forward(self, x):
+        """
+        Propagation avant du réseau de neurones.
+
+        :param x: Tenseur d'entrée [batch_size, num_sensors]
+        """
+        return self.layers(x)
+
+
+# ----------------------- Entraînement du modèle -----------------------
+def train_model(model, train_loader, test_loader, criterion, optimizer, epochs = 100, patience=10):
+    """
+    Entraîne le modèle sur les données d'entraînement.
+
+    :param model: Modèle à entraîner (WavelengthPredictor).
+    :param train_loader: DataLoader pour les données d'entraînement.
+    :param test_loader: DataLoader pour les données de test.
+    :param criterion: Fonction de perte (MSELoss ou autre).
+    :param optimizer: Optimiseur (Adam ou autre).
+    :param epochs: Nombre d'époques pour l'entraînement.
+    :param patience: Nombre d'époques sans amélioration avant d'arrêter l'entraînement.
+    """
+    size = len(train_loader.dataset)  # Taille du dataset d'entraînement
+
+    # Scheduler pour ajuster le taux d'apprentissage
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode='min', factor=0.2, patience=5, min_lr=1e-6)
+
+    # Historique des pertes pour suivre la progression
+    train_losses = []   # Liste pour stocker les pertes d'entraînement
+    test_losses = []    # Liste pour stocker les pertes de test
+    train_maes = []     # Liste pour stocker les MAEs d'entraînement
+    test_maes = []      # Liste pour stocker les MAEs de test
+
+    # Pour early stopping
+    best_test_loss = float('inf')    # Meilleure perte de test
+    best_model_state = None     # État du modèle avec la meilleure perte
+    epochs_no_improve = 0       # Compteur d'époques sans amélioration
+
+    # Calcul du temps d'exécution pour l'entraînement
+    start_train_time = perf_counter()
+
+    for epoch in range(epochs):
+        # Model en mode entraînement
+        model.train()
+        running_loss = 0.0  # Initialiser la perte courante
+        running_mae = 0.0   # Initialiser l'erreur absolue moyenne courante
+
+        for inputs, targets in tqdm(train_loader, desc=f"Epoch {epoch + 1}/{epochs}"):
+            inputs, targets = inputs.to(device), targets.to(device)
+
+            targets = targets.view(-1, 1)
+
+            # Forward pass
+            outputs = model(inputs)
+            loss = criterion(outputs, targets)
+
+            # Backpropagation
+            loss.backward()
+            optimizer.step()        # Mettre à jour les poids
+            optimizer.zero_grad()   # Réinitialiser les gradients
+
+            # Accumuler la perte
+            running_loss += loss.item() * inputs.size(0)
+
+            # Calculer l'erreur absolue moyenne
+            mae = torch.mean(torch.abs(outputs - targets))
+            running_mae += mae.item() * inputs.size(0)
+
+        # Calculer la perte et MAE moyennes
+        epoch_train_loss = running_loss / size
+        epoch_train_mae = running_mae / size
+
+        train_losses.append(epoch_train_loss)
+        train_maes.append(epoch_train_mae)
+
+        # Évaluation sur le dataset de test
+        model.eval()         # Mettre le modèle en mode évaluation
+        running_loss = 0.0   # Initialiser la perte courante
+        running_mae = 0.0    # Initialiser l'erreur absolue moyenne courante
+
+        with torch.no_grad():  # Pas besoin de calculer les gradients
+            for inputs, targets in test_loader:
+                inputs, targets = inputs.to(device), targets.to(device)
+                targets = targets.view(-1, 1)
+
+                # Forward pass
+                outputs = model(inputs)
+                loss = criterion(outputs, targets)
+
+                # Accumuler la perte
+                running_loss += loss.item() * inputs.size(0)
+
+                # Calculer l'erreur absolue moyenne
+                mae = torch.mean(torch.abs(outputs - targets))
+                running_mae += mae.item() * inputs.size(0)
+
+        # Calculer la perte et MAE moyennes
+        epoch_test_loss = running_loss / len(test_loader.dataset)
+        epoch_test_mae = running_mae / len(test_loader.dataset)
+
+        test_losses.append(epoch_test_loss)
+        test_maes.append(epoch_test_mae)
+
+        # Scheduler pour ajuster le taux d'apprentissage
+        scheduler.step(epoch_test_loss)
+
+        # Afficher la progression
+        if (epoch + 1) % 10 == 0 or epoch == 0:
+            print(f"Époque {epoch + 1}/{epochs} - "
+                  f"Train Loss: {epoch_train_loss:.4f}, Train MAE: {epoch_train_mae:.2f} nm - "
+                  f"Test Loss: {epoch_test_loss:.4f}, Test MAE: {epoch_test_mae:.2f} nm")
+
+        # Vérifier s'il y a une amélioration
+        if epoch_test_loss < best_test_loss:
+            best_test_loss = epoch_test_loss
+            best_model_state = model.state_dict().copy()
+            epochs_no_improve = 0
         else:
-            # Utiliser les gains fournis
-            self.gain_IR1 = gains[0]
-            self.gain_IR1xP = gains[1]
-            self.gain_IR2 = gains[2]
-            self.gain_UV = gains[3]
-            self.gain_C_UV = gains[4]
-            self.gain_C_VISG = gains[5]
-            self.gain_C_VISB = gains[6]
-            self.gain_C_VISR = gains[7]
+            epochs_no_improve += 1
 
-        # Créé un dictionnaire pour les capteurs
-        self.dict_capteurs = {
-            'P_IR1': {'gain': self.gain_IR1, 'sensor_area': self.P_IR1_area},
-            'P_IR1xP': {'gain': self.gain_IR1xP, 'sensor_area': self.P_IR1xP_area},
-            'P_IR2': {'gain': self.gain_IR2, 'sensor_area': self.P_IR2_area},
-            'P_UV': {'gain': self.gain_UV, 'sensor_area': self.P_UV_area},
-            'C_UV': {'gain': self.gain_C_UV, 'sensor_area': self.C_UV_area},
-            'C_VISG': {'gain': self.gain_C_VISG, 'sensor_area': self.C_VISG_area},
-            'C_VISB': {'gain': self.gain_C_VISB, 'sensor_area': self.C_VISB_area},
-            'C_VISR': {'gain': self.gain_C_VISR, 'sensor_area': self.C_VISR_area}}
+        # Early stopping si aucune amélioration pendant "patience" époques
+        if epochs_no_improve >= patience:
+            print(
+                f"Arrêt anticipé à l'époque {epoch + 1} car aucune amélioration pendant {patience} époques.")
+            break
 
-        # Charger des données
-        self._load_data()
+    # Temps total d'entraînement
+    end_train_time = perf_counter()
+    print(f"Temps d'entraînement total : {end_train_time - start_train_time:.2f} secondes")
 
-        # Traiter les données
-        self._process_data()
+    # Charger le meilleur état du modèle
+    if best_model_state is not None:
+        model.load_state_dict(best_model_state)
 
-
-    def _load_data(self):
-        """
-        Charger les fichiers CSV
-        """
-        # Obtenir le chemin du répertoire contenant le script en cours d'exécution
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-
-        self.UV1 = pd.read_csv(os.path.join(script_dir, "UVS.csv"), header=None)
-        self.UV2 = pd.read_csv(os.path.join(script_dir, "UV2.csv"), header=None)
-        self.VIS_green = pd.read_csv(os.path.join(script_dir, "Green.csv"), header=None)
-        self.VIS_Blue = pd.read_csv(os.path.join(script_dir, "Blue.csv"), header=None)
-        self.VIS_red = pd.read_csv(os.path.join(script_dir, "Red.csv"), header=None)
-        self.IR = pd.read_csv(os.path.join(script_dir, "IR.csv"), header=None)
-        self.IR2 = pd.read_csv(os.path.join(script_dir, "IR2.csv"), header=None)
-        self.plastic_t_file = pd.read_csv(os.path.join(script_dir, "TransmissionsPlastiques.csv"))
-
-        # Extraction des données de transmission du plastique de petri
-        plastic_index = self.plastic_t_file.columns.get_loc(self.plastic_name)  # Trouver l'index de la colonne correspondant au plastique
-        plastic_transmission = self.plastic_t_file.iloc[1:, plastic_index + 1].values.astype(np.float64)[::-1] / 100
-        wavelength = self.plastic_t_file.iloc[1:, plastic_index].values.astype(np.float64)[::-1]
-        self.plastic_transmission = pd.DataFrame(np.column_stack((wavelength, plastic_transmission)))
+    return model, train_losses, test_losses
 
 
 
-    def _interpolate_data(self, new_length=10000):
-        """
-        Interpoler les données pour avoir une longueur uniforme.
+# Utilisation
+if __name__ == '__main__':
+    device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
+    print(f"Using {device} device")
+    print("\n")
 
-        :param new_length: Nouvelle longueur des données (Default = 10000)
-        """
-        # Grille de longueurs d'onde
-        wavelength = np.linspace(250, 2500, new_length)
+    # Mesurer le temps d'exécution (début)
+    start_total_time = perf_counter()
 
-        # Liste des attributs à interpoler et leurs noms
-        datas = [
-            ('UV1', self.UV1),
-            ('UV2', self.UV2),
-            ('VIS_green', self.VIS_green),
-            ('VIS_Blue', self.VIS_Blue),
-            ('VIS_red', self.VIS_red),
-            ('IR', self.IR),
-            ('IR2', self.IR2),
-            ('plastic_transmission', self.plastic_transmission)
-        ]
+    # Prétraitement des données
+    reponses_capteurs = DataPreProcess()
+    reponses_capteurs = reponses_capteurs.all_sensors
 
-        # Interpolation des données
-        for dataset_name, data in datas:
-            # Trier les données par longueur d'onde
-            data = data.sort_values(by=data.columns[0])
+    # Créer le dataset avec les données des capteurs
+    dataset = CapteursDataset(reponses_capteurs)
 
-            # S'il y a des valeurs négatives, les remplacer par 0.
-            data[1] = data[1].apply(lambda x: 0 if x < 0 else x)
+    # Paramètres
+    batch_size = 32
+    test_size = 0.2
+    random_seed = 42
+    learning_rate = 0.001
+    num_epochs = 10
 
-            # Récupérer les limites du fichier CSV
-            min_x = data.iloc[:, 0].min()
-            max_x = data.iloc[:, 0].max()
+    # Diviser les données et créer les DataLoaders
+    train_loader, test_loader = prepare_dataloaders(dataset,
+                                                    test_size=test_size,
+                                                    batch_size=batch_size,
+                                                    random_seed=random_seed,
+                                                    shuffle=True)
 
-            new_data = np.zeros((new_length, 2))
-            new_data[:, 0] = wavelength
+    # Initialiser le modèle
+    model = WavelengthPredictor().to(device)
+    print("----------------------------------")
+    print(f"Modèle : {model}")
+    print("----------------------------------")
 
-            # Créer un masque pour les longueurs d'onde dans la plage
-            mask = (wavelength >= min_x) & (wavelength <= max_x)
+    # Définir la fonction de perte et l'optimiseur
+    criterion = nn.MSELoss()  # Fonction de perte MSE
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)  # Optimiseur Adam
 
-            # Créer l'interpolation (cubic pour plus de précision)
-            f = interp1d(data[0], data[1], kind='linear', bounds_error=False, fill_value=0.0)
+    # Entraîner le modèle
+    model, train_losses, test_losses = train_model(model,
+                                                   train_loader,
+                                                   test_loader,
+                                                   criterion,
+                                                   optimizer,
+                                                   epochs=num_epochs,
+                                                   patience=10)
 
-            new_data[mask, 1] = f(wavelength[mask])
-
-            # Remplacer les données originales par les données interpolées
-            setattr(self, dataset_name, new_data)
-
-    @staticmethod
-    def _QE2ApW(data: np.ndarray) -> np.ndarray:
-        """
-        Convertit l'efficacité quantique en ampères par watt
-
-        :param data: Données des photodiodes
-        :return: Données converties en ampères par watt
-        """
-        ApW_arr = np.zeros(np.shape(data))
-        ApW_arr[:, 1] = data[:, 1] * constants.e / (constants.h * constants.c / (data[:, 0] * 1e-9))
-        ApW_arr[:, 0] = data[:, 0]
-        return ApW_arr
-
-    @staticmethod
-    def _photodiode_ADC(current_data, gain_transimp=1, ADC_max=4095, voltage_max=3.3):
-        """
-        Convertit le courant en valeurs ADC
-
-        :param current_data: Données de courant
-        :param gain_transimp: Gain du transimpédance (Default = 1)
-        :param ADC_max: Valeur maximale de l'ADC (Default = 4095)
-        :param voltage_max: Valeur maximale du voltage (Default = 3.3)
-        :return: Données converties en valeurs ADC
-        """
-        # 4095*Voltage/3.3
-        ADC_arr = np.zeros(np.shape(current_data))
-        ADC_arr[:, 1] = current_data[:, 1] * gain_transimp * ADC_max / voltage_max
-        ADC_arr[:, 0] = current_data[:, 0]
-        return ADC_arr
-
-    @staticmethod
-    def _denormalize_curve(normalized_data, reference_wavelength, reference_value,
-                          scaling_factor: float =1.0, sensor_area: float =1.0) -> np.ndarray:
-        """
-        Dénormalise une courbe en utilisant un point de référence.
-
-        :param normalized_data: Données normalisées (format [longueur d'onde, valeur])
-        :param reference_wavelength: Longueur d'onde de référence en nm
-        :param reference_value: Valeur absolue à cette longueur d'onde (ex : counts/(µW/cm²))
-        :param scaling_factor: Facteur d'échelle pour la dénormalisation (Default = 1)
-        :param sensor_area: Aire du capteur (Default = 1)
-
-        :return: Données dénormalisées (longueur d'onde, valeur dénormalisée)
-        """
-        # Créer une copie pour éviter de modifier les données originales
-        denormalized_data = np.copy(normalized_data)
-
-        # Trouver la valeur normalisée à la longueur d'onde de référence
-        # Trouver l'indice le plus proche de la longueur d'onde de référence
-        idx = np.abs(normalized_data[:, 0] - reference_wavelength).argmin()
-        normalized_value_at_ref = normalized_data[idx, 1]
-
-        # Si la valeur normalisée est 0, on ne peut pas calculer le facteur
-        if normalized_value_at_ref == 0:
-            print(f"Attention: La valeur normalisée à {reference_wavelength} nm est 0. Impossible de dénormaliser.")
-            return denormalized_data
-
-        # Calculer le facteur de mise à l'échelle
-        scale_factor = reference_value / normalized_value_at_ref
-
-        # Appliquer le facteur d'échelle à toutes les valeurs normalisées
-        denormalized_data[:, 1] = normalized_data[:, 1] * scale_factor * scaling_factor / sensor_area
-
-        return denormalized_data
-
-    @staticmethod
-    def _spectral_normalization(data_array):
-        """
-        Normalise les réponses des capteurs par rapport à la valeur maximale sur toute la plage de longueurs d'onde.
-        Version vectorisée pour de meilleures performances.
-
-        :param data_array: Liste des tableaux de données pour chaque capteur
-        :return: Liste des tableaux de données normalisés
-        """
-        # Création d'une copie des données pour éviter de modifier les originales
-        normalized_data = [np.copy(data) for data in data_array]
-
-        # Extraction des valeurs (deuxième colonne) de chaque tableau
-        values = np.array([data[:, 1] for data in normalized_data])
-
-        # Calcul du maximum pour chaque point de longueur d'onde (sur tous les capteurs)
-        max_values = np.max(values, axis=0)
-
-        # Éviter la division par zéro en remplaçant les zéros par 1.
-        max_values[max_values == 0] = 1
-
-        # Normalisation de tous les capteurs en une seule opération
-        for i, data in enumerate(normalized_data):
-            data[:, 1] = values[i] / max_values
-
-        return normalized_data
-
-    def _process_data(self):
-        """
-        Traiter les données. Appliquer les méthodes de prétraitement nécessaires.
-        """
-        # Interpoler les données
-        self._interpolate_data()
-
-        # ------------ P_IR1 --------------
-        P_IR1_interp = self._photodiode_ADC(self._QE2ApW(self.IR), self.dict_capteurs['P_IR1']['gain'])
-
-        # ------------ P_IR1xP ------------
-        P_IR1xP_interp = self.IR
-        P_IR1xP_interp[:, 1] = self.IR[:, 1] * self.plastic_transmission[:, 1]
-        P_IR1xP_interp = self._photodiode_ADC(self._QE2ApW(P_IR1xP_interp), self.dict_capteurs['P_IR1xP']['gain'])
-
-        # ------------ P_IR2 --------------
-        P_IR2_interp = self._photodiode_ADC(self._QE2ApW(self.IR2), self.dict_capteurs['P_IR2']['gain'])
-
-        # ------------ P_UV ---------------
-        P_UV_interp = self._photodiode_ADC(self._QE2ApW(self.UV2), self.dict_capteurs['P_UV']['gain'])
-
-
-        # ------------ C_UV ---------------
-        C_UV_interp = self._denormalize_curve(self.UV1, 310, 160/70,
-                                        self.dict_capteurs['C_UV']['gain'],
-                                        self.dict_capteurs['C_UV']['sensor_area'])
-
-        # ------------ C_VISG -------------
-        C_VISG_interp = abs(self._denormalize_curve(self.VIS_green, 518, 74,
-                                              self.dict_capteurs['C_VISG']['gain'],
-                                              self.dict_capteurs['C_VISG'][
-                                                  'sensor_area']))
-
-        # ------------ C_VISB -------------
-        C_VISB_interp = self._denormalize_curve(self.VIS_Blue, 467, 56,
-                                          self.dict_capteurs['C_VISB']['gain'],
-                                          self.dict_capteurs['C_VISB']['sensor_area'])
-
-        # ------------ C_VISR -------------
-        C_VISR_interp = self._denormalize_curve(self.VIS_red, 619, 96,
-                                          self.dict_capteurs['C_VISR']['gain'],
-                                          self.dict_capteurs['C_VISR']['sensor_area'])
-
-        # Ajouter les valeurs au dict_capteurs pour chaque capteur
-        self.dict_capteurs['P_IR1']['data'] = P_IR1_interp
-        self.dict_capteurs['P_IR1xP']['data'] = P_IR1xP_interp
-        self.dict_capteurs['P_IR2']['data'] = P_IR2_interp
-        self.dict_capteurs['P_UV']['data'] = P_UV_interp
-        self.dict_capteurs['C_UV']['data'] = C_UV_interp
-        self.dict_capteurs['C_VISG']['data'] = C_VISG_interp
-        self.dict_capteurs['C_VISB']['data'] = C_VISB_interp
-        self.dict_capteurs['C_VISR']['data'] = C_VISR_interp
-
-        # Normaliser les données
-        normalized_data_list= self._spectral_normalization(
-            [P_IR1_interp, P_IR1xP_interp, P_IR2_interp, P_UV_interp,
-             C_UV_interp,C_VISG_interp, C_VISB_interp, C_VISR_interp])
-
-        P_IR1_N = normalized_data_list[0]
-        P_IR1xP_N = normalized_data_list[1]
-        P_IR2_N = normalized_data_list[2]
-        P_UV_N = normalized_data_list[3]
-        C_UV_N = normalized_data_list[4]
-        C_VISG_N = normalized_data_list[5]
-        C_VISB_N = normalized_data_list[6]
-        C_VISR_N = normalized_data_list[7]
-
-        self.all_sensors = {'P_IR1': P_IR1_N,
-                            'P_IR1xP': P_IR1xP_N,
-                            'P_IR2': P_IR2_N,
-                            'P_UV': P_UV_N,
-                            'C_UV': C_UV_N,
-                            'C_VISG': C_VISG_N,
-                            'C_VISB': C_VISB_N,
-                            'C_VISR': C_VISR_N}
-
-        self.Photodiodes_sensors = {'P_IR1': P_IR1_N,
-                                    'P_IR1xP': P_IR1xP_N,
-                                    'P_IR2': P_IR2_N,
-                                    'P_UV': P_UV_N}
-
-        self.I2C_sensors = {'C_UV': C_UV_N,
-                            'C_VISG': C_VISG_N,
-                            'C_VISB': C_VISB_N,
-                            'C_VISR': C_VISR_N}
-
-    @staticmethod
-    def plot_response(responses):
-        """
-        Fonction pour afficher les courbes de réponse des capteurs
-        """
-        plt.figure(figsize=(8, 4))
-
-        for sensor_name, data in responses.items():
-            plt.plot(data[:, 0], data[:, 1], label=sensor_name)
-
-        plt.title("Courbes de réponse des capteurs")
-        plt.xlabel("Longueur d'onde (nm)")
-        plt.ylabel("Réponse normalisée")
-        plt.legend()
-        plt.grid()
-        plt.show()
-
-
-donnees = DataPreProcess()
-donnees.plot_response(donnees.all_sensors)
-#print(donnees.UV1)
-
-print(f"Temps d'exécution total : {perf_counter() - start_total_time}")
-
-device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
-print(f"Using {device} device")
+    # Temps total d'exécution
+    print(f"Temps d'exécution total : {perf_counter() - start_total_time}")
