@@ -110,11 +110,13 @@ class SerialManager():
 
 
     def setPortName(self, portName):
-        if self.serialListener is not None:
-            self.serialListener.updatePortName(portName)
-        
-        else:
+        if self.serialListener is None:
             self.serialListener = SerialListener(portName)
+            print("Pas de listener")
+        else:
+            print("On update le listener")
+            self.serialListener.updatePortName(portName)
+
 
     def closePort(self):
         self.serialListener.closePort()
