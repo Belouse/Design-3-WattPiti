@@ -8,6 +8,7 @@ class SerialListener():
         self.port = serial.Serial(portName, 115200)
 
     def updatePortName(self, portName):
+        self.port.close()
         self.port = serial.Serial(portName, 115200)
     
     def readData(self, numberOfData, printExecutionTime):
