@@ -341,6 +341,20 @@ class InterfaceWattpiti(tk.Tk):
                 self.posCanvas.draw()
                 self.posCanvas.get_tk_widget().update()
 
+                #Graphique de la puissance en fonction du temps
+                self.axPow.clear()
+                self.axPow.set_xlabel("Temps (s)")
+                self.axPow.set_ylabel("Puissance (W)")
+
+
+                #À changer (mettre des vraies valeurs de temps)
+                self.timeArray = np.arange(0, len(self.listDebug), 1)
+
+                self.timeArray = self.timeArray * 0.01
+                self.axPow.plot(self.timeArray, self.listDebug, color = "blue")
+                self.powerCanvas.draw()
+                self.powerCanvas.get_tk_widget().update()
+
         self.after(10, self.loop)
 
 
@@ -352,7 +366,17 @@ class InterfaceWattpiti(tk.Tk):
 
     #Fontion du bouton pour réinitialiser la simulation
     def click_reset(self):
-        pass
+        if self.running == True:
+            self.click_stop()
+        self.listDebug = []
+        self.powerVar.set("00.00")
+        self.wavelenghtVar.set("000.0")
+        self.positionXVar.set("0")
+        self.positionYVar.set("0") 
+        self.axPos.clear()
+        self.axPow.clear()
+        
+
 
     #Fonction pour la fréquence d'échantillonnage
     def freq_value(self):
