@@ -279,6 +279,9 @@ class InterfaceWattpiti(tk.Tk):
         self.running = False
         self.listDebug = []
 
+        self.serialManager = SerialManager("COM5", self.dataContainer, maxData=100)
+        "self.selected_port.get().split(",")[0]"
+
 
 
 
@@ -288,8 +291,6 @@ class InterfaceWattpiti(tk.Tk):
     #Fonction du bouton pour démarrer la simulation
     def click_start(self):
         #Importation des classes externes pour stocker les données
-        self.serialManager = SerialManager("COM5", self.dataContainer, maxData=100)
-        "self.selected_port.get().split(",")[0]"
 
         if not self.running:
             self.running = True
@@ -310,33 +311,33 @@ class InterfaceWattpiti(tk.Tk):
     #Fonction du bouton pour arrêter la simulation
 
     def loop(self):
+        if self.running:
+            for i  in range(1):
+                self.serialManager.updateDataFromMCU(1)
+                self.algorithmManager.calculatePosition()
+                self.algorithmManager.calculateWavelength()
+                self.algorithmManager.calculatePower()
 
-        for i  in range(1):
-            self.serialManager.updateDataFromMCU(1)
-            self.algorithmManager.calculatePosition()
-            self.algorithmManager.calculateWavelength()
-            self.algorithmManager.calculatePower()
-
-            self.newpositon = self.dataContainer.position
-            self.newWaveLenght = self.dataContainer.wavelength
-            self.newpower = self.dataContainer.power    
+                self.newpositon = self.dataContainer.position
+                self.newWaveLenght = self.dataContainer.wavelength
+                self.newpower = self.dataContainer.power    
 
 
 
-            #self.rawWavelengthMatrix = self.dataContainer.rawWavelengthMatrix
-            self.rawTemperatureMatrix = self.dataContainer.rawTemperatureMatrix
-            self.listDebug.append(self.rawTemperatureMatrix[0][16])
-        
-            self.powerVar.set(str(self.rawTemperatureMatrix[0][16]))
+                #self.rawWavelengthMatrix = self.dataContainer.rawWavelengthMatrix
+                self.rawTemperatureMatrix = self.dataContainer.rawTemperatureMatrix
+                self.listDebug.append(self.rawTemperatureMatrix[0][0])
+            
+                self.powerVar.set(str(self.rawTemperatureMatrix[0][0]))
 
-        self.after(100, self.loop)
+        self.after(1000, self.loop)
 
 
     
     
     
     def click_stop(self):
-        pass
+        self.running = False
 
     #Fontion du bouton pour réinitialiser la simulation
     def click_reset(self):

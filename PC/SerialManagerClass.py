@@ -4,10 +4,11 @@ from SerialListenerClass import SerialListener
 
 
 class SerialManager():
-    def __init__(self, portName, dataContainer, maxData=100):
-        self.serialListener = SerialListener(portName)
+    def __init__(self, dataContainer, maxData=100):
         self.dataContainer = dataContainer
         self.maxData = maxData
+        self.serialListener = None
+
 
     def formatData(self, serialData):
         thermaldata = []
@@ -63,6 +64,10 @@ class SerialManager():
 
 
     def updateDataFromMCU(self, numberOfData, printExecutionTime=True):
+        if self.serialListener is None:
+            raise Exception("Serial port not set. Please set the port name first.")
+        
+
         rawData = self.serialListener.readData(numberOfData, printExecutionTime)
         thermalCountsMatrix, wavelengthCountsMatrix = self.formatData(rawData)
         temperatureMatrix = self.convertCountsToTemperature(thermalCountsMatrix)
@@ -104,5 +109,9 @@ class SerialManager():
             self.dataContainer.rawWavelengthMatrix = self.dataContainer.rawWavelengthMatrix[:self.maxData]
 
 
-    def updatePortName(self, portName):
-        self.serialListener.updatePortName(portName)
+    def setPortName(self, portName):
+        if self.serialListener is not None:
+            self.serialListener.updatePortName(portName)
+        
+        else:
+            self.serialListener = SerialListener(portName)

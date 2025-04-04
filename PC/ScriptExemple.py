@@ -16,7 +16,9 @@ portName = "COM5"
 
 dataContainer = DataContainer()
 algorithmManager = AlgorithmManager(dataContainer)
-serialManager = SerialManager(portName, dataContainer, maxData=100)
+serialManager = SerialManager(dataContainer, maxData=100)
+serialManager.setPortName(portName)
+serialManager.setPortName(portName)
 
 # for loop pour simuler le call de la séquence plusieurs fois par l'interface
 for i in range(numberOfLoops):
