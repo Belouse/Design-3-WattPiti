@@ -4,6 +4,7 @@ import pandas as pd
 from scipy import constants
 import matplotlib.pyplot as plt
 from time import perf_counter
+from sklearn.preprocessing import StandardScaler
 import torch
 from torch.utils.data import Dataset, DataLoader, random_split
 import torch.nn as nn
@@ -42,8 +43,8 @@ class CapteursDataset(Dataset):
             self.sensor_responses[:, i] = data[:, 1]
 
         # Convertir en tenseur PyTorch
-        self.wavelengths = torch.tensor(self.wavelengths, dtype=torch.float32)
-        self.sensor_responses = torch.tensor(self.sensor_responses, dtype=torch.float32)
+        self.wavelengths = torch.FloatTensor(self.wavelengths).view(-1, 1)
+        self.sensor_responses = torch.FloatTensor(self.sensor_responses)
 
     def __len__(self):
         """
@@ -123,7 +124,7 @@ class WavelengthPredictor(nn.Module):
 
         num_sensors = 8 # Nombre de capteurs (input size)
 
-        hidden_layer_sizes = (256, 128)
+        hidden_layer_sizes = (512, 512)
 
         dropout_rate = 0.2  # Taux de dropout pour régularisation
 
@@ -132,17 +133,17 @@ class WavelengthPredictor(nn.Module):
             # Première hidden layer
             nn.Linear(num_sensors, hidden_layer_sizes[0]),  # 8 in -> 64 out
             nn.ReLU(),                                      # Fonction d'activation ReLU
-            # nn.BatchNorm1d(hidden_layer_sizes[0]),
+            nn.BatchNorm1d(hidden_layer_sizes[0]),
             nn.Dropout(dropout_rate),                       # Dropout pour régularisation
 
             # Deuxième hidden layer
             nn.Linear(hidden_layer_sizes[0], hidden_layer_sizes[1]),
             nn.ReLU(),
-            # nn.BatchNorm1d(hidden_layer_sizes[1]),
+            nn.BatchNorm1d(hidden_layer_sizes[1]),
             nn.Dropout(dropout_rate),
 
             # Couche de sortie
-            nn.Linear(hidden_layer_sizes[-1], 1)
+            nn.Linear(hidden_layer_sizes[1], 1)
         )
 
     def forward(self, x):
@@ -173,7 +174,7 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, epochs =
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode='min', factor=0.2, patience=5, min_lr=1e-6)
 
-    # Historique des pertes pour suivre la progression
+
     train_losses = []   # Liste pour stocker les pertes d'entraînement
     test_losses = []    # Liste pour stocker les pertes de test
     train_maes = []     # Liste pour stocker les MAEs d'entraînement
@@ -196,8 +197,6 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, epochs =
         for inputs, targets in tqdm(train_loader, desc=f"Epoch {epoch + 1}/{epochs}"):
             inputs, targets = inputs.to(device), targets.to(device)
 
-            targets = targets.view(-1, 1)
-
             # Forward pass
             outputs = model(inputs)
             loss = criterion(outputs, targets)
@@ -211,8 +210,8 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, epochs =
             running_loss += loss.item() * inputs.size(0)
 
             # Calculer l'erreur absolue moyenne
-            mae = torch.mean(torch.abs(outputs - targets))
-            running_mae += mae.item() * inputs.size(0)
+            # mae = torch.mean(torch.abs(outputs - targets))
+            running_mae += torch.sum(torch.abs(outputs - targets)).item()
 
         # Calculer la perte et MAE moyennes
         epoch_train_loss = running_loss / size
@@ -229,7 +228,6 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, epochs =
         with torch.no_grad():  # Pas besoin de calculer les gradients
             for inputs, targets in test_loader:
                 inputs, targets = inputs.to(device), targets.to(device)
-                targets = targets.view(-1, 1)
 
                 # Forward pass
                 outputs = model(inputs)
@@ -239,18 +237,19 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, epochs =
                 running_loss += loss.item() * inputs.size(0)
 
                 # Calculer l'erreur absolue moyenne
-                mae = torch.mean(torch.abs(outputs - targets))
-                running_mae += mae.item() * inputs.size(0)
+                # mae = torch.mean(torch.abs(outputs - targets))
+                running_mae += torch.sum(torch.abs(outputs - targets)).item()
 
-        # Calculer la perte et MAE moyennes
-        epoch_test_loss = running_loss / len(test_loader.dataset)
-        epoch_test_mae = running_mae / len(test_loader.dataset)
+            # Calculer la perte et MAE moyennes
+            epoch_test_loss = running_loss / len(test_loader.dataset)
+            epoch_test_mae = running_mae / len(test_loader.dataset)
 
-        test_losses.append(epoch_test_loss)
-        test_maes.append(epoch_test_mae)
+            test_losses.append(epoch_test_loss)
+            test_maes.append(epoch_test_mae)
 
         # Scheduler pour ajuster le taux d'apprentissage
         scheduler.step(epoch_test_loss)
+
 
         # Afficher la progression
         if (epoch + 1) % 10 == 0 or epoch == 0:
@@ -280,13 +279,139 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, epochs =
     if best_model_state is not None:
         model.load_state_dict(best_model_state)
 
-    return model, train_losses, test_losses
+    history = {
+        'train_loss': train_losses,
+        'test_loss': test_losses,
+        'train_mae': train_maes,
+        'test_mae': test_maes
+    }
+
+    return model, history
+
+
+# ------------------- Visualiser l'historique d'entraînement -------------------
+def plot_history(history):
+    plt.figure(figsize=(12, 5))
+
+    # Tracé de la perte (loss)
+    plt.subplot(1, 2, 1)
+    plt.plot(history['train_loss'], label='Entraînement')
+    plt.plot(history['test_loss'], label='Validation')
+    plt.title('Perte MSE')
+    plt.xlabel('Époque')
+    plt.ylabel('Erreur')
+    plt.legend()
+    plt.grid(True)
+
+    # Tracé de l'erreur absolue moyenne
+    plt.subplot(1, 2, 2)
+    plt.plot(history['train_mae'], label='Entraînement')
+    plt.plot(history['test_mae'], label='Validation')
+    plt.title('Erreur absolue moyenne')
+    plt.xlabel('Époque')
+    plt.ylabel('MAE (nm)')
+    plt.legend()
+    plt.grid(True)
+
+    plt.tight_layout()
+    plt.show()
+
+
+# ------------------------ Visualiser les résultats du test ------------------------
+def plot_test_results(model, test_loader):
+    """
+    Trace un graphique comparant les prédictions du modèle avec les valeurs réelles
+    sur l'ensemble de test.
+
+    :param model: Le modèle entraîné
+    :param test_loader: DataLoader contenant les données de test
+    """
+    # Mettre le modèle en mode évaluation
+    model.eval()
+
+    # Listes pour stocker les prédictions et les valeurs réelles
+    predictions = []
+    actual_values = []
+
+    device = 'cpu'
+
+    # Désactiver le calcul des gradients pour l'inférence
+    with torch.no_grad():
+        for inputs, targets in test_loader:
+            inputs, targets = inputs.to(device), targets.to(device)
+
+            # Forward pass
+            outputs = model(inputs)
+
+            # Ajouter les prédictions et les valeurs réelles aux listes
+            predictions.extend(outputs.cpu().numpy())
+            actual_values.extend(targets.cpu().numpy())
+
+    # Convertir en arrays numpy
+    predictions = np.array(predictions).flatten()
+    actual_values = np.array(actual_values).flatten()
+
+    # Calculer l'erreur absolue pour chaque point
+    absolute_errors = np.abs(predictions - actual_values)
+
+    # Calculer les statistiques d'erreur
+    mae = np.mean(absolute_errors)
+    rmse = np.sqrt(np.mean((predictions - actual_values) ** 2))
+
+    # Créer la figure avec deux sous-graphiques
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10),
+                                   gridspec_kw={'height_ratios': [3, 2]})
+
+    # 1er graph : Prédictions vs Valeurs réelles
+    ax1.scatter(actual_values, predictions, alpha=0.5)
+
+    # Tracer la ligne de référence y=x (prédiction parfaite)
+    min_val = min(np.min(predictions), np.min(actual_values))
+    max_val = max(np.max(predictions), np.max(actual_values))
+    ax1.plot([min_val, max_val], [min_val, max_val], 'r-', label='Prédiction parfaite')
+    ax1.set_xlabel('Longueur d\'onde réelle (nm)')
+    ax1.set_ylabel('Longueur d\'onde prédite (nm)')
+    ax1.set_xlim(0, 2800)
+    ax1.set_title(f'Prédictions vs Valeurs réelles\nMAE: {mae:.2f} nm, RMSE: {rmse:.2f} nm')
+    ax1.grid(True)
+    ax1.legend()
+
+    # 2ème graph : Erreur absolue selon la longueur d'onde
+    # Trier par longueur d'onde
+    sort_idx = np.argsort(actual_values)
+    sorted_wavelengths = actual_values[sort_idx]
+    sorted_errors = absolute_errors[sort_idx]
+
+    # Lissage pour une courbe plus fluide
+    window_size = 15
+    if len(sorted_wavelengths) > window_size:
+        smoothed_errors = np.convolve(sorted_errors, np.ones(window_size) / window_size,
+                                      mode='valid')
+        smoothed_wavelengths = sorted_wavelengths[window_size - 1:]
+    else:
+        smoothed_errors = sorted_errors
+        smoothed_wavelengths = sorted_wavelengths
+
+    # Tracer la courbe avec aire remplie
+    ax2.plot(smoothed_wavelengths, smoothed_errors, 'b-', linewidth=2)
+    ax2.fill_between(smoothed_wavelengths, 0, smoothed_errors, alpha=0.3,
+                     color='orange')
+    ax2.axhline(y=mae, color='r', linestyle='-', label=f'MAE moyenne: {mae:.2f} nm')
+    ax2.set_xlabel('Longueur d\'onde (nm)')
+    ax2.set_ylabel('Erreur absolue (nm)')
+    ax2.set_title('Erreur absolue en fonction de la longueur d\'onde')
+    ax2.grid(True)
+    ax2.legend()
+
+    plt.tight_layout()
+    plt.show()
 
 
 
-# Utilisation
+# ------------------------------ Utilisation ------------------------------
 if __name__ == '__main__':
-    device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
+    #device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using {device} device")
     print("\n")
 
@@ -294,25 +419,26 @@ if __name__ == '__main__':
     start_total_time = perf_counter()
 
     # Prétraitement des données
-    reponses_capteurs = DataPreProcess()
+    reponses_capteurs = DataPreProcess(plastic_name='Petri')
     reponses_capteurs = reponses_capteurs.all_sensors
 
     # Créer le dataset avec les données des capteurs
     dataset = CapteursDataset(reponses_capteurs)
 
     # Paramètres
-    batch_size = 32
+    batch_size = 64
     test_size = 0.2
     random_seed = 42
     learning_rate = 0.001
-    num_epochs = 10
+    num_epochs = 500
 
     # Diviser les données et créer les DataLoaders
     train_loader, test_loader = prepare_dataloaders(dataset,
                                                     test_size=test_size,
                                                     batch_size=batch_size,
                                                     random_seed=random_seed,
-                                                    shuffle=True)
+                                                    shuffle=True
+                                                    )
 
     # Initialiser le modèle
     model = WavelengthPredictor().to(device)
@@ -325,13 +451,20 @@ if __name__ == '__main__':
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)  # Optimiseur Adam
 
     # Entraîner le modèle
-    model, train_losses, test_losses = train_model(model,
-                                                   train_loader,
-                                                   test_loader,
-                                                   criterion,
-                                                   optimizer,
-                                                   epochs=num_epochs,
-                                                   patience=10)
+    trained_model, history = train_model(model,
+                                 train_loader,
+                                 test_loader,
+                                 criterion,
+                                 optimizer,
+                                 epochs=num_epochs,
+                                 patience=30
+                                 )
 
     # Temps total d'exécution
     print(f"Temps d'exécution total : {perf_counter() - start_total_time}")
+
+    # Visualiser l'historique d'entraînement
+    plot_history(history)
+
+    # Visualiser les résultats du test
+    plot_test_results(trained_model, test_loader)
