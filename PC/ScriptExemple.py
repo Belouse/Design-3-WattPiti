@@ -8,11 +8,11 @@ from AlgorithmManagerClass import AlgorithmManager
 import numpy as np
 # number of data points to average for each sensor befor
 # sending the data to the algorithms
-numberOfDataPoints = 20
-numberOfLoops = 10
+numberOfDataPoints = 1
+numberOfLoops = 5
 
 # Open the serial connection (replace with the correct port name)
-portName = "/dev/cu.usbmodem3976347232332"
+portName = "COM5"
 
 dataContainer = DataContainer()
 algorithmManager = AlgorithmManager(dataContainer)

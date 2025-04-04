@@ -11,6 +11,8 @@ import numpy as np
 import time
 from DataContainerClass import DataContainer
 from AlgoPosition import AlgoPosition
+from AlgorithmManagerClass import AlgorithmManager
+from SerialManagerClass import SerialManager
 import serial.tools.list_ports
 
 
@@ -18,9 +20,9 @@ class InterfaceWattpiti(tk.Tk):
     def __init__(self):
         super().__init__()
 
-
-        #Importation des classes externes pour stocker les données
-        self.data = DataContainer()
+        #Création d'une instance de la classe DataContainer pour stocker les données
+        self.dataContainer = DataContainer()
+        self.algorithmManager = AlgorithmManager(self.dataContainer)
         self.algoPosition = AlgoPosition()
 
         #création de l'interface
@@ -91,9 +93,10 @@ class InterfaceWattpiti(tk.Tk):
         self.portList = []
         for port in self.ports:
             self.portList.append(f"{port.device}, {port.description}")
-        #self.default_port_index = next((i for i, port in enumerate(self.portList) if "COM4 - Lien série sur Bluetooth standard (COM4)" in port), 0)
-        self.portComboBox = ttk.Combobox(self, values=self.portList, width = 35)
-        self.portComboBox.place(x = 350, y=50)
+
+        self.selected_port = tk.StringVar()
+        self.portComboBox = ttk.Combobox(self, values=self.portList, width=35, textvariable=self.selected_port)
+        self.portComboBox.place(x=350, y=50)
         self.portComboBox.current(0)
 
         #Création d'un label pour le choix du port
@@ -101,15 +104,27 @@ class InterfaceWattpiti(tk.Tk):
         self.labelFreq.place(x=250, y = 50)
 
 
+        #Choix de la longueur d'onde
+        self.waveLenghtList = ["À déterminer", "976", "1064", "1319", "1550"]
+        self.waveLenghtComboBox = ttk.Combobox(self, values=self.waveLenghtList, width=20)
+        self.waveLenghtComboBox.place(x=440, y=80)
+        self.waveLenghtComboBox.current(0)
+
+        #Label pour le choix de la longueur d'onde
+        self.labelWaveLength = ttk.Label(self, text="Longueur d'onde (nm):", style = "labelStyle.TLabel")
+        self.labelWaveLength.place(x=250, y=80)
+
+
         #Création d'une entrée pour le temps de moyennage
-        timeVar = tk.StringVar()
-        timeVar.trace_add("write", self.time_value)
-        self.timeEntry = ttk.Entry(self, textvariable = timeVar)
-        self.timeEntry.place(x= 445, y=100)
+        self.timeVar = tk.StringVar()
+        self.timeVar.trace_add("write", self.time_value)
+        self.timeEntry = ttk.Entry(self, textvariable = self.timeVar)
+        self.timeEntry.place(x= 445, y=110)
+        self.timeEntry.insert(0, "10")
 
         #Création d'un label pour le temps d'acquisition
         self.labelTime = ttk.Label(self, text="Temps de moyennage (s):", style= "labelStyle.TLabel")
-        self.labelTime.place(x = 250, y = 100)
+        self.labelTime.place(x = 250, y = 110)
 
 
 
@@ -267,22 +282,39 @@ class InterfaceWattpiti(tk.Tk):
 
 
 
-
-
-
     #Fonction du bouton pour démarrer la simulation
     def click_start(self):
-        self.startButton.after(1000, self.startButton.config(state="disabled"))
-        self.stopButton.after(1000, self.startButton.config(state="normal"))
+        #Importation des classes externes pour stocker les données
+        self.serialManager = SerialManager(self.selected_port.get().split(",")[0], self.dataContainer, maxData=100)
+
+
+
+
+
+        self.startButton.after(500, self.startButton.config(state="disabled"))
+        self.stopButton.after(500, self.startButton.config(state="normal"))
+
+        self.serialManager.updateDataFromMCU(1)
+
+        self.algorithmManager.calculatePosition()
+        self.algorithmManager.calculateWavelength()
+        self.algorithmManager.calculatePower()
+
+        self.newpositon = self.dataContainer.position
+        self.newWaveLenght = self.dataContainer.wavelength
+        self.newpower = self.dataContainer.power
+
+        self.rawWavelengthMatrix = self.dataContainer.rawWavelengthMatrix
+        self.rawTemperatureMatrix = self.dataContainer.rawTemperatureMatrix
 
         if self.timeEntry.get() == "":
             self.error_handling("ERREUR: Aucun temps de moyennage n'a été entré.")
 
         #Changer la valeur des variables de la classe DataContainer
-        self.positionXVar.set(str(self.data.position[0]))
-        self.positionYVar.set(str(self.data.position[1]))
-        self.powerVar.set(str(self.data.power))
-        self.wavelenghtVar.set(str(self.data.wavelength))
+        self.positionXVar.set(str(self.dataContainer.position[0]))
+        self.positionYVar.set(str(self.dataContainer.position[1]))
+        self.powerVar.set(str(self.dataContainer.power))
+        self.wavelenghtVar.set(str(self.dataContainer.wavelength))
         
 
     #Fonction du bouton pour arrêter la simulation
@@ -395,18 +427,18 @@ class InterfaceWattpiti(tk.Tk):
 
     def pos_plot(self):
         #Fonction pour afficher le graphique de la position centrale du faisceau
-        self.data.temperature = np.array([39.4394989,  40.51720047, 40.40250015, 39.22230148, 41.09389877, 43.10359955, 42.76750183, 40.5965004,43.02610016, 48.70330048, 47.12360001, 41.83250046,42.22079849, 58.96350098, 50.47050095, 40.92689896, 0])
+        self.dataContainer.temperature = np.array([39.4394989,  40.51720047, 40.40250015, 39.22230148, 41.09389877, 43.10359955, 42.76750183, 40.5965004,43.02610016, 48.70330048, 47.12360001, 41.83250046,42.22079849, 58.96350098, 50.47050095, 40.92689896, 0])
         self.axPos.clear()
         self.axPos.set_xlabel("Position x (mm)")
         self.axPos.set_ylabel("Position y (mm)")
-        AlgoPosition.calculatePosition(self.algoPosition, self.data)
-        contour = self.axPos.contourf(self.data.interpolatedTemperatureGrid[0], 
-                          self.data.interpolatedTemperatureGrid[1], 
-                          self.data.interpolatedTemperatureGrid[2], 
+        AlgoPosition.calculatePosition(self.algoPosition, self.dataContainer)
+        contour = self.axPos.contourf(self.dataContainer.interpolatedTemperatureGrid[0], 
+                          self.dataContainer.interpolatedTemperatureGrid[1], 
+                          self.dataContainer.interpolatedTemperatureGrid[2], 
                           levels=150,
                           cmap='turbo')
         
-        for row in self.data.thermalCaptorPosition:
+        for row in self.dataContainer.thermalCaptorPosition:
             for (x, y) in row:
                 rect = patches.Rectangle((x - 1.5, y - 1.5), 0.75, 0.75, linewidth=1.5, edgecolor='white', facecolor='none', alpha=0.5)
                 self.axPos.add_patch(rect)
@@ -414,6 +446,8 @@ class InterfaceWattpiti(tk.Tk):
         self.posCanvas.get_tk_widget().update()
 
 
+
 if __name__ == "__main__":
     app = InterfaceWattpiti()
     app.mainloop()
+    print(app.selected_port.get().split(",")[0])
