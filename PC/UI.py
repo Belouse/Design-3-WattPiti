@@ -24,6 +24,7 @@ class InterfaceWattpiti(tk.Tk):
         self.dataContainer = DataContainer()
         self.algorithmManager = AlgorithmManager(self.dataContainer)
         self.algoPosition = AlgoPosition()
+        self.serialManager = SerialManager(self.dataContainer, maxData=1)
 
         #création de l'interface
         self.title("Puissance-mètre Wattpiti")
@@ -97,7 +98,6 @@ class InterfaceWattpiti(tk.Tk):
         self.selected_port = tk.StringVar()
         self.portComboBox = ttk.Combobox(self, values=self.portList, width=35, textvariable=self.selected_port)
         self.portComboBox.place(x=350, y=50)
-        self.portComboBox.current(0)
 
         #Création d'un label pour le choix du port
         self.labelFreq = ttk.Label(self, text="Choix du port:", style = "labelStyle.TLabel")
@@ -279,8 +279,6 @@ class InterfaceWattpiti(tk.Tk):
         self.running = False
         self.listDebug = []
 
-        self.serialManager = SerialManager("COM5", self.dataContainer, maxData=100)
-        "self.selected_port.get().split(",")[0]"
 
 
 
@@ -291,7 +289,7 @@ class InterfaceWattpiti(tk.Tk):
     #Fonction du bouton pour démarrer la simulation
     def click_start(self):
         #Importation des classes externes pour stocker les données
-
+        self.serialManager.setPortName(self.selected_port.get().split(",")[0])
         if not self.running:
             self.running = True
             self.loop() 
@@ -463,10 +461,16 @@ class InterfaceWattpiti(tk.Tk):
         self.posCanvas.draw()
         self.posCanvas.get_tk_widget().update()
 
+    def on_close(self):
+        #self.serialManager.closePort()
+        self.destroy()
+
 
 
 if __name__ == "__main__":
     app = InterfaceWattpiti()
+    app.protocol("WM_DELETE_WINDOW", app.on_close)  # Handle window close event
     app.mainloop()
+
     print(app.selected_port.get().split(",")[0])
     print(app.listDebug)
