@@ -12,7 +12,7 @@ numberOfDataPoints = 1
 numberOfLoops = 5
 
 # Open the serial connection (replace with the correct port name)
-portName = "/dev/cu.usbmodem3976347232332"
+portName = "/dev/cu.usbmodem3976347232332" 
 
 dataContainer = DataContainer()
 algorithmManager = AlgorithmManager(dataContainer)
