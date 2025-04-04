@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from DataContainerClass import DataContainer
 import pandas as pd
 from scipy.interpolate import interp1d
+import os
 
 class AlgoPower:
     def __init__(self):
@@ -23,12 +24,20 @@ class AlgoPower:
 
 
 
-    def calculatePowerTest(self, fichier_csv):
+    def calculatePowerTest(self, nom_fichier):
         """
         
         Fonction de test ici qui n'interrompt pas le main...
         
         """
+        # Aller dans /Thermique/SimulationCSV depuis le script dans PC/
+        base_path = os.path.dirname(os.path.abspath(__file__))  # /Design-3-WattPiti/PC
+        dossier_csv = os.path.join(base_path, "..", "Thermique", "SimulationCSV")
+        dossier_csv = os.path.normpath(dossier_csv)  # Nettoyer le chemin
+
+        # Créer le chemin complet vers le fichier
+        chemin_fichier = os.path.join(dossier_csv, nom_fichier)
+
         # --- Données réponses aux échelons pour interpolation ---
         T_points = np.array([3.73, 10.53, 17.33, 24.13])
         K_points = np.array([1.492, 2.106, 2.311, 2.413])
@@ -40,7 +49,7 @@ class AlgoPower:
 
 
         # Lire le fichier CSV
-        df = pd.read_csv(fichier_csv)
+        df = pd.read_csv(chemin_fichier)
     
         # Garder uniquement les données des nodes 121 et 241
         df_121 = df[df["Node_ID"] == 121]
@@ -99,9 +108,4 @@ class AlgoPower:
 
 # Crée une instance de la classe
 mon_algo = AlgoPower()
-
-# Chemin vers ton fichier CSV
-#fichier = "/Users/vincentlelievre/Desktop/Design_3/Fichiers_test/TestEchelon10W.csv"
-
-# Appel de la méthode
-#puissance = mon_algo.calculatePowerTest(fichier)
+mon_algo.calculatePowerTest("TestEchelon5W.csv") # mettre le nom du fichier test
