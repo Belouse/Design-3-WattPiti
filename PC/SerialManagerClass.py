@@ -115,3 +115,6 @@ class SerialManager():
         
         else:
             self.serialListener = SerialListener(portName)
+
+    def closePort(self):
+        self.serialListener.closePort()

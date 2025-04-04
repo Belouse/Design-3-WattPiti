@@ -8,7 +8,7 @@ class SerialListener():
         self.port = serial.Serial(portName, 115200)
 
     def updatePortName(self, portName):
-        self.port.close()
+        self.closePort()
         self.port = serial.Serial(portName, 115200)
     
     def readData(self, numberOfData, printExecutionTime):
@@ -26,3 +26,6 @@ class SerialListener():
             print(f"Temps d'execution de la réception de données {time.time() - start}")
 
         return dataRead
+    
+    def closePort(self):
+        self.port.close()
