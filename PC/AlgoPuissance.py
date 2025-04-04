@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from dataclasses import dataclass
 from DataContainerClass import DataContainer
+import pandas as pd
+from scipy.interpolate import interp1d
 
 class AlgoPower:
     def __init__(self):
@@ -21,77 +23,85 @@ class AlgoPower:
 
 
 
-    def calculatePowerTest(self, dataContainer):
+    def calculatePowerTest(self, fichier_csv):
         """
         
         Fonction de test ici qui n'interrompt pas le main...
         
         """
-        temperatures = dataContainer.temperature
-        thermistor_temps = temperatures[:-1]  # 16 premières valeurs
-        T0 = temperatures[-1]                 # Température de référence (17e élément)
+        # --- Données réponses aux échelons pour interpolation ---
+        T_points = np.array([3.73, 10.53, 17.33, 24.13])
+        K_points = np.array([1.492, 2.106, 2.311, 2.413])
+        tau_points = np.array([1.0196, 1.3203, 1.3881, 1.4183])
 
-        # Rayon plaque (mm)
-        radius = 30
+        # Fonctions interpolées linéaires
+        calculate_K = interp1d(T_points, K_points, kind='linear', fill_value="extrapolate")
+        calculate_tau = interp1d(T_points, tau_points, kind='linear', fill_value="extrapolate")
 
-        # Positions radiales : 16 points répartis uniformément + 1 point pour T0
-        radial_positions = np.linspace(0, radius, len(thermistor_temps) + 1)
 
-        # Températures mesurées incluant la température de référence
-        all_temperatures = np.append(thermistor_temps, T0)
+        # Lire le fichier CSV
+        df = pd.read_csv(fichier_csv)
+    
+        # Garder uniquement les données des nodes 121 et 241
+        df_121 = df[df["Node_ID"] == 121]
+        df_241 = df[df["Node_ID"] == 241]
 
-        # Approximation d'une gaussienne
-        def gaussian(x, a, b, c):
-            return a * np.exp(-((x - b) ** 2) / (2 * c ** 2))
+        # S'assurer qu'ils sont bien triés par le temps
+        df_121 = df_121.sort_values(by="Time")
+        df_241 = df_241.sort_values(by="Time")
+    
+        # Extraire le temps et les températures
+        temps = df_121["Time"].values
+        T_121 = df_121["NDTEMP.T"].values # max_temperature in dataContainerClass
+        T_241 = df_241["NDTEMP.T"].values # 17e élément du vecteur temperature in dataContainerClass
+    
+        # Calcul de la température normalisée
+        T_norm = T_121 - T_241
 
-        # Paramètres de la gaussienne
-        a = np.max(thermistor_temps)  
-        b = 0                         
-        c = radius / 3                
+        # Supprimer les premières valeurs (trimer pour avoir la bonne valeur de température)
+        T_norm = T_norm[8:] - T_norm[8]
+        temps = temps[8:] - temps[8]
 
-        # Génération des températures gaussiennes
-        gaussian_temps = gaussian(radial_positions, a, b, c)
+        # Identifier l’indice correspondant à t >= 10 secondes
+        indices_regime_permanent = np.where(temps >= 10)[0]
 
-        # Modèle pour le calcul de la puissance --> trouvé avec curvfit des courbes à Tom (*pas précis*)
-        def calculate_laser_power(T_r, r):
-            return (T_r - T0) / (2.70 * np.exp(-0.0018 * r**2))
+        # Prendre la première valeur après 10 secondes
+        i = indices_regime_permanent[0]
+        T_regime = T_norm[i]
+        K_regime = calculate_K(T_regime)
+        P_regime = T_regime / K_regime
 
-        # Calcul des puissances individuelles
-        laser_powers = np.array([calculate_laser_power(T_r, r) 
-                                for T_r, r in zip(thermistor_temps, radial_positions[:-1])])
+        # Calcul du terme transitoire de puissance
+        tau_regime = calculate_tau(T_regime)
+        dT_dt = np.gradient(T_norm, temps)
+        dT_dt_regime = dT_dt[i]
+        P_transitoire = (tau_regime / K_regime) * dT_dt_regime
 
-        # Puissance totale du laser
-        total_power = np.sum(laser_powers)
+        #Puissance totale
+        P_total = P_regime + P_transitoire
 
-        # Graphique pour températures
-        plt.figure(figsize=(8, 5))
-        plt.plot(radial_positions, all_temperatures, 'o-', label='Températures mesurées')
-        plt.plot(radial_positions, gaussian_temps, '--', label='Gaussienne ajustée')
-        plt.title('Distribution des températures sur la plaque chauffée')
-        plt.xlabel('Position radiale (mm)')
-        plt.ylabel('Température (°C)')
-        plt.legend()
-        plt.grid(True)
-        plt.show()
+        # Affichage
+        print(f"--- Terme transitoire ---")
+        print(f"Constante de temps tau(T) = {tau_regime:.5f}")
+        print(f"dT/dt ≈ {dT_dt_regime:.5f}")
+        print(f"Terme transitoire (tau/K * dT/dt) = {P_transitoire:.5f}")
 
-        # Graphique pour puissances
-        plt.figure(figsize=(8, 5))
-        plt.plot(radial_positions[:-1], laser_powers, 'o-', label='Puissance estimée (W)')
-        plt.title('Estimation de la puissance du laser en fonction de la position radiale')
-        plt.xlabel('Position radiale (mm)')
-        plt.ylabel('Puissance (W)')
-        plt.legend()
-        plt.grid(True)
-        plt.show()
+        print(f"\n--- Puissance totale ---")
+        print(f"P_total = P_regime + P_transitoire = {P_total:.5f}")
 
-        print(f"Puissance totale du laser estimée : {total_power:.2f} W")
-        return total_power
 
-# Exemple d'utilisation
-sensor_data = DataContainer(
-    temperature=np.array([50, 48, 46, 44, 42, 40, 38, 36, 34, 32, 
-                            30, 28, 26, 24, 22, 20, 30])  # Dernier élément = température de référence
-)
-if __name__ == "__main__":
-    algo = AlgoPower()
-    algo.calculatePowerTest(sensor_data)
+        print(f"--- Régime permanent à t = {temps[i]:.2f} s ---")
+        print(f"Température normalisée T(t) = {T_regime:.5f}")
+        print(f"Gain K(T) = {K_regime:.5f}")
+        print(f"Puissance P(t) = T(t) / K(T) = {P_regime:.5f}")
+    
+        return P_total
+
+# Crée une instance de la classe
+mon_algo = AlgoPower()
+
+# Chemin vers ton fichier CSV
+fichier = "/Users/vincentlelievre/Desktop/Design_3/Fichiers_test/TestEchelon10W.csv"
+
+# Appel de la méthode
+puissance = mon_algo.calculatePowerTest(fichier)
