@@ -241,9 +241,6 @@ class InterfaceWattpiti(tk.Tk):
         self.powerPlot = self.powerCanvas.get_tk_widget()
         self.powerPlot.place(x=20, y=280)
 
-        #Création d'un bouton pour afficher le graphique de la puissance en fonction du temps
-        self.powerPlotButton = ttk.Button(self, text="Afficher le graphique", command=self.power_plot, style = "saveButtonStyle.TButton")
-        self.powerPlotButton.place(x = 400, y = 235)
 
 
 
@@ -261,9 +258,6 @@ class InterfaceWattpiti(tk.Tk):
         self.axPos.set_xlabel("Position x (mm)")
         self.axPos.set_ylabel("Position y (mm)")
 
-        #Création d'un bouton pour afficher le graphique
-        self.posPlotButton = ttk.Button(self, text="Afficher le graphique", command=self.pos_plot, style = "saveButtonStyle.TButton")
-        self.posPlotButton.place(x = 1100, y = 235)
 
         self.posCanvas = FigureCanvasTkAgg(self.posFig, master = self)
         self.posPlot = self.posCanvas.get_tk_widget()
@@ -327,8 +321,27 @@ class InterfaceWattpiti(tk.Tk):
                 self.listDebug.append(self.rawTemperatureMatrix[0][0])
             
                 self.powerVar.set(str(self.rawTemperatureMatrix[0][0]))
+                
 
-        self.after(1000, self.loop)
+                #Graphique de la position centrale du faisceau
+                self.axPos.clear()
+                self.axPos.set_xlabel("Position x (mm)")
+                self.axPos.set_ylabel("Position y (mm)")
+                AlgoPosition.calculatePosition(self.algoPosition, self.dataContainer)
+                contour = self.axPos.contourf(self.dataContainer.interpolatedTemperatureGrid[0], 
+                                self.dataContainer.interpolatedTemperatureGrid[1], 
+                                self.dataContainer.interpolatedTemperatureGrid[2], 
+                                levels=150,
+                                cmap='turbo')
+                
+                for row in self.dataContainer.thermalCaptorPosition:
+                    for (x, y) in row:
+                        rect = patches.Rectangle((x - 1.5, y - 1.5), 0.75, 0.75, linewidth=1.5, edgecolor='white', facecolor='none', alpha=0.5)
+                        self.axPos.add_patch(rect)
+                self.posCanvas.draw()
+                self.posCanvas.get_tk_widget().update()
+
+        self.after(10, self.loop)
 
 
     
@@ -441,28 +454,9 @@ class InterfaceWattpiti(tk.Tk):
     def power_plot(self):
         pass
 
-    def pos_plot(self):
-        #Fonction pour afficher le graphique de la position centrale du faisceau
-        self.dataContainer.temperature = np.array([39.4394989,  40.51720047, 40.40250015, 39.22230148, 41.09389877, 43.10359955, 42.76750183, 40.5965004,43.02610016, 48.70330048, 47.12360001, 41.83250046,42.22079849, 58.96350098, 50.47050095, 40.92689896, 0])
-        self.axPos.clear()
-        self.axPos.set_xlabel("Position x (mm)")
-        self.axPos.set_ylabel("Position y (mm)")
-        AlgoPosition.calculatePosition(self.algoPosition, self.dataContainer)
-        contour = self.axPos.contourf(self.dataContainer.interpolatedTemperatureGrid[0], 
-                          self.dataContainer.interpolatedTemperatureGrid[1], 
-                          self.dataContainer.interpolatedTemperatureGrid[2], 
-                          levels=150,
-                          cmap='turbo')
-        
-        for row in self.dataContainer.thermalCaptorPosition:
-            for (x, y) in row:
-                rect = patches.Rectangle((x - 1.5, y - 1.5), 0.75, 0.75, linewidth=1.5, edgecolor='white', facecolor='none', alpha=0.5)
-                self.axPos.add_patch(rect)
-        self.posCanvas.draw()
-        self.posCanvas.get_tk_widget().update()
-
     def on_close(self):
-        #self.serialManager.closePort()
+        if self.serialManager.serialListener is not None:
+            self.serialManager.closePort()
         self.destroy()
 
 
