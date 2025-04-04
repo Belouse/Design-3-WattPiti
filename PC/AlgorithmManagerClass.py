@@ -29,8 +29,10 @@ class AlgorithmManager():
 
         Associate the result of the calculation to the DataContainer.position
         """
-        position = self.algoPosition.calculatePosition(self.dataContainer)
+        position, max_temp = self.algoPosition.calculatePosition(self.dataContainer)
         self.dataContainer.position = position
+        self.dataContainer.old_max_temperature = self.dataContainer.max_temperature
+        self.dataContainer.max_temperature = max_temp
     
     def calculatePower(self):
         """

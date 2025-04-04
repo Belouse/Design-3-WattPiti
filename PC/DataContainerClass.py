@@ -52,6 +52,7 @@ class DataContainer:
     temperature: np.ndarray  = field(default_factory=lambda: np.array([]))
     interpolatedTemperatureGrid: np.ndarray = field(default_factory=lambda: np.array([]))
     max_temperature: float = 0.0
+    old_max_temperature: float = 0.0
     wavelengthCounts: np.ndarray  = field(default_factory=lambda: np.array([]))
     position: tuple = (0,0)
     power : float = 1

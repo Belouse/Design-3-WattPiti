@@ -31,12 +31,12 @@ class AlgoPosition():
       temp = temp - lowest_temp
 
       X, Y, Z = AlgoPosition.interpolate_circle(temp, dataContainer.thermalCaptorPosition, radius=self.rayon, center=(0, 0), resolution=300, rbf_function='gaussian')
-      print("type(X)", type(X))
+    
       max_x, max_y, max_temp = AlgoPosition.find_max_interpolation(X, Y, Z)
       position = (max_x,max_y)
       dataContainer.interpolatedTemperatureGrid = np.stack((X, Y, Z+lowest_temp), axis=0)
-      dataContainer.max_temperature = max_temp+lowest_temp
-      return position
+      
+      return position, max_temp+lowest_temp
     
 
     def interpolate_circle(matrix, position, radius, center=(0, 0), resolution=300, rbf_function='gaussian'):
