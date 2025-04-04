@@ -120,7 +120,6 @@ class InterfaceWattpiti(tk.Tk):
         self.timeVar.trace_add("write", self.time_value)
         self.timeEntry = ttk.Entry(self, textvariable = self.timeVar)
         self.timeEntry.place(x= 445, y=110)
-        self.timeEntry.insert(0, "10")
 
         #Création d'un label pour le temps d'acquisition
         self.labelTime = ttk.Label(self, text="Temps de moyennage (s):", style= "labelStyle.TLabel")
@@ -276,6 +275,10 @@ class InterfaceWattpiti(tk.Tk):
         self.errorFrame.grid_propagate(False)
 
 
+        #Gestion de la loop
+        self.running = False
+        self.listDebug = []
+
 
 
 
@@ -285,39 +288,53 @@ class InterfaceWattpiti(tk.Tk):
     #Fonction du bouton pour démarrer la simulation
     def click_start(self):
         #Importation des classes externes pour stocker les données
-        self.serialManager = SerialManager(self.selected_port.get().split(",")[0], self.dataContainer, maxData=100)
+        self.serialManager = SerialManager("COM5", self.dataContainer, maxData=100)
+        "self.selected_port.get().split(",")[0]"
+
+        if not self.running:
+            self.running = True
+            self.loop() 
 
 
 
-
-
-        self.startButton.after(500, self.startButton.config(state="disabled"))
-        self.stopButton.after(500, self.startButton.config(state="normal"))
-
-        self.serialManager.updateDataFromMCU(1)
-
-        self.algorithmManager.calculatePosition()
-        self.algorithmManager.calculateWavelength()
-        self.algorithmManager.calculatePower()
-
-        self.newpositon = self.dataContainer.position
-        self.newWaveLenght = self.dataContainer.wavelength
-        self.newpower = self.dataContainer.power
-
-        self.rawWavelengthMatrix = self.dataContainer.rawWavelengthMatrix
-        self.rawTemperatureMatrix = self.dataContainer.rawTemperatureMatrix
-
-        if self.timeEntry.get() == "":
-            self.error_handling("ERREUR: Aucun temps de moyennage n'a été entré.")
+        #if self.timeEntry.get() == "":
+            #self.error_handling("ERREUR: Aucun temps de moyennage n'a été entré.")
 
         #Changer la valeur des variables de la classe DataContainer
-        self.positionXVar.set(str(self.dataContainer.position[0]))
-        self.positionYVar.set(str(self.dataContainer.position[1]))
-        self.powerVar.set(str(self.dataContainer.power))
-        self.wavelenghtVar.set(str(self.dataContainer.wavelength))
+        #self.positionXVar.set(str(self.dataContainer.position[0]))
+        #self.positionYVar.set(str(self.dataContainer.position[1]))
+        #self.powerVar.set(str(self.dataContainer.power))
+        #self.wavelenghtVar.set(str(self.dataContainer.wavelength))
         
 
     #Fonction du bouton pour arrêter la simulation
+
+    def loop(self):
+
+        for i  in range(1):
+            self.serialManager.updateDataFromMCU(1)
+            self.algorithmManager.calculatePosition()
+            self.algorithmManager.calculateWavelength()
+            self.algorithmManager.calculatePower()
+
+            self.newpositon = self.dataContainer.position
+            self.newWaveLenght = self.dataContainer.wavelength
+            self.newpower = self.dataContainer.power    
+
+
+
+            #self.rawWavelengthMatrix = self.dataContainer.rawWavelengthMatrix
+            self.rawTemperatureMatrix = self.dataContainer.rawTemperatureMatrix
+            self.listDebug.append(self.rawTemperatureMatrix[0][16])
+        
+            self.powerVar.set(str(self.rawTemperatureMatrix[0][16]))
+
+        self.after(100, self.loop)
+
+
+    
+    
+    
     def click_stop(self):
         pass
 
@@ -451,3 +468,4 @@ if __name__ == "__main__":
     app = InterfaceWattpiti()
     app.mainloop()
     print(app.selected_port.get().split(",")[0])
+    print(app.listDebug)

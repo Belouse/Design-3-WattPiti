@@ -101,7 +101,7 @@ class AlgoPower:
 mon_algo = AlgoPower()
 
 # Chemin vers ton fichier CSV
-fichier = "/Users/vincentlelievre/Desktop/Design_3/Fichiers_test/TestEchelon10W.csv"
+#fichier = "/Users/vincentlelievre/Desktop/Design_3/Fichiers_test/TestEchelon10W.csv"
 
 # Appel de la méthode
-puissance = mon_algo.calculatePowerTest(fichier)
+#puissance = mon_algo.calculatePowerTest(fichier)
