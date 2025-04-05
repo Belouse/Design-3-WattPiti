@@ -8,6 +8,7 @@ from scipy import constants
 import pickle
 import os
 from EntrainementLambda import EntrainementLambda
+from CapteursDataProcess import DataPreProcess
 from matplotlib.gridspec import GridSpec
 import seaborn as sns
 from tqdm import tqdm
@@ -50,8 +51,9 @@ class AlgoWavelength:
         self.sensor_order = ['P_IR1', 'P_IR1xP', 'P_IR2', 'P_UV', 'C_UV', 'C_VISG', 'C_VISB', 'C_VISR']
         
         # Créer une instance de EntrainementLambda pour avoir accès aux réponses des capteurs
-        self.entrainement = EntrainementLambda()
-        self.responses = self.entrainement.all_sensors
+        self.data_preprocess = DataPreProcess()
+        self.responses = self.data_preprocess.all_sensors
+        self.response_dict = self.data_preprocess.dict_capteurs
             
     def calculate_wavelength(self, sensor_values):
         """
@@ -117,6 +119,34 @@ class AlgoWavelength:
             ratios_list.append(ratio)
         
         return ratios_dict, ratios_list
+
+    def get_sensor_response_for_wavelength(self, wavelength):
+        """
+        Extrait la réponse de chaque capteur pour une longueur d'onde donnée.
+        
+        Parameters:
+        wavelength (float): Longueur d'onde en nanomètres pour laquelle extraire les réponses
+        
+        Returns:
+        dict: Dictionnaire contenant les réponses de chaque capteur
+        """
+        # Dictionnaire pour stocker les réponses
+        responses_dict = {}
+        
+        # Pour chaque capteur, trouver la valeur à la longueur d'onde spécifiée
+        for sensor_name in self.sensor_order:
+            sensor_data = self.responses[sensor_name]
+            
+            # Trouver l'indice le plus proche de la longueur d'onde demandée
+            idx = np.abs(sensor_data[:, 0] - wavelength).argmin()
+            
+            # Obtenir la valeur du capteur à cette longueur d'onde
+            response = sensor_data[idx, 1]
+            
+            # Stocker dans le dictionnaire
+            responses_dict[sensor_name] = response
+        
+        return responses_dict
 
     def test_model_with_wavelength(self, test_wavelength, entrainement_instance=None):
         """
@@ -373,7 +403,6 @@ class AlgoWavelength:
         plt.savefig("analyse_bruit_longueur_onde.png", dpi=300)
         plt.show()
 
-
     def analyze_sensor_sensitivity(self, wavelength_range=(300, 2000), num_wavelengths=10, noise_level=0.05, trials=30):
         """
         Analyse la sensibilité de chaque capteur au bruit pour différentes longueurs d'onde.
@@ -434,7 +463,6 @@ class AlgoWavelength:
         
         return results_df
 
-
     def plot_sensor_sensitivity_results(self, results_df):
         """
         Trace les résultats de l'analyse de sensibilité des capteurs.
@@ -493,8 +521,10 @@ if __name__ == "__main__":
     
     # Test du modèle avec une longueur d'onde spécifique
     test_wavelength = 800  # Par exemple, 800 nm
+    responses = algo.get_sensor_response_for_wavelength(test_wavelength)
+    print(f"Réponses des capteurs pour {responses} nm")
     print(algo.test_model_with_wavelength(test_wavelength))
-    
+      
     # # Tester plusieurs longueurs d'onde
     # algo.sweep_wavelength_range(start_nm=250, end_nm=2500, step_nm=1)
     

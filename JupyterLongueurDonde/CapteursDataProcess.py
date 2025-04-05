@@ -46,6 +46,16 @@ class DataPreProcess:
         self.C_VISB_area = 0.2E-3 ** 2
         self.C_VISR_area = 0.2E-3 ** 2
 
+        # Initialiser les positions des capteurs (x, y, z)
+        self.P_IR1_pos = (-9.7, 21.34, -23.16)  # Position du capteur IR1 [mm]
+        self.P_IR1xP_pos = (9.25, 21.18, -23.238)  # Position du capteur IR1xP [mm]
+        self.P_IR2_pos = (0, 23.63, -20.66)  # Position du capteur IR2 [mm]
+        self.P_UV_pos = (-0.63, 20.56, -26.89)  # Position du capteur UV [mm]
+        self.C_UV_pos = (-5.36, 26.86, -30.14)  # Position du capteur UV I2C [mm]
+        self.C_VISG_pos = (5.97, 16.97, -29.91)  # Position du capteur VIS I2C Green [mm]
+        self.C_VISB_pos = (5.97, 16.97, -29.91)  # Position du capteur VIS I2C Blue [mm]
+        self.C_VISR_pos = (5.97, 16.97, -29.91)  # Position du capteur VIS I2C Red [mm]
+
         # Configurer les gains des capteurs
         if gains is None:
             # Valeurs par défaut si aucun gain n'est fourni
@@ -70,15 +80,15 @@ class DataPreProcess:
 
         # Créé un dictionnaire pour les capteurs
         self.dict_capteurs = {
-            'P_IR1': {'gain': self.gain_IR1, 'sensor_area': self.P_IR1_area},
-            'P_IR1xP': {'gain': self.gain_IR1xP, 'sensor_area': self.P_IR1xP_area},
-            'P_IR2': {'gain': self.gain_IR2, 'sensor_area': self.P_IR2_area},
-            'P_UV': {'gain': self.gain_UV, 'sensor_area': self.P_UV_area},
-            'C_UV': {'gain': self.gain_C_UV, 'sensor_area': self.C_UV_area},
-            'C_VISG': {'gain': self.gain_C_VISG, 'sensor_area': self.C_VISG_area},
-            'C_VISB': {'gain': self.gain_C_VISB, 'sensor_area': self.C_VISB_area},
-            'C_VISR': {'gain': self.gain_C_VISR, 'sensor_area': self.C_VISR_area}}
-
+            'P_IR1': {'gain': self.gain_IR1, 'sensor_area': self.P_IR1_area, 'position': self.P_IR1_pos},
+            'P_IR1xP': {'gain': self.gain_IR1xP, 'sensor_area': self.P_IR1xP_area, 'position': self.P_IR1xP_pos},
+            'P_IR2': {'gain': self.gain_IR2, 'sensor_area': self.P_IR2_area, 'position': self.P_IR2_pos},
+            'P_UV': {'gain': self.gain_UV, 'sensor_area': self.P_UV_area, 'position': self.P_UV_pos},
+            'C_UV': {'gain': self.gain_C_UV, 'sensor_area': self.C_UV_area, 'position': self.C_UV_pos},
+            'C_VISG': {'gain': self.gain_C_VISG, 'sensor_area': self.C_VISG_area, 'position': self.C_VISG_pos},
+            'C_VISB': {'gain': self.gain_C_VISB, 'sensor_area': self.C_VISB_area, 'position': self.C_VISB_pos},
+            'C_VISR': {'gain': self.gain_C_VISR, 'sensor_area': self.C_VISR_area, 'position': self.C_VISR_pos}}
+        
         # Charger des données
         self._load_data()
 
