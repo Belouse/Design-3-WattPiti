@@ -7,6 +7,7 @@ from JSONFormatterClass import JSONFormatter
 from MUXClass import Mux
 from ThermalMatrixClass import ThermalMatrix
 from MCP9808Class import MCP9808
+# from VELM6040 import VEML6040
 # Start up of the MCU
 print("Pyboard start up...")
 startIndicator() # lights will blink on the MCU to show that the code excution is starting
@@ -43,6 +44,8 @@ jsonFormatter = JSONFormatter()
 # Initialize I2C and the related sensors
 i2c = I2C(2, freq=400000)  # I2C bus 1, standard frequency
 mcp9808 = MCP9808(i2c)
+# velm6040 = VEML6040(i2c)
+
 
 while True:
     # start = pyb.millis()
@@ -53,7 +56,13 @@ while True:
     readingPhotoDiode3 = photoDiode3.read()
     readingPhotoDiode4 = photoDiode4.read()
 
-    # i2c readings, not implemented yet
+    # i2c reading
+    # colors = velm6040.read_rgbw()
+    # vemlRed = colors['red']
+    # vemlGreen = colors['green']
+    # vemlBlue = colors['blue']
+    # vemlWhite = colors['white']
+
     vemlRed = 1000
     vemlGreen = 1001
     vemlBlue = 1002
@@ -74,6 +83,7 @@ while True:
     
     thermalReadings = thermalMatrix.readMatrix(delay=delayBetweenReadings)
     mcp9808Temp = mcp9808.readTemperature()
+
     thermalReadings.append(mcp9808Temp)
     formattedData = jsonFormatter.format_data(thermalReadings, wavelengthReadings)
     serialPort.send(formattedData)
