@@ -3,10 +3,14 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.neural_network import MLPRegressor
+from sklearn.exceptions import ConvergenceWarning
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, r2_score
 from scipy import constants 
 import os
+import pickle
+import warnings
+import time
 
 class EntrainementLambda():
 
@@ -273,11 +277,7 @@ class EntrainementLambda():
         Returns:
         MLPRegressor: Le modèle entraîné
         """
-        import pickle
-        from sklearn.neural_network import MLPRegressor
-        from sklearn.exceptions import ConvergenceWarning
-        import warnings
-        import time
+        
         
         training_data = []    
     
