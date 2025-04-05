@@ -1,6 +1,7 @@
 from AlgoPosition import AlgoPosition
 from AlgoPuissance import AlgoPower
 from AlgoLambda import AlgoWavelength
+from time import time
 
 class AlgorithmManager():
     """
@@ -21,6 +22,16 @@ class AlgorithmManager():
         self.algoPower = AlgoPower()
         self.algoPosition = AlgoPosition()
         self.dataContainer = dataContainer
+        self.time = time()
+
+    def update_time(self):
+        """
+        Update the time between each calculation of max_temperature
+        """
+        
+        # update the time with the time since the last update
+        self.dataContainer.Delta_t = time() - self.time
+        self.time = time()
 
 
     def calculatePosition(self):
@@ -29,8 +40,13 @@ class AlgorithmManager():
 
         Associate the result of the calculation to the DataContainer.position
         """
-        position = self.algoPosition.calculatePosition(self.dataContainer)
+
+        self.update_time()
+
+        position, max_temp = self.algoPosition.calculatePosition(self.dataContainer)
         self.dataContainer.position = position
+        self.dataContainer.old_max_temperature = self.dataContainer.max_temperature
+        self.dataContainer.max_temperature = max_temp
     
     def calculatePower(self):
         """

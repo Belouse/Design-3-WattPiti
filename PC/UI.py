@@ -115,17 +115,6 @@ class InterfaceWattpiti(tk.Tk):
         self.labelWaveLength.place(x=250, y=80)
 
 
-        #Création d'une entrée pour le temps de moyennage
-        self.timeVar = tk.StringVar()
-        self.timeVar.trace_add("write", self.time_value)
-        self.timeEntry = ttk.Entry(self, textvariable = self.timeVar)
-        self.timeEntry.place(x= 445, y=110)
-
-        #Création d'un label pour le temps d'acquisition
-        self.labelTime = ttk.Label(self, text="Temps de moyennage (s):", style= "labelStyle.TLabel")
-        self.labelTime.place(x = 250, y = 110)
-
-
 
         # Création d'un cadre pour les options d'enregistrement
         self.optionsFrame = ttk.Frame(self, width=400, height=200, borderwidth=3, style='frameLabelStyle.TLabelframe')
@@ -224,14 +213,14 @@ class InterfaceWattpiti(tk.Tk):
 
 
         ###Création du frame pour le graphique de la puissance en fonction du temps
-        self.powerPlotFrame = ttk.Frame(self, width=850, height=600, borderwidth=3, style = "frameLabelStyle.TLabelframe")
+        self.powerPlotFrame = ttk.Frame(self, width=850, height=685, borderwidth=3, style = "frameLabelStyle.TLabelframe")
         self.powerPlotFrame.grid(row = 2, column= 0 , columnspan = 3, rowspan = 1, padx = 5, pady = 5, sticky = "nsew")
 
         self.powerPlotLabel = ttk.Label(self, text= "Graphique de la puissance en fonction du temps", style = "frameLabelStyle.TLabelframe.Label")
         self.powerPlotLabel.place(x = 10, y = 230)
 
         #Création du graphique pour la puissance en fonction du temps
-        self.powerFig = Figure(figsize = (8, 5), dpi = 100)
+        self.powerFig = Figure(figsize = (8, 5.8), dpi = 100)
         self.axPow = self.powerFig.add_subplot(111)
         self.axPow.set_xlabel("Temps (s)")
         self.axPow.set_ylabel("Puissance (W)")
@@ -245,7 +234,7 @@ class InterfaceWattpiti(tk.Tk):
 
 
         ###Création du frame du graphique de la position centrale du faisceau
-        self.posPlotFrame = ttk.Frame(self, width=575, height=600, borderwidth=3, style = "frameLabelStyle.TLabelframe")
+        self.posPlotFrame = ttk.Frame(self, width=575, height=685, borderwidth=3, style = "frameLabelStyle.TLabelframe")
         #self.posPlotFrame.grid(row = 2, column= 4 , columnspan = 3, rowspan = 1, padx = 5, pady = 5, sticky = "nsew")
         self.posPlotFrame.place(x = 860, y = 217)
 
@@ -253,7 +242,7 @@ class InterfaceWattpiti(tk.Tk):
         self.posPlotLabel.place(x = 870, y = 230)
 
         #Création du graphique pour la position centrale du faisceau
-        self.posFig = Figure(figsize = (5, 5), dpi = 100)
+        self.posFig = Figure(figsize = (5, 5.8), dpi = 100)
         self.axPos = self.posFig.add_subplot(111)
         self.axPos.set_xlabel("Position x (mm)")
         self.axPos.set_ylabel("Position y (mm)")
@@ -265,7 +254,7 @@ class InterfaceWattpiti(tk.Tk):
 
         #Création d'un frame pour les erreurs
         self.errorFrame = ttk.Frame(self, width=400, height=100, borderwidth=3, style = "frameLabelStyle.TLabelframe")
-        self.errorFrame.grid(row = 3, column = 0, padx=5, pady=5, sticky = "nsew", columnspan = 2)
+        self.errorFrame.grid(row = 3, column = 3, padx=5, pady=5, sticky = "nsew", columnspan = 2)
         self.errorFrame.grid_propagate(False)
 
 
@@ -288,19 +277,6 @@ class InterfaceWattpiti(tk.Tk):
             self.running = True
             self.loop() 
 
-
-
-        #if self.timeEntry.get() == "":
-            #self.error_handling("ERREUR: Aucun temps de moyennage n'a été entré.")
-
-        #Changer la valeur des variables de la classe DataContainer
-        #self.positionXVar.set(str(self.dataContainer.position[0]))
-        #self.positionYVar.set(str(self.dataContainer.position[1]))
-        #self.powerVar.set(str(self.dataContainer.power))
-        #self.wavelenghtVar.set(str(self.dataContainer.wavelength))
-        
-
-    #Fonction du bouton pour arrêter la simulation
 
     def loop(self):
         if self.running:
@@ -341,6 +317,20 @@ class InterfaceWattpiti(tk.Tk):
                 self.posCanvas.draw()
                 self.posCanvas.get_tk_widget().update()
 
+                #Graphique de la puissance en fonction du temps
+                self.axPow.clear()
+                self.axPow.set_xlabel("Temps (s)")
+                self.axPow.set_ylabel("Puissance (W)")
+
+
+                #À changer (mettre des vraies valeurs de temps)
+                self.timeArray = np.arange(0, len(self.listDebug), 1)
+
+                self.timeArray = self.timeArray * 0.01
+                self.axPow.plot(self.timeArray, self.listDebug, color = "blue")
+                self.powerCanvas.draw()
+                self.powerCanvas.get_tk_widget().update()
+
         self.after(10, self.loop)
 
 
@@ -352,7 +342,17 @@ class InterfaceWattpiti(tk.Tk):
 
     #Fontion du bouton pour réinitialiser la simulation
     def click_reset(self):
-        pass
+        if self.running == True:
+            self.click_stop()
+        self.listDebug = []
+        self.powerVar.set("00.00")
+        self.wavelenghtVar.set("000.0")
+        self.positionXVar.set("0")
+        self.positionYVar.set("0") 
+        self.axPos.clear()
+        self.axPow.clear()
+        
+
 
     #Fonction pour la fréquence d'échantillonnage
     def freq_value(self):
@@ -424,21 +424,8 @@ class InterfaceWattpiti(tk.Tk):
                     self.error_handling("ERREUR: Aucune donnée pour l'enregistrement n'a été sélectionnée.")
 
     
-    #Fonction pour le format du fichier enregistré
-    def file_format(self):
-        pass
+
     
-    #Fonction pour la valeur de puissance lue
-    def power_value(self):
-        pass
-
-    #Fonction pour la valeur de la longueur d'onde lue
-    def wavelenght_value(self):
-        pass
-
-    #Fonction pour la valeur de la position lue
-    def position_value(self):
-        pass
 
     def error_handling(self, message):
         #Création d'un label pour les erreurs
@@ -450,9 +437,6 @@ class InterfaceWattpiti(tk.Tk):
     def erase_error(self):
         #Effacer le message d'erreur
         self.errorLabel.destroy()
-
-    def power_plot(self):
-        pass
 
     def on_close(self):
         if self.serialManager.serialListener is not None:

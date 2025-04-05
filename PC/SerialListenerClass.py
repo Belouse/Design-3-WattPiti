@@ -23,9 +23,10 @@ class SerialListener():
                 except json.JSONDecodeError:
                     pass
         if printExecutionTime:
-            print(f"Temps d'execution de la réception de données {time.time() - start}")
-
+            #print(f"Temps d'execution de la réception de données {time.time() - start}")
+            pass
         return dataRead
     
     def closePort(self):
         self.port.close()
+
