@@ -57,6 +57,7 @@ class DataContainer:
     position: tuple = (0,0)
     power : float = 1
     wavelength: float = 1000
+    Delta_t: float = 0.1 # in seconds, time between each update of max_temperature
 
     rawTemperatureMatrix: np.ndarray = field(default_factory=lambda: np.zeros([]))
     rawWavelengthMatrix: np.ndarray = field(default_factory=lambda: np.zeros([]))
