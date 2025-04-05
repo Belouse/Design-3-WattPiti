@@ -30,7 +30,7 @@ class AlgorithmManager():
         """
         
         # update the time with the time since the last update
-        self.dataContainer.DeltDelta_t = time.time() - self.time
+        self.dataContainer.Delta_t = time() - self.time
         self.time = time()
 
 
