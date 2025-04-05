@@ -201,15 +201,15 @@ class InterfaceWattpiti(tk.Tk):
         self.positionDisplayLabel.place(x = 1050, y = 158)
         
         self.positionXDisplay = ttk.Label(self, textvariable= self.positionXVar, font = ("Inter", 24, "bold"))
-        self.positionXDisplay.place(x = 1290, y= 150)
+        self.positionXDisplay.place(x = 1230, y= 150)
         self.positionYDisplay = ttk.Label(self, textvariable=self.positionYVar, font = ("Inter", 24, "bold"))
-        self.positionYDisplay.place(x = 1390, y= 150)
+        self.positionYDisplay.place(x = 1340, y= 150)
 
         self.positionXLabel = ttk.Label(self, text = "x :", font= ("Inter", 24, "bold"))
-        self.positionXLabel.place(x = 1240, y = 149)
+        self.positionXLabel.place(x = 1190, y = 149)
 
         self.positionYLabel = ttk.Label(self, text = "y :", font= ("Inter", 24, "bold"))
-        self.positionYLabel.place(x = 1340, y = 149)
+        self.positionYLabel.place(x = 1300, y = 149)
 
 
         ###Création du frame pour le graphique de la puissance en fonction du temps
@@ -235,7 +235,6 @@ class InterfaceWattpiti(tk.Tk):
 
         ###Création du frame du graphique de la position centrale du faisceau
         self.posPlotFrame = ttk.Frame(self, width=575, height=685, borderwidth=3, style = "frameLabelStyle.TLabelframe")
-        #self.posPlotFrame.grid(row = 2, column= 4 , columnspan = 3, rowspan = 1, padx = 5, pady = 5, sticky = "nsew")
         self.posPlotFrame.place(x = 860, y = 217)
 
         self.posPlotLabel = ttk.Label(self, text= "Position centrale du faisceau", style = "frameLabelStyle.TLabelframe.Label")
@@ -252,15 +251,11 @@ class InterfaceWattpiti(tk.Tk):
         self.posPlot = self.posCanvas.get_tk_widget()
         self.posPlot.place(x = 900, y = 280)
 
-        #Création d'un frame pour les erreurs
-        self.errorFrame = ttk.Frame(self, width=400, height=100, borderwidth=3, style = "frameLabelStyle.TLabelframe")
-        self.errorFrame.grid(row = 3, column = 3, padx=5, pady=5, sticky = "nsew", columnspan = 2)
-        self.errorFrame.grid_propagate(False)
-
 
         #Gestion de la loop
         self.running = False
-        self.listDebug = []
+        self.dataArray = []
+        self.powArray = []
 
 
 
@@ -279,24 +274,35 @@ class InterfaceWattpiti(tk.Tk):
 
 
     def loop(self):
-        if self.running:
-            for i  in range(1):
+        if self.running: #Vérifier si une simulation est en cours
+            for i  in range(1): # initialisation de la loop
+
+                #Importation des données de dataContainer
                 self.serialManager.updateDataFromMCU(1)
                 self.algorithmManager.calculatePosition()
                 self.algorithmManager.calculateWavelength()
                 self.algorithmManager.calculatePower()
-
-                self.newpositon = self.dataContainer.position
+                self.newposition = self.dataContainer.position
                 self.newWaveLenght = self.dataContainer.wavelength
                 self.newpower = self.dataContainer.power    
-
-
-
-                #self.rawWavelengthMatrix = self.dataContainer.rawWavelengthMatrix
                 self.rawTemperatureMatrix = self.dataContainer.rawTemperatureMatrix
-                self.listDebug.append(self.rawTemperatureMatrix[0][0])
-            
-                self.powerVar.set(str(self.rawTemperatureMatrix[0][0]))
+
+
+                self.dataArray.append((self.newpower, self.newWaveLenght, self.newposition)) #Importer les données dans une liste
+                #self.dataArray = np.array(self.dataArray) #Convertir la liste en tableau numpy
+                self.powerVar.set(str(self.rawTemperatureMatrix[0][0])) #liste des différentes puissances (à changer)
+
+
+                #Formater les données pour les afficher dans l'interface graphique
+                self.newpower = "{:.2f}".format(self.newpower) #Formater la puissance
+                self.newWaveLenght = "{:.1f}".format(self.newWaveLenght) #Formater la longueur d'onde
+                self.newposition = [round(x, 2) for x in self.newposition] #Formater la position centrale du faisceau
+                
+                #Mettre à jour les labels dans l'interface graphique
+                #self.powerVar.set(str(self.newpower))
+                self.wavelenghtVar.set(str(self.newWaveLenght))
+                self.positionXVar.set(str(self.newposition[0]))
+                self.positionYVar.set(str(self.newposition[1]))
                 
 
                 #Graphique de la position centrale du faisceau
@@ -324,10 +330,12 @@ class InterfaceWattpiti(tk.Tk):
 
 
                 #À changer (mettre des vraies valeurs de temps)
-                self.timeArray = np.arange(0, len(self.listDebug), 1)
+                self.powArray.append(self.rawTemperatureMatrix[0][0])
+                self.timeArray = np.arange(0, len(self.dataArray), 1)
 
                 self.timeArray = self.timeArray * 0.01
-                self.axPow.plot(self.timeArray, self.listDebug, color = "blue")
+                self.powValues = list(zip(* self.dataArray))[0]
+                self.axPow.plot(self.timeArray, list(self.powValues), color = "blue")
                 self.powerCanvas.draw()
                 self.powerCanvas.get_tk_widget().update()
 
@@ -337,20 +345,24 @@ class InterfaceWattpiti(tk.Tk):
     
     
     
-    def click_stop(self):
+    def click_stop(self): #Permet de mettre sur pause la simulation
         self.running = False
 
     #Fontion du bouton pour réinitialiser la simulation
     def click_reset(self):
         if self.running == True:
             self.click_stop()
-        self.listDebug = []
+
+        #Réinitialiser les variables
+        self.dataArray = []
+        self.powArray = []
         self.powerVar.set("00.00")
         self.wavelenghtVar.set("000.0")
         self.positionXVar.set("0")
         self.positionYVar.set("0") 
         self.axPos.clear()
         self.axPow.clear()
+        self.click_start()
         
 
 
@@ -364,6 +376,22 @@ class InterfaceWattpiti(tk.Tk):
 
     #Fonction pour enregistrer les données
     def save_data(self):
+
+        if self.running == True:
+            self.click_stop()
+        
+        #Désactiver les widgets de l'interface
+        self.startButton.configure(state = "disabled")
+        self.stopButton.configure(state = "disabled")
+        self.resetButton.configure(state = "disabled")
+        self.saveButton.configure(state = "disabled")
+        self.portComboBox.configure(state = "disabled")
+        self.wavelengthCheckButton.configure(state = "disabled") 
+        self.powerCheckButton.configure(state = "disabled")
+        self.positionCheckButton.configure(state = "disabled")
+        self.waveLenghtComboBox.configure(state = "disabled")
+
+       
         self.choiceArray = [self.powerCheckButtonBool.get(),self.wavelengthCheckButtonBool.get(), self.positionCheckButtonBool.get()]
 
         #Enregistrer les données dans un fichier txt
@@ -382,7 +410,6 @@ class InterfaceWattpiti(tk.Tk):
         self.file_name = os.path.join(save_dir, self.file_name)
 
         #Mettre des conditions selon les choix de l'utilisateur
-        print(self.file_name)
         if self.fileNameVar.get() == "":
             self.error_handling("ERREUR: Aucun nom de fichier n'a été entré.")
 
@@ -390,38 +417,61 @@ class InterfaceWattpiti(tk.Tk):
             if self.choiceArray == [True, True, True]:
                 with open(self.file_name, 'w') as file:
                     file.write("Puissance (W),Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
-                    file.write(f"{self.powerVar.get()},{self.wavelenghtVar.get()},{self.positionXVar.get()},{self.positionYVar.get()}\n")
+                    for i in self.dataArray:
+                        file.write(f"{i[0]},{i[1]},{i[2][0]},{i[2][1]}\n")
             
             elif self.choiceArray == [True, True, False]:
                 with open(self.file_name, 'w') as file:
                     file.write("Puissance (W),Longueur d'onde (nm)\n")
-                    file.write(f"{self.powerVar.get()},{self.wavelenghtVar.get()}\n")
+                    for i in self.dataArray:
+                        file.write(f"{i[0]},{i[1]}\n")
             
             elif self.choiceArray == [True, False, True]:
                 with open(self.file_name, 'w') as file:
                     file.write("Puissance (W),Position x (mm),Position y (mm)\n")   
+                    for i in self.dataArray:
+                        file.write(f"{i[0]},{i[2][0]},{i[2][1]}\n")
 
             elif self.choiceArray == [False, True, True]:
                 with open(self.file_name, 'w') as file:
                     file.write("Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
+                    for i in self.dataArray:
+                        file.write(f"{i[1]},{i[2][0]},{i[2][1]}\n")
                 
             elif self.choiceArray == [True, False, False]:
                 with open(self.file_name, 'w') as file:
                     file.write("Puissance (W)\n")
-                    file.write(f"{self.powerVar.get()}\n")
+                    for i in self.dataArray:
+                        file.write(f"{i[0]}\n")
             
             elif self.choiceArray == [False, True, False]:
                 with open(self.file_name, 'w') as file:
                     file.write("Longueur d'onde (nm)\n")
-                    file.write(f"{self.wavelenghtVar.get()}\n")
+                    for i in self.dataArray:
+                        file.write(f"{i[1]}\n")
 
             elif self.choiceArray == [False, False, True]:
                 with open(self.file_name, 'w') as file:
                     file.write("Position x (mm),Position y (mm)\n")
+                    for i in self.dataArray:
+                        file.write(f"{i[2][0]},{i[2][1]}\n")
 
             elif self.choiceArray == [False, False, False]:
                 if self.file_name != ".csv":
                     self.error_handling("ERREUR: Aucune donnée pour l'enregistrement n'a été sélectionnée.")
+                
+
+        #Réactiver les widgets de l'interface
+        self.startButton.configure(state = "normal")
+        self.stopButton.configure(state = "normal")
+        self.resetButton.configure(state = "normal")
+        self.saveButton.configure(state = "normal")
+        self.portComboBox.configure(state = "normal")
+        self.wavelengthCheckButton.configure(state = "normal") 
+        self.powerCheckButton.configure(state = "normal")
+        self.positionCheckButton.configure(state = "normal")
+        self.waveLenghtComboBox.configure(state = "normal")
+
 
     
 
@@ -449,6 +499,3 @@ if __name__ == "__main__":
     app = InterfaceWattpiti()
     app.protocol("WM_DELETE_WINDOW", app.on_close)  # Handle window close event
     app.mainloop()
-
-    print(app.selected_port.get().split(",")[0])
-    print(app.listDebug)
