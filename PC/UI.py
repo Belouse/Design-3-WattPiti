@@ -20,6 +20,9 @@ class InterfaceWattpiti(tk.Tk):
     def __init__(self):
         super().__init__()
 
+        #Donnée du temps
+        self.startTime = time.time()
+
         #Création d'une instance de la classe DataContainer pour stocker les données
         self.dataContainer = DataContainer() #Instance de la classe DataContainer
         self.algorithmManager = AlgorithmManager(self.dataContainer) #Instance de la classe AlgorithmManager
@@ -276,6 +279,8 @@ class InterfaceWattpiti(tk.Tk):
     def loop(self):
         if self.running: #Vérifier si une simulation est en cours
             for i  in range(1): # initialisation de la loop
+                self.currentTime = time.time() - self.startTime #Calculer le temps écoulé depuis l'ouverture de l'interface
+                #print(self.currentTime)
 
                 #Importation des données de dataContainer
                 self.serialManager.updateDataFromMCU(1)
@@ -288,7 +293,7 @@ class InterfaceWattpiti(tk.Tk):
                 self.rawTemperatureMatrix = self.dataContainer.rawTemperatureMatrix
 
 
-                self.dataArray.append((self.newpower, self.newWaveLenght, self.newposition)) #Importer les données dans une liste
+                self.dataArray.append((self.currentTime, self.newpower, self.newWaveLenght, self.newposition)) #Importer les données dans une liste
                 #self.dataArray = np.array(self.dataArray) #Convertir la liste en tableau numpy
                 self.powerVar.set(str(self.rawTemperatureMatrix[0][0])) #liste des différentes puissances (à changer)
 
@@ -331,11 +336,10 @@ class InterfaceWattpiti(tk.Tk):
 
                 #À changer (mettre des vraies valeurs de temps)
                 self.powArray.append(self.rawTemperatureMatrix[0][0])
-                self.timeArray = np.arange(0, len(self.dataArray), 1)
 
-                self.timeArray = self.timeArray * 0.01
-                self.powValues = list(zip(* self.dataArray))[0]
-                self.axPow.plot(self.timeArray, list(self.powValues), color = "blue")
+                self.timeArray = list(zip(* self.dataArray))[0]
+                self.powValues = list(zip(* self.dataArray))[1]
+                self.axPow.plot(list(self.timeArray), list(self.powValues), color = "blue")
                 self.powerCanvas.draw()
                 self.powerCanvas.get_tk_widget().update()
 
@@ -416,45 +420,45 @@ class InterfaceWattpiti(tk.Tk):
         else:
             if self.choiceArray == [True, True, True]:
                 with open(self.file_name, 'w') as file:
-                    file.write("Puissance (W),Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
+                    file.write("Temps (s), Puissance (W),Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
                     for i in self.dataArray:
-                        file.write(f"{i[0]},{i[1]},{i[2][0]},{i[2][1]}\n")
+                        file.write(f"{i[0]},{i[1]},{i[2]},{i[3][0]},{i[3][1]}\n")
             
             elif self.choiceArray == [True, True, False]:
                 with open(self.file_name, 'w') as file:
-                    file.write("Puissance (W),Longueur d'onde (nm)\n")
+                    file.write("Temps (s), Puissance (W),Longueur d'onde (nm)\n")
                     for i in self.dataArray:
-                        file.write(f"{i[0]},{i[1]}\n")
+                        file.write(f"{i[0]},{i[1]},{i[2]}\n")
             
             elif self.choiceArray == [True, False, True]:
                 with open(self.file_name, 'w') as file:
-                    file.write("Puissance (W),Position x (mm),Position y (mm)\n")   
+                    file.write("Temps (s), Puissance (W),Position x (mm),Position y (mm)\n")   
                     for i in self.dataArray:
-                        file.write(f"{i[0]},{i[2][0]},{i[2][1]}\n")
+                        file.write(f"{i[0]},{i[1]},{i[3][0]},{i[3][1]}\n")
 
             elif self.choiceArray == [False, True, True]:
                 with open(self.file_name, 'w') as file:
-                    file.write("Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
+                    file.write("Temps (s), Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
                     for i in self.dataArray:
-                        file.write(f"{i[1]},{i[2][0]},{i[2][1]}\n")
+                        file.write(f"{i[0]},{i[2]},{i[3][0]},{i[3][1]}\n")
                 
             elif self.choiceArray == [True, False, False]:
                 with open(self.file_name, 'w') as file:
-                    file.write("Puissance (W)\n")
+                    file.write("Temps (s), Puissance (W)\n")
                     for i in self.dataArray:
-                        file.write(f"{i[0]}\n")
+                        file.write(f"{i[0]}, {i[1]}\n")
             
             elif self.choiceArray == [False, True, False]:
                 with open(self.file_name, 'w') as file:
                     file.write("Longueur d'onde (nm)\n")
                     for i in self.dataArray:
-                        file.write(f"{i[1]}\n")
+                        file.write(f"{i[0]},{i[1]}\n")
 
             elif self.choiceArray == [False, False, True]:
                 with open(self.file_name, 'w') as file:
                     file.write("Position x (mm),Position y (mm)\n")
                     for i in self.dataArray:
-                        file.write(f"{i[2][0]},{i[2][1]}\n")
+                        file.write(f"{i[0]}, {i[3][0]},{i[3][1]}\n")
 
             elif self.choiceArray == [False, False, False]:
                 if self.file_name != ".csv":
@@ -481,7 +485,6 @@ class InterfaceWattpiti(tk.Tk):
         #Création d'un label pour les erreurs
         self.errorLabel = ttk.Label(self, text = message, style = "labelStyle.TLabel")
         self.errorLabel.place(x = 10, y = 870)
-        self.errorFrame.grid_propagate(False)
         self.errorLabel.after(3000, self.erase_error)
     
     def erase_error(self):
@@ -495,8 +498,6 @@ class InterfaceWattpiti(tk.Tk):
 
         if self.serialManager.serialListener is not None: #Déconnecte le port série
             self.serialManager.closePort()
-            print("toto")
-
         self.destroy() #Ferme la fenêtre
 
 
