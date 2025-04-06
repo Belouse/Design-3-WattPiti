@@ -474,12 +474,15 @@ class InterfaceWattpiti(tk.Tk):
 
         self.savingTime = time.time() - self.savingTimeRef #Calculer le temps d'enregistrement
 
+
+
             
                 
 
         #Réactiver les widgets de l'interface
         if self.choiceArray != [False, False, False]:
-            self.after(self.savingTime, self.enable_widgets())
+            self.after(int(self.savingTime), self.enable_widgets())
+            self.sucess_message(f"Données enregistrées avec succès en {self.savingTime:.8f} secondes")
 
         
     def disable_widgets(self):
@@ -512,8 +515,18 @@ class InterfaceWattpiti(tk.Tk):
 
 
 
-    
+    def sucess_message(self, message):
+        #Création d'un label pour les messages de succès
+        self.errorLabel = ttk.Label(self, text = message, font=("Inter", 20, "bold"), foreground = "green")
+        self.errorLabel.place(x = 10, y = 870)
 
+        self.disable_widgets()
+        #Afficher le message pendant 3 secondes
+        self.errorLabel.after(3000, self.erase_error)
+
+        if self.running == False:
+            if len(self.dataArray) != 0:
+                self.click_start()
     
 
     def error_handling(self, message):
@@ -522,17 +535,7 @@ class InterfaceWattpiti(tk.Tk):
         self.errorLabel.place(x = 10, y = 870)
 
         #Désactiver les widgets de l'interface
-        self.startButton.configure(state = "disabled")
-        self.stopButton.configure(state = "disabled")
-        self.resetButton.configure(state = "disabled")
-        self.saveButton.configure(state = "disabled")
-        self.portComboBox.configure(state = "disabled")
-        self.wavelengthCheckButton.configure(state = "disabled") 
-        self.powerCheckButton.configure(state = "disabled")
-        self.positionCheckButton.configure(state = "disabled")
-        self.waveLenghtComboBox.configure(state = "disabled")
-        self.tareButton.configure(state= "disabled")
-        self.fileName.configure(state = "disabled")
+        self.disable_widgets()
 
         #Afficher l'erreur pendant 3 secondes
         self.errorLabel.after(3000, self.erase_error)
@@ -542,17 +545,7 @@ class InterfaceWattpiti(tk.Tk):
         self.errorLabel.destroy()
 
         #Réactiver les widgets de l'interface
-        self.startButton.configure(state = "normal")
-        self.stopButton.configure(state = "normal")
-        self.resetButton.configure(state = "normal")
-        self.saveButton.configure(state = "normal")
-        self.portComboBox.configure(state = "normal")
-        self.wavelengthCheckButton.configure(state = "normal") 
-        self.powerCheckButton.configure(state = "normal")
-        self.positionCheckButton.configure(state = "normal")
-        self.waveLenghtComboBox.configure(state = "normal")
-        self.tareButton.configure(state= "normal")
-        self.fileName.configure(state = "normal")
+        self.enable_widgets()
 
     def on_close(self): #Permet de fermer la fenêtre et de fermer le port série
 
