@@ -13,7 +13,6 @@ from tqdm import tqdm
 
 from CapteursDataProcess import DataPreProcess
 
-
 # -------- Organisation des données dans une classe Dataset PyTorch -------
 class CapteursDataset(Dataset):
     """
@@ -45,6 +44,9 @@ class CapteursDataset(Dataset):
         # Convertir en tenseur PyTorch
         self.wavelengths = torch.FloatTensor(self.wavelengths).view(-1, 1)
         self.sensor_responses = torch.FloatTensor(self.sensor_responses)
+
+        self.wavelengths.to(device)
+        self.sensor_responses.to(device)
 
     def __len__(self):
         """
@@ -119,31 +121,40 @@ class WavelengthPredictor(nn.Module):
     """
     Réseau de neurones pour prédire la longueur d'onde à partir des réponses des capteurs.
     """
-    def __init__(self):
+    def __init__(self, dropout_rate):
         super(WavelengthPredictor, self).__init__()
 
         num_sensors = 8 # Nombre de capteurs (input size)
 
-        hidden_layer_sizes = (512, 512)
+        #hidden_layer_sizes = (512, 512)
 
-        dropout_rate = 0.2  # Taux de dropout pour régularisation
+        #dropout_rate = 0.2 # Taux de dropout pour régularisation
 
         # Définition des couches
         self.layers = nn.Sequential(
             # Première hidden layer
-            nn.Linear(num_sensors, hidden_layer_sizes[0]),  # 8 in -> 64 out
-            nn.ReLU(),                                      # Fonction d'activation ReLU
-            nn.BatchNorm1d(hidden_layer_sizes[0]),
-            nn.Dropout(dropout_rate),                       # Dropout pour régularisation
+            nn.Linear(in_features=8, out_features=512, bias=True),  # 8 in -> 64 out
+            nn.ReLU(),                                           # Fonction d'activation ReLU
+            #nn.BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+            nn.LayerNorm(512, eps=1e-05, elementwise_affine=True),
+            nn.Dropout(dropout_rate, inplace=False),             # Dropout pour régularisation
 
             # Deuxième hidden layer
-            nn.Linear(hidden_layer_sizes[0], hidden_layer_sizes[1]),
+            nn.Linear(in_features=512, out_features=1024, bias=True),
             nn.ReLU(),
-            nn.BatchNorm1d(hidden_layer_sizes[1]),
-            nn.Dropout(dropout_rate),
+            #nn.BatchNorm1d(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+            nn.LayerNorm(1024, eps=1e-05, elementwise_affine=True),
+            nn.Dropout(dropout_rate, inplace=False),
+
+            # Troisième hidden layer
+            nn.Linear(in_features=1024, out_features=512, bias=True),
+            nn.ReLU(),
+            #nn.BatchNorm1d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+            nn.LayerNorm(512, eps=1e-05, elementwise_affine=True),
+            nn.Dropout(dropout_rate, inplace=False),
 
             # Couche de sortie
-            nn.Linear(hidden_layer_sizes[1], 1)
+            nn.Linear(in_features=512, out_features=1, bias=True)
         )
 
     def forward(self, x):
@@ -168,6 +179,8 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, epochs =
     :param epochs: Nombre d'époques pour l'entraînement.
     :param patience: Nombre d'époques sans amélioration avant d'arrêter l'entraînement.
     """
+    #device = "cpu"
+
     size = len(train_loader.dataset)  # Taille du dataset d'entraînement
 
     # Scheduler pour ajuster le taux d'apprentissage
@@ -333,7 +346,7 @@ def plot_test_results(model, test_loader):
     predictions = []
     actual_values = []
 
-    device = 'cpu'
+    # device = 'cpu'
 
     # Désactiver le calcul des gradients pour l'inférence
     with torch.no_grad():
@@ -350,6 +363,12 @@ def plot_test_results(model, test_loader):
     # Convertir en arrays numpy
     predictions = np.array(predictions).flatten()
     actual_values = np.array(actual_values).flatten()
+
+    # Calculer la performance globale : un point est bon si l'erreur est inferieur
+    # à 10% de la valeur réelle.
+    performance = np.abs(predictions - actual_values) / actual_values < 0.1
+    performance = np.mean(performance) * 100  # En pourcentage
+    print(f"Performance globale : {performance:.2f}% des prédictions sont dans les 10% de l'erreur")
 
     # Calculer l'erreur absolue pour chaque point
     absolute_errors = np.abs(predictions - actual_values)
@@ -371,7 +390,7 @@ def plot_test_results(model, test_loader):
     ax1.plot([min_val, max_val], [min_val, max_val], 'r-', label='Prédiction parfaite')
     ax1.set_xlabel('Longueur d\'onde réelle (nm)')
     ax1.set_ylabel('Longueur d\'onde prédite (nm)')
-    ax1.set_xlim(0, 2800)
+    ax1.set_xlim(0, 2700)
     ax1.set_title(f'Prédictions vs Valeurs réelles\nMAE: {mae:.2f} nm, RMSE: {rmse:.2f} nm')
     ax1.grid(True)
     ax1.legend()
@@ -396,10 +415,13 @@ def plot_test_results(model, test_loader):
     ax2.plot(smoothed_wavelengths, smoothed_errors, 'b-', linewidth=2)
     ax2.fill_between(smoothed_wavelengths, 0, smoothed_errors, alpha=0.3,
                      color='orange')
+    # Courbe d'erreur acceptable
+    ax2.plot(smoothed_wavelengths, smoothed_wavelengths * 0.1, 'g--')
     ax2.axhline(y=mae, color='r', linestyle='-', label=f'MAE moyenne: {mae:.2f} nm')
     ax2.set_xlabel('Longueur d\'onde (nm)')
     ax2.set_ylabel('Erreur absolue (nm)')
     ax2.set_title('Erreur absolue en fonction de la longueur d\'onde')
+    ax2.set_xlim(0, 2700)
     ax2.grid(True)
     ax2.legend()
 
@@ -411,7 +433,7 @@ def plot_test_results(model, test_loader):
 # ------------------------------ Utilisation ------------------------------
 if __name__ == '__main__':
     #device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = "cpu"
     print(f"Using {device} device")
     print("\n")
 
@@ -426,11 +448,14 @@ if __name__ == '__main__':
     dataset = CapteursDataset(reponses_capteurs)
 
     # Paramètres
-    batch_size = 64
-    test_size = 0.2
-    random_seed = 42
-    learning_rate = 0.001
-    num_epochs = 500
+    batch_size = 128                         # Taille des batches pour le DataLoader
+    test_size = 0.2                         # Proportion de données de test
+    random_seed = 42                        # Graine pour la reproductibilité
+    learning_rate = 0.0031701443704886616   # Taux d'apprentissage
+    dropout_rate = 0.11276492753388213      # Taux de dropout pour régularisation
+    weight_decay = 2.3936000236956148e-05   # Régularisation L2
+    num_epochs = 500                        # Nombre d'époques pour l'entraînement
+    patience = 30                           # Nombre d'époques sans amélioration avant d'arrêter l'entraînement
 
     # Diviser les données et créer les DataLoaders
     train_loader, test_loader = prepare_dataloaders(dataset,
@@ -441,14 +466,15 @@ if __name__ == '__main__':
                                                     )
 
     # Initialiser le modèle
-    model = WavelengthPredictor().to(device)
+    model = WavelengthPredictor(dropout_rate=dropout_rate).to(device)
     print("----------------------------------")
     print(f"Modèle : {model}")
     print("----------------------------------")
 
     # Définir la fonction de perte et l'optimiseur
-    criterion = nn.MSELoss()  # Fonction de perte MSE
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)  # Optimiseur Adam
+    #criterion = nn.MSELoss()  # Fonction de perte MSE
+    criterion = nn. HuberLoss(delta=10)  # Fonction de perte Huber
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)  # Optimiseur Adam
 
     # Entraîner le modèle
     trained_model, history = train_model(model,
@@ -457,8 +483,11 @@ if __name__ == '__main__':
                                  criterion,
                                  optimizer,
                                  epochs=num_epochs,
-                                 patience=30
+                                 patience=patience
                                  )
+
+    #torch.save(trained_model.state_dict(), "modele_nn_pytroch.pt")
+    torch.save(model.state_dict(), 'model_nn_pytorch_weights.pth')
 
     # Temps total d'exécution
     print(f"Temps d'exécution total : {perf_counter() - start_total_time}")

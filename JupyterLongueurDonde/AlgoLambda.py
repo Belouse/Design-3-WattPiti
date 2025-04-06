@@ -12,8 +12,8 @@ from CapteursDataProcess import DataPreProcess
 from matplotlib.gridspec import GridSpec
 import seaborn as sns
 from tqdm import tqdm
-
-
+import torch
+from NN_Pytorch_Lambda import WavelengthPredictor
 
 class AlgoWavelength:
     """
@@ -42,8 +42,11 @@ class AlgoWavelength:
         
         # Charger le modèle entraîné
         try:
-            with open(model_path_abs, 'rb') as f:
-                self.model = pickle.load(f)
+            self.model = WavelengthPredictor(dropout_rate=0.11276492753388213)  # Recreate the model
+            self.model.load_state_dict(torch.load(model_path))
+            # print(self.model)
+            #with open(model_path_abs, 'rb') as f:
+            #    self.model = pickle.load(f)
         except Exception as e:
             raise Exception(f"Erreur lors du chargement du modèle: {str(e)}")
         
@@ -54,8 +57,8 @@ class AlgoWavelength:
         self.data_preprocess = DataPreProcess()
         self.responses = self.data_preprocess.all_sensors
         self.response_dict = self.data_preprocess.dict_capteurs
-            
-    def calculate_wavelength(self, sensor_values):
+        
+    def calculate_wavelength(self, sensor_values, enable_print=False):
         """
         Prédit la longueur d'onde à partir des valeurs des capteurs.
         
@@ -73,13 +76,24 @@ class AlgoWavelength:
         # Reformater pour avoir la forme attendue par le modèle (1 échantillon, 8 caractéristiques)
         if sensor_values.ndim == 1:
             sensor_values = sensor_values.reshape(1, -1)
-        
+
+        # Convertir le tableau numpy en tensor PyTorch
+        tensor_input = torch.tensor(sensor_values, dtype=torch.float32)
+
+        # Mettre le modèle en mode évaluation
+        self.model.eval()
+
         # Faire la prédiction
-        predicted_wavelength = self.model.predict(sensor_values)[0]
+        with torch.no_grad():
+            predicted_wavelength = self.model(tensor_input).item()
+        
+        if enable_print:
+            print("\nTest avec les ratios fournis:")
+            print(f"Longueur d'onde prédite: {predicted_wavelength:.2f} nm\n")
         
         return predicted_wavelength
         
-    def get_sensor_ratios_for_wavelength(self, wavelength, entrainement_instance=None):
+    def get_sensor_ratios_for_wavelength(self, wavelength, enable_print=False):
         """
         Extrait les ratios d'illumination de chaque capteur pour une longueur d'onde donnée.
         
@@ -92,12 +106,9 @@ class AlgoWavelength:
         dict: Dictionnaire contenant les ratios d'illumination pour chaque capteur
         list: Liste des ratios dans l'ordre [P_IR1, P_IR1xP, P_IR2, P_UV, C_UV, C_VISG, C_VISB, C_VISR]
         """
-        # Utiliser l'instance interne si aucune n'est fournie
-        if entrainement_instance is None:
-            sensors_data = self.responses
-        else:
-            sensors_data = entrainement_instance.all_sensors
-        
+    
+        sensors_data = self.responses
+
         # Dictionnaire pour stocker les ratios
         ratios_dict = {}
         
@@ -118,9 +129,14 @@ class AlgoWavelength:
             ratios_dict[sensor_name] = ratio
             ratios_list.append(ratio)
         
+        if enable_print:
+            print("\nRatios des capteurs pour {} nm:".format(wavelength))
+            for sensor, ratio in ratios_dict.items():
+                print(f"{sensor}: {ratio:.4f}")
+        
         return ratios_dict, ratios_list
 
-    def get_sensor_response_for_wavelength(self, wavelength):
+    def get_sensor_response_for_wavelength(self, wavelength, enable_print=False):
         """
         Extrait la réponse de chaque capteur pour une longueur d'onde donnée.
         
@@ -133,9 +149,12 @@ class AlgoWavelength:
         # Dictionnaire pour stocker les réponses
         responses_dict = {}
         
-        # Pour chaque capteur, trouver la valeur à la longueur d'onde spécifiée
+        # Liste pour stocker les réponses dans l'ordre spécifié
+        responses_list = []
+        
+        # Pour chaque capteur, trouver la valeur à la longueur d'onde spécifiée dans self.response_dict
         for sensor_name in self.sensor_order:
-            sensor_data = self.responses[sensor_name]
+            sensor_data = self.response_dict[sensor_name]['data']
             
             # Trouver l'indice le plus proche de la longueur d'onde demandée
             idx = np.abs(sensor_data[:, 0] - wavelength).argmin()
@@ -145,10 +164,16 @@ class AlgoWavelength:
             
             # Stocker dans le dictionnaire
             responses_dict[sensor_name] = response
-        
-        return responses_dict
+            responses_list.append(response)
+            
+        if enable_print:
+            print("\nRéponses des capteurs pour {} nm:".format(wavelength))
+            for sensor, reponse in responses_dict.items():
+                print(f"{sensor}: {reponse:.4f}")
+    
+        return responses_dict, responses_list
 
-    def test_model_with_wavelength(self, test_wavelength, entrainement_instance=None):
+    def test_model_with_wavelength(self, test_wavelength, entrainement_instance=None, enable_print=False):
         """
         Teste le modèle en simulant les valeurs des capteurs pour une longueur d'onde donnée,
         puis en utilisant ces valeurs pour prédire la longueur d'onde.
@@ -170,13 +195,15 @@ class AlgoWavelength:
         # Calculer l'erreur absolue
         error = abs(predicted_wavelength - test_wavelength)
         
-        # print(f"Longueur d'onde de test: {test_wavelength} nm")
-        # print(f"Longueur d'onde prédite: {predicted_wavelength:.2f} nm")
-        # print(f"Erreur absolue: {error:.2f} nm")
-        
+        if enable_print:
+            print("\nTest du modèle:")
+            print(f"Longueur d'onde de test: {test_wavelength} nm")
+            print(f"Longueur d'onde prédite: {predicted_wavelength:.2f} nm")
+            print(f"Erreur absolue: {error:.2f} nm")
+    
         return test_wavelength, predicted_wavelength, error
     
-    def plot_spectral_response(self):
+    def plot_spectral_ratios(self):
         """
         Affiche les courbes de réponse spectrale des capteurs.
         """
@@ -192,382 +219,288 @@ class AlgoWavelength:
         plt.legend()
         plt.grid(True)
         plt.show()
-
-    def sweep_wavelength_range(self, start_nm=300, end_nm=2000, step_nm=50):
+    
+    def plot_spectral_response(self):
         """
-        Teste le modèle sur une plage de longueurs d'onde et affiche les résultats.
-        
-        Parameters:
-        start_nm (float): Longueur d'onde de départ (en nm)
-        end_nm (float): Longueur d'onde de fin (en nm)
-        step_nm (float): Pas entre les longueurs d'onde (en nm)
-        
-        Returns:
-        tuple: (tableau des longueurs d'onde de test, tableau des longueurs d'onde prédites, tableau des erreurs)
+        Affiche les courbes de réponse spectrale des capteurs.
         """
-        # Créer la plage de longueurs d'onde à tester
-        test_wavelengths = np.arange(start_nm, end_nm + step_nm, step_nm)
+        plt.figure(figsize=(10, 6))
         
-        # Tableaux pour stocker les résultats
-        predicted_wavelengths = []
-        errors = []
+        for sensor_name in self.sensor_order:
+            sensor_data = self.response_dict[sensor_name]['data']
+            plt.plot(sensor_data[:, 0], sensor_data[:, 1], label=sensor_name)
         
-        # Tester chaque longueur d'onde
-        for wavelength in test_wavelengths:
-            _, predicted, error = self.test_model_with_wavelength(wavelength)
-            predicted_wavelengths.append(predicted)
-            errors.append(error)
-        
-        # Convertir en tableaux numpy
-        predicted_wavelengths = np.array(predicted_wavelengths)
-        errors = np.array(errors)
-        
-        # Afficher les résultats
-        plt.figure(figsize=(12, 8))
-        
-        # Sous-graphique 1: Prédictions vs réalité
-        plt.subplot(2, 1, 1)
-        plt.plot(test_wavelengths, predicted_wavelengths, 'o-', label="Prédictions")
-        plt.plot(test_wavelengths, test_wavelengths, 'r--', label="Référence (y=x)")
-        plt.title("Prédictions vs Longueurs d'onde réelles")
-        plt.xlabel("Longueur d'onde réelle (nm)")
-        plt.ylabel("Longueur d'onde prédite (nm)")
+        plt.title("Réponses spectrales des capteurs")
+        plt.xlabel("Longueur d'onde (nm)")
+        plt.ylabel("Réponse normalisée")
         plt.legend()
         plt.grid(True)
-        
-        # Sous-graphique 2: Erreurs
-        plt.subplot(2, 1, 2)
-        plt.bar(test_wavelengths, errors)
-        plt.title("Erreur absolue par longueur d'onde")
-        plt.xlabel("Longueur d'onde (nm)")
-        plt.ylabel("Erreur absolue (nm)")
-        plt.grid(True)
-        
-        plt.tight_layout()
-        plt.show()
-        
-        # Statistiques globales
-        mean_error = np.mean(errors)
-        max_error = np.max(errors)
-        
-        # print(f"Erreur moyenne: {mean_error:.2f} nm")
-        # print(f"Erreur maximale: {max_error:.2f} nm")
-        
-        return test_wavelengths, predicted_wavelengths, errors
-    
-    def add_noise_to_ratios(self, ratios, noise_level):
-        """
-        Ajoute du bruit gaussien aux ratios des capteurs.
-        
-        Parameters:
-        ratios (list or numpy.ndarray): Ratios des capteurs
-        noise_level (float): Niveau de bruit (écart-type du bruit gaussien)
-        
-        Returns:
-        numpy.ndarray: Ratios avec bruit ajouté
-        """
-        ratios_array = np.array(ratios)
-        noise = np.random.normal(0, noise_level, size=ratios_array.shape)
-        noisy_ratios = ratios_array + noise
-        
-        # S'assurer que les ratios restent dans l'intervalle [0, 1]
-        noisy_ratios = np.clip(noisy_ratios, 0, 1)
-        
-        return noisy_ratios
-
-    def analyze_noise_impact(self, wavelength_range=(300, 2000), num_wavelengths=10, 
-                            noise_levels=(0, 0.01, 0.02, 0.05, 0.1, 0.2), trials_per_level=30):
-        """
-        Analyse l'impact du bruit sur la précision de l'estimation de la longueur d'onde.
-        
-        Parameters:
-        wavelength_range (tuple): Plage de longueurs d'onde à tester (min, max)
-        num_wavelengths (int): Nombre de longueurs d'onde à tester dans la plage
-        noise_levels (tuple): Niveaux de bruit à tester
-        trials_per_level (int): Nombre d'essais par niveau de bruit
-        
-        Returns:
-        pandas.DataFrame: Dataframe contenant les résultats de l'analyse
-        """
-        # Longueurs d'onde à tester
-        test_wavelengths = np.linspace(wavelength_range[0], wavelength_range[1], num_wavelengths)
-        
-        # Préparer le DataFrame pour collecter les résultats
-        results = []
-        
-        # Boucle principale pour chaque longueur d'onde et niveau de bruit
-        for wavelength in tqdm(test_wavelengths, desc="Wavelengths"):
-            # Obtenir les ratios de référence pour cette longueur d'onde
-            _, clean_ratios = self.get_sensor_ratios_for_wavelength(wavelength)
-            
-            for noise_level in noise_levels:
-                for trial in range(trials_per_level):
-                    # Ajouter du bruit aux ratios
-                    noisy_ratios = self.add_noise_to_ratios(clean_ratios, noise_level)
-                    
-                    # Prédire la longueur d'onde avec les ratios bruités
-                    predicted_wavelength = self.calculate_wavelength(noisy_ratios)
-                    
-                    # Calculer l'erreur
-                    error = abs(predicted_wavelength - wavelength)
-                    relative_error = error / wavelength * 100  # en pourcentage
-                    
-                    # Stocker les résultats
-                    results.append({
-                        'True Wavelength': wavelength,
-                        'Predicted Wavelength': predicted_wavelength,
-                        'Noise Level': noise_level,
-                        'Absolute Error': error,
-                        'Relative Error (%)': relative_error,
-                        'Trial': trial,
-                    })
-        
-        # Convertir en DataFrame
-        results_df = pd.DataFrame(results)
-        
-        # Afficher les résultats
-        self.plot_noise_analysis_results(results_df)
-        
-        return results_df
-
-
-    def plot_noise_analysis_results(self, results_df):
-        """
-        Trace les résultats de l'analyse de bruit.
-        
-        Parameters:
-        results_df (pandas.DataFrame): DataFrame contenant les résultats de l'analyse
-        """
-        # Créer une figure avec plusieurs sous-graphiques
-        plt.figure(figsize=(15, 15))
-        gs = GridSpec(3, 2, figure=plt.gcf())
-        
-        # 1. Erreur absolue moyenne vs Niveau de bruit
-        ax1 = plt.subplot(gs[0, 0])
-        error_by_noise = results_df.groupby('Noise Level')['Absolute Error'].mean().reset_index()
-        ax1.plot(error_by_noise['Noise Level'], error_by_noise['Absolute Error'], 'o-', linewidth=2)
-        ax1.set_xlabel('Niveau de bruit')
-        ax1.set_ylabel('Erreur absolue moyenne (nm)')
-        ax1.set_title('Impact du niveau de bruit sur l\'erreur absolue moyenne')
-        ax1.grid(True)
-        
-        # 2. Box plot de l'erreur par niveau de bruit
-        ax2 = plt.subplot(gs[0, 1])
-        sns.boxplot(x='Noise Level', y='Absolute Error', data=results_df, ax=ax2)
-        ax2.set_xlabel('Niveau de bruit')
-        ax2.set_ylabel('Erreur absolue (nm)')
-        ax2.set_title('Distribution des erreurs par niveau de bruit')
-        
-        # 3. Erreur relative (%) par longueur d'onde et niveau de bruit (heatmap)
-        ax3 = plt.subplot(gs[1, :])
-        heatmap_data = results_df.groupby(['True Wavelength', 'Noise Level'])['Relative Error (%)'].mean().unstack()
-        sns.heatmap(heatmap_data, annot=True, fmt=".1f", cmap="YlOrRd", ax=ax3)
-        ax3.set_xlabel('Niveau de bruit')
-        ax3.set_ylabel('Longueur d\'onde réelle (nm)')
-        ax3.set_title('Erreur relative moyenne (%) par longueur d\'onde et niveau de bruit')
-        
-        # 4. Scatter plot de longueur d'onde prédite vs longueur d'onde réelle pour différents niveaux de bruit
-        ax4 = plt.subplot(gs[2, :])
-        
-        # Sélectionner un sous-ensemble pour rendre le graphique plus lisible
-        # Prendre uniquement le premier essai pour chaque combinaison
-        subset = results_df[results_df['Trial'] == 0]
-        
-        noise_colors = {
-            0: 'green',
-            0.01: 'blue',
-            0.02: 'purple',
-            0.05: 'orange',
-            0.1: 'red',
-            0.2: 'black'
-        }
-        
-        for noise_level, color in noise_colors.items():
-            if noise_level in subset['Noise Level'].values:
-                data = subset[subset['Noise Level'] == noise_level]
-                ax4.scatter(data['True Wavelength'], data['Predicted Wavelength'], 
-                        label=f'Bruit {noise_level}', color=color, alpha=0.7)
-        
-        # Ligne de référence y=x
-        min_wl = results_df['True Wavelength'].min()
-        max_wl = results_df['True Wavelength'].max()
-        ax4.plot([min_wl, max_wl], [min_wl, max_wl], 'k--', label='Idéal (y=x)')
-        
-        ax4.set_xlabel('Longueur d\'onde réelle (nm)')
-        ax4.set_ylabel('Longueur d\'onde prédite (nm)')
-        ax4.set_title('Prédictions vs Réalité pour différents niveaux de bruit')
-        ax4.legend()
-        ax4.grid(True)
-        
-        plt.tight_layout()
-        plt.savefig("analyse_bruit_longueur_onde.png", dpi=300)
         plt.show()
 
-    def analyze_sensor_sensitivity(self, wavelength_range=(300, 2000), num_wavelengths=10, noise_level=0.05, trials=30):
-        """
-        Analyse la sensibilité de chaque capteur au bruit pour différentes longueurs d'onde.
+def test_noise_influence(wavelengths=[450, 976, 1976], noise_levels=np.arange(0, 0.21, 0.02), 
+                        num_iterations=10, model_path='model_nn_pytorch_weights.pth'):
+    """
+    Teste l'influence du bruit sur la précision des prédictions de longueur d'onde.
+    
+    Parameters:
+    wavelengths (list): Liste des longueurs d'onde à tester
+    noise_levels (array): Niveaux de bruit à appliquer (proportion de la valeur)
+    num_iterations (int): Nombre d'itérations pour chaque combinaison pour obtenir des statistiques
+    model_path (str): Chemin vers le modèle entraîné
+    
+    Returns:
+    tuple: (results, sensor_variations) 
+           - results: dict contenant les pourcentages d'erreur moyens pour chaque combinaison
+           - sensor_variations: dict contenant les variations moyennes de chaque capteur avec leur signe
+    """
+    # Initialiser l'algorithme de prédiction
+    algo = AlgoWavelength(model_path=model_path)
+    
+    # Préparer la structure pour stocker les résultats
+    results = {
+        'wavelength': [],
+        'noise_level': [],
+        'error_percent': []
+    }
+    
+    # Structure pour stocker les variations des réponses des capteurs
+    sensor_variations = {
+        'wavelength': [],
+        'noise_level': [],
+        'sensor_name': [],
+        'variation_percent': []
+    }
+    
+    # Pour chaque longueur d'onde
+    for wavelength in wavelengths:
+        print(f"Traitement de la longueur d'onde: {wavelength} nm")
         
-        Parameters:
-        wavelength_range (tuple): Plage de longueurs d'onde à tester (min, max)
-        num_wavelengths (int): Nombre de longueurs d'onde à tester dans la plage
-        noise_level (float): Niveau de bruit à appliquer
-        trials (int): Nombre d'essais pour chaque configuration
+        # Obtenir les réponses des capteurs pour cette longueur d'onde
+        _, responses_list = algo.get_sensor_response_for_wavelength(wavelength)
         
-        Returns:
-        pandas.DataFrame: Dataframe contenant les résultats de l'analyse
-        """
-        # Longueurs d'onde à tester
-        test_wavelengths = np.linspace(wavelength_range[0], wavelength_range[1], num_wavelengths)
-        
-        # Préparer le DataFrame pour collecter les résultats
-        results = []
-        
-        # Boucle principale pour chaque longueur d'onde
-        for wavelength in tqdm(test_wavelengths, desc="Wavelengths"):
-            # Obtenir les ratios de référence pour cette longueur d'onde
-            _, clean_ratios = self.get_sensor_ratios_for_wavelength(wavelength)
-            clean_ratios = np.array(clean_ratios)
+        # Pour chaque niveau de bruit
+        for noise_level in noise_levels:
+            error_percents = []
             
-            # Référence: prédiction sans bruit
-            reference_prediction = self.calculate_wavelength(clean_ratios)
+            # Pour chaque capteur, initialiser une liste pour stocker les variations
+            sensor_variations_this_level = [[] for _ in range(len(algo.sensor_order))]
             
-            # Tester chaque capteur individuellement
-            for i, sensor_name in enumerate(self.sensor_order):
-                for trial in range(trials):
-                    # Créer un ensemble de ratios où seul le capteur actuel a du bruit
-                    noisy_ratios = clean_ratios.copy()
-                    noisy_ratios[i] += np.random.normal(0, noise_level)
-                    noisy_ratios = np.clip(noisy_ratios, 0, 1)  # Limiter entre 0 et 1
+            # Répéter plusieurs fois pour obtenir des statistiques
+            for _ in range(num_iterations):
+                # Ajouter du bruit aux réponses brutes (avant normalisation)
+                noisy_responses = []
+                for i, response in enumerate(responses_list):
+                    # Générer un bruit aléatoire entre -noise_level et +noise_level de la valeur
+                    noise = np.random.uniform(-noise_level, noise_level) * response
+                    noisy_response = response + noise
+                    noisy_response = max(0, noisy_response)  # Assurer des valeurs positives
                     
-                    # Prédire la longueur d'onde avec ce capteur bruité
-                    predicted_wavelength = self.calculate_wavelength(noisy_ratios)
+                    # Calculer la variation en pourcentage avec signe
+                    if response > 0:  # Éviter division par zéro
+                        # Garder le signe de la variation (positif = augmentation, négatif = diminution)
+                        variation_percent = (noisy_response - response) / response * 100
+                        sensor_variations_this_level[i].append(variation_percent)
                     
-                    # Calculer l'erreur
-                    error = abs(predicted_wavelength - wavelength)
-                    
-                    # Stocker les résultats
-                    results.append({
-                        'True Wavelength': wavelength,
-                        'Predicted Wavelength': predicted_wavelength,
-                        'Sensor': sensor_name,
-                        'Absolute Error': error,
-                        'Relative Error (%)': error / wavelength * 100,
-                        'Trial': trial,
-                    })
-        
-        # Convertir en DataFrame
-        results_df = pd.DataFrame(results)
-        
-        # Afficher les résultats
-        self.plot_sensor_sensitivity_results(results_df)
-        
-        return results_df
+                    noisy_responses.append(noisy_response)
+                
+                # Normaliser les réponses avec bruit
+                noisy_ratios = np.array(noisy_responses) / np.max(noisy_responses)
+                
+                # Prédire la longueur d'onde avec les ratios bruités
+                predicted_wavelength = algo.calculate_wavelength(noisy_ratios)
+                
+                # Calculer l'erreur en pourcentage
+                error_percent = abs(predicted_wavelength - wavelength) / wavelength * 100
+                error_percents.append(error_percent)
+            
+            # Calculer la moyenne des erreurs pour ce niveau de bruit et cette longueur d'onde
+            mean_error_percent = np.mean(error_percents)
+            
+            # Stocker les résultats d'erreur
+            results['wavelength'].append(wavelength)
+            results['noise_level'].append(noise_level)
+            results['error_percent'].append(mean_error_percent)
+            
+            # Stocker les variations moyennes pour chaque capteur
+            for i, variations in enumerate(sensor_variations_this_level):
+                if variations:  # S'assurer qu'il y a des données
+                    sensor_variations['wavelength'].append(wavelength)
+                    sensor_variations['noise_level'].append(noise_level)
+                    sensor_variations['sensor_name'].append(algo.sensor_order[i])
+                    sensor_variations['variation_percent'].append(np.mean(variations))
+    
+    return results, sensor_variations
 
-    def plot_sensor_sensitivity_results(self, results_df):
-        """
-        Trace les résultats de l'analyse de sensibilité des capteurs.
+def plot_separate_heatmaps(results, sensor_variations):
+    """
+    Crée deux figures séparées:
+    1. Une heatmap d'erreur de prédiction pour chaque longueur d'onde
+    2. Une figure avec trois heatmaps empilées verticalement montrant la variation des capteurs pour chaque longueur d'onde
+    
+    Parameters:
+    results (dict): Résultats d'erreur obtenus de la fonction test_noise_influence
+    sensor_variations (dict): Variations des capteurs obtenues de la fonction test_noise_influence
+    """
+    # Convertir les résultats en DataFrame
+    df_results = pd.DataFrame(results)
+    df_sensors = pd.DataFrame(sensor_variations)
+    
+    # FIGURE 1: Heatmap d'erreur de prédiction
+    plt.figure(figsize=(10, 6))
+    
+    # Créer un pivot pour la heatmap d'erreur
+    pivot_error = df_results.pivot(index='noise_level', columns='wavelength', values='error_percent')
+    
+    # Créer la heatmap d'erreur
+    ax = sns.heatmap(pivot_error, annot=True, fmt=".2f", cmap="YlOrRd", 
+                cbar_kws={'label': 'Erreur (%)'})
+    
+    # Ajouter des titres et étiquettes
+    plt.title("Erreur de prédiction par longueur d'onde", fontsize=14)
+    plt.xlabel("Longueur d'onde (nm)", fontsize=12)
+    plt.ylabel("Niveau de bruit", fontsize=12)
+    
+    # Améliorer les étiquettes de l'axe des x
+    ax.set_xticklabels([f"{int(wl)} nm" for wl in pivot_error.columns])
+    
+    # Améliorer les étiquettes de l'axe des y
+    ax.set_yticklabels([f"{nl:.2f}" for nl in pivot_error.index])
+    
+    plt.tight_layout()
+    plt.savefig('heatmap_error_prediction.png', dpi=300)
+    plt.show()
+    
+    # FIGURE 2: Heatmaps empilées des variations de capteurs pour chaque longueur d'onde
+    wavelengths = df_results['wavelength'].unique()
+    num_wavelengths = len(wavelengths)
+    
+    # Créer une figure plus haute pour accueillir les trois heatmaps empilées
+    fig, axes = plt.subplots(num_wavelengths, 1, figsize=(10, 3 * num_wavelengths))
+    
+    # Définir une palette de couleurs divergente avec le point central à 0
+    cmap = sns.diverging_palette(240, 10, as_cmap=True)
+    
+    # Pour chaque longueur d'onde
+    for i, wavelength in enumerate(wavelengths):
+        # Filtrer pour cette longueur d'onde spécifique
+        df_sensors_filtered = df_sensors[df_sensors['wavelength'] == wavelength]
         
-        Parameters:
-        results_df (pandas.DataFrame): DataFrame contenant les résultats de l'analyse
-        """
-        plt.figure(figsize=(15, 10))
+        # Créer un pivot pour la heatmap de variation des capteurs
+        pivot_sensors = df_sensors_filtered.pivot(index='noise_level', columns='sensor_name', values='variation_percent')
         
-        # 1. Erreur moyenne par capteur
-        plt.subplot(2, 2, 1)
-        error_by_sensor = results_df.groupby('Sensor')['Absolute Error'].mean().reset_index()
-        error_by_sensor = error_by_sensor.sort_values('Absolute Error', ascending=False)
+        # Créer la heatmap de variation des capteurs sur l'axe correspondant
+        ax = axes[i] if num_wavelengths > 1 else axes
         
-        bars = plt.bar(error_by_sensor['Sensor'], error_by_sensor['Absolute Error'])
-        plt.xlabel('Capteur')
-        plt.ylabel('Erreur absolue moyenne (nm)')
-        plt.title('Sensibilité des capteurs au bruit')
-        plt.xticks(rotation=45)
+        # Trouver la valeur absolue maximale pour centrer correctement la carte de couleurs
+        vmax = max(abs(pivot_sensors.values.min()), abs(pivot_sensors.values.max()))
         
-        # Ajouter les valeurs au-dessus des barres
-        for bar in bars:
-            height = bar.get_height()
-            plt.text(bar.get_x() + bar.get_width()/2., height + 0.1,
-                    f'{height:.1f}', ha='center', va='bottom')
+        # Créer la heatmap avec une coloration divergente (bleu = négatif, rouge = positif)
+        sns.heatmap(pivot_sensors, annot=True, fmt="+.2f", cmap=cmap,
+                    vmin=-vmax, vmax=vmax, center=0,
+                    cbar_kws={'label': 'Variation (%)'}, ax=ax)
         
-        # 2. Box plot de l'erreur par capteur
-        plt.subplot(2, 2, 2)
-        sns.boxplot(x='Sensor', y='Absolute Error', data=results_df)
-        plt.xlabel('Capteur')
-        plt.ylabel('Erreur absolue (nm)')
-        plt.title('Distribution des erreurs par capteur')
-        plt.xticks(rotation=45)
+        # Ajouter des titres et étiquettes
+        ax.set_title(f"Variation des réponses des capteurs pour λ = {wavelength} nm", fontsize=14)
+        ax.set_xlabel("Capteur", fontsize=12)
+        ax.set_ylabel("Niveau de bruit", fontsize=12)
         
-        # 3. Heatmap de l'erreur relative par capteur et longueur d'onde
-        plt.subplot(2, 1, 2)
-        heatmap_data = results_df.groupby(['True Wavelength', 'Sensor'])['Relative Error (%)'].mean().unstack()
-        sns.heatmap(heatmap_data, annot=True, fmt=".1f", cmap="YlOrRd")
-        plt.xlabel('Capteur')
-        plt.ylabel('Longueur d\'onde réelle (nm)')
-        plt.title('Erreur relative moyenne (%) par longueur d\'onde et capteur')
-        
-        plt.tight_layout()
-        plt.savefig("analyse_sensibilite_capteurs.png", dpi=300)
-        plt.show()
+        # Améliorer les étiquettes de l'axe des y
+        ax.set_yticklabels([f"{nl:.2f}" for nl in pivot_sensors.index])
+    
+    # Ajuster l'espacement entre les sous-graphiques
+    plt.tight_layout()
+    plt.savefig('heatmap_sensor_variations.png', dpi=300)
+    plt.show()
+    
+def plot_wavelength_errors(results):
+    """
+    Crée un graphique montrant l'évolution de l'erreur en fonction du niveau de bruit
+    pour chaque longueur d'onde testée.
+    
+    Parameters:
+    results (dict): Résultats obtenus de la fonction test_noise_influence
+    """
+    # Convertir les résultats en DataFrame
+    df = pd.DataFrame(results)
+    
+    # Créer la figure
+    plt.figure(figsize=(10, 6))
+    
+    # Tracer les courbes pour chaque longueur d'onde
+    for wavelength in df['wavelength'].unique():
+        subset = df[df['wavelength'] == wavelength]
+        plt.plot(subset['noise_level'], subset['error_percent'], 
+                 marker='o', label=f"{wavelength} nm")
+    
+    # Ajouter des titres et étiquettes
+    plt.title("Évolution de l'erreur en fonction du niveau de bruit")
+    plt.xlabel("Niveau de bruit")
+    plt.ylabel("Erreur (%)")
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.legend()
+    
+    plt.tight_layout()
+    plt.savefig('error_vs_noise.png')
+    plt.show()
 
-# Exemple d'utilisation des nouvelles fonctions
-if __name__ == "__main__":  
-    # Création d'une instance de AlgoWavelength
-    algo = AlgoWavelength(model_path='heavyModel.pkl')
+# Exemple d'utilisation:
+if __name__ == "__main__":
+    def analyse_sensibilite():
+        # Définir les longueurs d'onde à tester (celles mentionnées dans le code original)
+        wavelengths = [450, 976, 1976]
+        
+        # Définir la plage de niveaux de bruit (de 0% à 20% par incréments de 2%)
+        noise_levels = np.arange(0, 0.41, 0.05)
+        
+        # Tester l'influence du bruit
+        results, sensor_variations = test_noise_influence(wavelengths, noise_levels, num_iterations=10)
+        
+        # Tracer les heatmaps séparément
+        plot_separate_heatmaps(results, sensor_variations)
+        
+        # Tracer l'évolution de l'erreur
+        plot_wavelength_errors(results)
     
-    # Afficher les courbes de réponse spectrale
-    algo.plot_spectral_response()
+    def extraction_reponses_laser():
+        algo = AlgoWavelength(model_path='model_nn_pytorch_weights.pth')
+        
+        # Test du modèle avec une longueur d'onde spécifique
+        test_wavelength = 450
+        # ratios_dict, ratios_list = algo.get_sensor_ratios_for_wavelength(test_wavelength)
+        responses_dict, responses_list = algo.get_sensor_response_for_wavelength(test_wavelength, enable_print=True)
+        ratios_list = np.array(responses_list)/ np.max(responses_list)
+        predicted_wavelength = algo.calculate_wavelength(ratios_list, enable_print=True)
     
+        test_wavelength = 976
+        # ratios_dict, ratios_list = algo.get_sensor_ratios_for_wavelength(test_wavelength)
+        responses_dict, responses_list = algo.get_sensor_response_for_wavelength(test_wavelength, enable_print=True)
+        ratios_list = np.array(responses_list) / np.max(responses_list)
+        predicted_wavelength = algo.calculate_wavelength(ratios_list, enable_print=True)
+        
+        test_wavelength = 1976
+        # ratios_dict, ratios_list = algo.get_sensor_ratios_for_wavelength(test_wavelength)
+        responses_dict, responses_list = algo.get_sensor_response_for_wavelength(test_wavelength, enable_print=True)
+        ratios_list = np.array(responses_list) / np.max(responses_list)
+        predicted_wavelength = algo.calculate_wavelength(ratios_list, enable_print=True)
+        
+    def plot_reponses_et_ratios():
+        algo = AlgoWavelength(model_path='model_nn_pytorch_weights.pth')
     
+        # Afficher les courbes de réponse spectrale
+        algo.plot_spectral_response()
+        algo.plot_spectral_ratios()
+        
+        
+        
+    # plot_reponses_et_ratios()
+    # extraction_reponses_laser()  
+    # analyse_sensibilite()
+        
     
-    # Test du modèle avec une longueur d'onde spécifique
-    test_wavelength = 800  # Par exemple, 800 nm
-    responses = algo.get_sensor_response_for_wavelength(test_wavelength)
-    print(f"Réponses des capteurs pour {responses} nm")
-    print(algo.test_model_with_wavelength(test_wavelength))
-      
-    # # Tester plusieurs longueurs d'onde
-    # algo.sweep_wavelength_range(start_nm=250, end_nm=2500, step_nm=1)
-    
-    # # Obtenir les ratios des capteurs pour une longueur d'onde spécifique
-    # ratios_dict, ratios_list = algo.get_sensor_ratios_for_wavelength(test_wavelength)
 
-    # print("\nRatios des capteurs pour {} nm:".format(test_wavelength))
-    # for sensor, ratio in ratios_dict.items():
-    #     print(f"{sensor}: {ratio:.4f}")
+
     
-    # Simuler un cas d'utilisation réel où on aurait des valeurs de capteurs
-    # et on voudrait prédire la longueur d'onde
     
-    # print("\nTest avec les ratios extraits:")
-    # predicted_wavelength = algo.calculate_wavelength(ratios_list)
-    # print(f"Longueur d'onde prédite: {predicted_wavelength:.2f} nm")
     
-    def analyse_bruit():
-        # 1. Analyse de l'impact du bruit sur différentes longueurs d'onde
-        print("Analyse de l'impact du bruit...")
-        results = algo.analyze_noise_impact(
-            wavelength_range=(250, 2500),  # Plage de longueurs d'onde (nm)
-            num_wavelengths=10,            # Nombre de longueurs d'onde à tester
-            noise_levels=(0, 0.01, 0.02, 0.05, 0.1, 0.2),  # Différents niveaux de bruit
-            trials_per_level=20            # Nombre d'essais par configuration
-        )
-        
-        # Sauvegarder les résultats dans un fichier CSV
-        results.to_csv("resultats_analyse_bruit.csv", index=False)
-        print("Analyse terminée et résultats sauvegardés.")
-    
-    def analyse_sensibilite_capteurs():
-        # 2. Analyse de la sensibilité de chaque capteur
-        print("Analyse de la sensibilité des capteurs...")
-        sensor_results = algo.analyze_sensor_sensitivity(
-            wavelength_range=(250, 2500),  # Plage de longueurs d'onde (nm)
-            num_wavelengths=10,             # Nombre de longueurs d'onde à tester
-            noise_level=0.05,              # Niveau de bruit à appliquer
-            trials=15                      # Nombre d'essais par configuration
-        )
-        
-        # Sauvegarder les résultats dans un fichier CSV
-        sensor_results.to_csv("resultats_sensibilite_capteurs.csv", index=False)
-        print("Analyse terminée et résultats sauvegardés.")
     
     
