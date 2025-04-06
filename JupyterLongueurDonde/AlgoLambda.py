@@ -1,15 +1,8 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.neural_network import MLPRegressor
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_absolute_error, r2_score
-from scipy import constants 
-import pickle
 from time import perf_counter
 import os
-
-from sympy import print_rcode
 
 from EntrainementLambda import EntrainementLambda
 from CapteursDataProcess import DataPreProcess
