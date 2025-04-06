@@ -14,11 +14,15 @@ from AlgoPosition import AlgoPosition
 from AlgorithmManagerClass import AlgorithmManager
 from SerialManagerClass import SerialManager
 import serial.tools.list_ports
+from datetime import datetime
 
 
 class InterfaceWattpiti(tk.Tk):
     def __init__(self):
         super().__init__()
+
+        #Donnée du temps
+        self.startTime = time.time()
 
         #Création d'une instance de la classe DataContainer pour stocker les données
         self.dataContainer = DataContainer() #Instance de la classe DataContainer
@@ -28,8 +32,8 @@ class InterfaceWattpiti(tk.Tk):
 
         #création de l'interface
         self.title("Puissance-mètre Wattpiti")
-        #self.geometry("{0}x{1}+0+0".format(self.winfo_screenwidth(), self.winfo_screenheight()))
-        self.geometry("1000x1000")
+        self.geometry("{0}x{1}+0+0".format(self.winfo_screenwidth(), self.winfo_screenheight()))
+        #self.geometry("1000x1000")
         self.configure(background="white")
 
         #Style des FrameLabels pour l'interface
@@ -93,10 +97,13 @@ class InterfaceWattpiti(tk.Tk):
         self.ports = serial.tools.list_ports.comports() #Lister les ports disponibles dans l'ordinateur
         self.portList = []
         for port in self.ports: #Affiche les ports et leur description dans l'interface
-            self.portList.append(f"{port.device}, {port.description}")
+            if "Bluetooth" not in port.description: #Enlever les ports Bluetooth de la liste
+                self.portList.append(f"{port.device}, {port.description}")
 
         self.selected_port = tk.StringVar()
-        self.portComboBox = ttk.Combobox(self, values=self.portList, width=35, textvariable=self.selected_port)
+        if len(self.portList) == 1: #Si un seul port est disponible, le sélectionner par défaut
+            self.selected_port.set(self.portList[0])
+        self.portComboBox = ttk.Combobox(self, values=self.portList, width=35, textvariable= self.selected_port)
         self.portComboBox.place(x=350, y=50)
 
         #Création d'un label pour le choix du port
@@ -105,10 +112,10 @@ class InterfaceWattpiti(tk.Tk):
 
 
         #Choix de la longueur d'onde
-        self.waveLenghtList = ["À déterminer", "976", "1064", "1319", "1550"]
+        self.waveLenghtList = ["À déterminer", "450", "976", "1976"]
         self.waveLenghtComboBox = ttk.Combobox(self, values=self.waveLenghtList, width=20)
         self.waveLenghtComboBox.place(x=440, y=80)
-        self.waveLenghtComboBox.current(0)
+        self.waveLenghtComboBox.current(0) 
 
         #Label pour le choix de la longueur d'onde
         self.labelWaveLength = ttk.Label(self, text="Longueur d'onde (nm):", style = "labelStyle.TLabel")
@@ -145,14 +152,17 @@ class InterfaceWattpiti(tk.Tk):
         self.wavelengthCheckButtonBool = tk.BooleanVar()
         self.wavelengthCheckButton = ttk.Checkbutton(self, text= "Longueur d'onde", variable = self.wavelengthCheckButtonBool)
         self.wavelengthCheckButton.place(x=810, y=120)
+        self.wavelengthCheckButtonBool.set(True)
         #Puissance
         self.powerCheckButtonBool = tk.BooleanVar()
         self.powerCheckButton = ttk.Checkbutton(self, text="Puissance", variable = self.powerCheckButtonBool)
         self.powerCheckButton.place(x=810, y = 100)
+        self.powerCheckButtonBool.set(True)
         #Position
         self.positionCheckButtonBool = tk.BooleanVar()
         self.positionCheckButton = ttk.Checkbutton(self, text="Position", variable = self.positionCheckButtonBool)
         self.positionCheckButton.place(x = 810, y = 140)
+        self.positionCheckButtonBool.set(True)
 
         #Création d'un bouton pour enregister les données
         self.saveButtonStyle = ttk.Style()
@@ -251,6 +261,16 @@ class InterfaceWattpiti(tk.Tk):
         self.posPlot = self.posCanvas.get_tk_widget()
         self.posPlot.place(x = 900, y = 280)
 
+        #Création d'un bouton pour calibrer les capteurs
+        self.tareButton = ttk.Button(self, text= "Tare", style="saveButtonStyle.TButton", command = self.click_tare)
+        self.tareButton.place(x = 420, y = 110)
+        self.tareLabel = ttk.Label(self, text = "Calibration des capteurs:", style = "labelStyle.TLabel")
+        self.tareLabel.place(x=250, y = 110)
+
+
+        #Première calibration des capteurs
+        #À faire
+
 
         #Gestion de la loop
         self.running = False
@@ -266,16 +286,21 @@ class InterfaceWattpiti(tk.Tk):
 
     #Fonction du bouton pour démarrer la simulation
     def click_start(self):
+        try:
         #Importation des classes externes pour stocker les données
-        self.serialManager.setPortName(self.selected_port.get().split(",")[0])
-        if not self.running:
-            self.running = True
-            self.loop() 
+            self.serialManager.setPortName(self.selected_port.get().split(",")[0])
+            if not self.running:
+                self.running = True
+                self.loop() 
+        except serial.SerialException as e:
+            self.error_handling("Erreur de connexion au port série")
+            self.running = False
 
 
     def loop(self):
         if self.running: #Vérifier si une simulation est en cours
             for i  in range(1): # initialisation de la loop
+                self.currentTime = time.time() - self.startTime #Calculer le temps écoulé depuis l'ouverture de l'interface
 
                 #Importation des données de dataContainer
                 self.serialManager.updateDataFromMCU(1)
@@ -288,7 +313,7 @@ class InterfaceWattpiti(tk.Tk):
                 self.rawTemperatureMatrix = self.dataContainer.rawTemperatureMatrix
 
 
-                self.dataArray.append((self.newpower, self.newWaveLenght, self.newposition)) #Importer les données dans une liste
+                self.dataArray.append((self.currentTime, self.newpower, self.newWaveLenght, self.newposition)) #Importer les données dans une liste
                 #self.dataArray = np.array(self.dataArray) #Convertir la liste en tableau numpy
                 self.powerVar.set(str(self.rawTemperatureMatrix[0][0])) #liste des différentes puissances (à changer)
 
@@ -327,19 +352,20 @@ class InterfaceWattpiti(tk.Tk):
                 self.axPow.clear()
                 self.axPow.set_xlabel("Temps (s)")
                 self.axPow.set_ylabel("Puissance (W)")
+                if len(self.dataArray) > 20: #limiter le nombre de points sur le graphique
+                    self.axPow.set_xlim(self.dataArray[-20][0], self.dataArray[-1][0])
 
 
                 #À changer (mettre des vraies valeurs de temps)
                 self.powArray.append(self.rawTemperatureMatrix[0][0])
-                self.timeArray = np.arange(0, len(self.dataArray), 1)
 
-                self.timeArray = self.timeArray * 0.01
-                self.powValues = list(zip(* self.dataArray))[0]
-                self.axPow.plot(self.timeArray, list(self.powValues), color = "blue")
+                self.timeArray = list(zip(* self.dataArray))[0]
+                self.powValues = list(zip(* self.dataArray))[1]
+                self.axPow.plot(list(self.timeArray), self.powArray, color = "blue")
                 self.powerCanvas.draw()
                 self.powerCanvas.get_tk_widget().update()
 
-        self.after(10, self.loop)
+        self.after(1, self.loop)
 
 
     
@@ -366,20 +392,100 @@ class InterfaceWattpiti(tk.Tk):
         
 
 
-    #Fonction pour la fréquence d'échantillonnage
-    def freq_value(self):
-        pass
-
-    #Fonction pour le temps d'acquisition
-    def time_value(self):
+    def click_tare(self):
+        #Fonction pour calibrer les capteurs
         pass
 
     #Fonction pour enregistrer les données
     def save_data(self):
+        self.savingTimeRef = time.time()
+        self.date = datetime.now()
+        self.dtstring = self.date.strftime("%d-%m-%Y %H_%M_%S")
 
         if self.running == True:
             self.click_stop()
         
+        #Désactiver les widgets de l'interface
+        self.disable_widgets()
+
+       
+        self.choiceArray = [self.powerCheckButtonBool.get(), self.wavelengthCheckButtonBool.get(), self.positionCheckButtonBool.get()]
+
+        #Enregistrer les données dans un fichier txt
+        
+        self.file_name = self.fileNameVar.get()
+        if self.fileNameVar.get() == "":
+            self.file_name = f"{self.dtstring}.csv"
+
+        if not self.file_name.endswith('.csv'):
+            self.file_name += '.csv'
+        # Créer un dossier "savedData" s'il n'existe pas
+        save_dir = os.path.join(os.path.dirname(__file__), "savedData")
+        os.makedirs(save_dir, exist_ok=True)
+        
+        # Chemin complet du fichier
+        self.file_name = os.path.join(save_dir, self.file_name)
+            
+
+        if self.choiceArray == [True, True, True]:
+            with open(self.file_name, 'w') as file:
+                file.write("Temps (s), Puissance (W),Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
+                for i in self.dataArray:
+                    file.write(f"{i[0]},{i[1]},{i[2]},{i[3][0]},{i[3][1]}\n")
+        
+        elif self.choiceArray == [True, True, False]:
+            with open(self.file_name, 'w') as file:
+                file.write("Temps (s), Puissance (W),Longueur d'onde (nm)\n")
+                for i in self.dataArray:
+                    file.write(f"{i[0]},{i[1]},{i[2]}\n")
+        
+        elif self.choiceArray == [True, False, True]:
+            with open(self.file_name, 'w') as file:
+                file.write("Temps (s), Puissance (W),Position x (mm),Position y (mm)\n")   
+                for i in self.dataArray:
+                    file.write(f"{i[0]},{i[1]},{i[3][0]},{i[3][1]}\n")
+
+        elif self.choiceArray == [False, True, True]:
+            with open(self.file_name, 'w') as file:
+                file.write("Temps (s), Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
+                for i in self.dataArray:
+                    file.write(f"{i[0]},{i[2]},{i[3][0]},{i[3][1]}\n")
+            
+        elif self.choiceArray == [True, False, False]:
+            with open(self.file_name, 'w') as file:
+                file.write("Temps (s), Puissance (W)\n")
+                for i in self.dataArray:
+                    file.write(f"{i[0]}, {i[1]}\n")
+            
+        elif self.choiceArray == [False, True, False]:
+            with open(self.file_name, 'w') as file:
+                file.write("Longueur d'onde (nm)\n")
+                for i in self.dataArray:
+                    file.write(f"{i[0]},{i[1]}\n")
+
+        elif self.choiceArray == [False, False, True]:
+            with open(self.file_name, 'w') as file:
+                file.write("Position x (mm),Position y (mm)\n")
+                for i in self.dataArray:
+                    file.write(f"{i[0]}, {i[3][0]},{i[3][1]}\n")
+
+        elif self.choiceArray == [False, False, False]:
+            self.error_handling("Aucune donnée sélectionnée à enregistrer")
+
+        self.savingTime = time.time() - self.savingTimeRef #Calculer le temps d'enregistrement
+
+
+
+            
+                
+
+        #Réactiver les widgets de l'interface
+        if self.choiceArray != [False, False, False]:
+            self.after(int(self.savingTime), self.enable_widgets())
+            self.sucess_message(f"Données enregistrées avec succès en {self.savingTime:.8f} secondes")
+
+        
+    def disable_widgets(self):
         #Désactiver les widgets de l'interface
         self.startButton.configure(state = "disabled")
         self.stopButton.configure(state = "disabled")
@@ -390,77 +496,10 @@ class InterfaceWattpiti(tk.Tk):
         self.powerCheckButton.configure(state = "disabled")
         self.positionCheckButton.configure(state = "disabled")
         self.waveLenghtComboBox.configure(state = "disabled")
+        self.tareButton.configure(state= "disabled")
+        self.fileName.configure(state = "disabled")
 
-       
-        self.choiceArray = [self.powerCheckButtonBool.get(),self.wavelengthCheckButtonBool.get(), self.positionCheckButtonBool.get()]
-
-        #Enregistrer les données dans un fichier txt
-        
-        self.file_name = self.fileNameVar.get()
-        if self.file_name == "":
-            self.error_handling("ERREUR: Aucun nom de fichier n'a été entré.")
-
-        if not self.file_name.endswith('.csv'):
-            self.file_name += '.csv'
-        # Créer un dossier "savedData" s'il n'existe pas
-        save_dir = os.path.join(os.path.dirname(__file__), "savedData")
-        os.makedirs(save_dir, exist_ok=True)
-        
-        # Chemin complet du fichier
-        self.file_name = os.path.join(save_dir, self.file_name)
-
-        #Mettre des conditions selon les choix de l'utilisateur
-        if self.fileNameVar.get() == "":
-            self.error_handling("ERREUR: Aucun nom de fichier n'a été entré.")
-
-        else:
-            if self.choiceArray == [True, True, True]:
-                with open(self.file_name, 'w') as file:
-                    file.write("Puissance (W),Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
-                    for i in self.dataArray:
-                        file.write(f"{i[0]},{i[1]},{i[2][0]},{i[2][1]}\n")
-            
-            elif self.choiceArray == [True, True, False]:
-                with open(self.file_name, 'w') as file:
-                    file.write("Puissance (W),Longueur d'onde (nm)\n")
-                    for i in self.dataArray:
-                        file.write(f"{i[0]},{i[1]}\n")
-            
-            elif self.choiceArray == [True, False, True]:
-                with open(self.file_name, 'w') as file:
-                    file.write("Puissance (W),Position x (mm),Position y (mm)\n")   
-                    for i in self.dataArray:
-                        file.write(f"{i[0]},{i[2][0]},{i[2][1]}\n")
-
-            elif self.choiceArray == [False, True, True]:
-                with open(self.file_name, 'w') as file:
-                    file.write("Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
-                    for i in self.dataArray:
-                        file.write(f"{i[1]},{i[2][0]},{i[2][1]}\n")
-                
-            elif self.choiceArray == [True, False, False]:
-                with open(self.file_name, 'w') as file:
-                    file.write("Puissance (W)\n")
-                    for i in self.dataArray:
-                        file.write(f"{i[0]}\n")
-            
-            elif self.choiceArray == [False, True, False]:
-                with open(self.file_name, 'w') as file:
-                    file.write("Longueur d'onde (nm)\n")
-                    for i in self.dataArray:
-                        file.write(f"{i[1]}\n")
-
-            elif self.choiceArray == [False, False, True]:
-                with open(self.file_name, 'w') as file:
-                    file.write("Position x (mm),Position y (mm)\n")
-                    for i in self.dataArray:
-                        file.write(f"{i[2][0]},{i[2][1]}\n")
-
-            elif self.choiceArray == [False, False, False]:
-                if self.file_name != ".csv":
-                    self.error_handling("ERREUR: Aucune donnée pour l'enregistrement n'a été sélectionnée.")
-                
-
+    def enable_widgets(self):
         #Réactiver les widgets de l'interface
         self.startButton.configure(state = "normal")
         self.stopButton.configure(state = "normal")
@@ -471,22 +510,42 @@ class InterfaceWattpiti(tk.Tk):
         self.powerCheckButton.configure(state = "normal")
         self.positionCheckButton.configure(state = "normal")
         self.waveLenghtComboBox.configure(state = "normal")
+        self.tareButton.configure(state= "normal")
+        self.fileName.configure(state = "normal")
 
 
-    
 
+    def sucess_message(self, message):
+        #Création d'un label pour les messages de succès
+        self.errorLabel = ttk.Label(self, text = message, font=("Inter", 20, "bold"), foreground = "green")
+        self.errorLabel.place(x = 10, y = 870)
+
+        self.disable_widgets()
+        #Afficher le message pendant 3 secondes
+        self.errorLabel.after(3000, self.erase_error)
+
+        if self.running == False:
+            if len(self.dataArray) != 0:
+                self.click_start()
     
 
     def error_handling(self, message):
         #Création d'un label pour les erreurs
-        self.errorLabel = ttk.Label(self, text = message, style = "labelStyle.TLabel")
+        self.errorLabel = ttk.Label(self, text = message, font=("Inter", 20, "bold"), foreground = "red")
         self.errorLabel.place(x = 10, y = 870)
-        self.errorFrame.grid_propagate(False)
+
+        #Désactiver les widgets de l'interface
+        self.disable_widgets()
+
+        #Afficher l'erreur pendant 3 secondes
         self.errorLabel.after(3000, self.erase_error)
     
     def erase_error(self):
         #Effacer le message d'erreur
         self.errorLabel.destroy()
+
+        #Réactiver les widgets de l'interface
+        self.enable_widgets()
 
     def on_close(self): #Permet de fermer la fenêtre et de fermer le port série
 
@@ -495,8 +554,6 @@ class InterfaceWattpiti(tk.Tk):
 
         if self.serialManager.serialListener is not None: #Déconnecte le port série
             self.serialManager.closePort()
-            print("toto")
-
         self.destroy() #Ferme la fenêtre
 
 
