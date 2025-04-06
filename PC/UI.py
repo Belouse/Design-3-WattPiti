@@ -21,10 +21,10 @@ class InterfaceWattpiti(tk.Tk):
         super().__init__()
 
         #Création d'une instance de la classe DataContainer pour stocker les données
-        self.dataContainer = DataContainer()
-        self.algorithmManager = AlgorithmManager(self.dataContainer)
-        self.algoPosition = AlgoPosition()
-        self.serialManager = SerialManager(self.dataContainer, maxData=1)
+        self.dataContainer = DataContainer() #Instance de la classe DataContainer
+        self.algorithmManager = AlgorithmManager(self.dataContainer) #Instance de la classe AlgorithmManager
+        self.algoPosition = AlgoPosition() #Instance de la classe Algoposition (pour le graphique de la position)
+        self.serialManager = SerialManager(self.dataContainer, maxData=1) #Instance de la classe SerialManager
 
         #création de l'interface
         self.title("Puissance-mètre Wattpiti")
@@ -34,7 +34,7 @@ class InterfaceWattpiti(tk.Tk):
 
         #Style des FrameLabels pour l'interface
         frameLabelStyle = ttk.Style()
-        frameLabelStyle.theme_use('default')   # choose other theme
+        frameLabelStyle.theme_use('default')
         frameLabelStyle.configure('frameLabelStyle.TLabelframe', borderwidth=10)
         frameLabelStyle.configure('frameLabelStyle.TLabelframe.Label', font=('Inter', 11, 'bold'))
 
@@ -90,9 +90,9 @@ class InterfaceWattpiti(tk.Tk):
 
 
         #Création d'une liste déroulante pour choisir le port
-        self.ports = serial.tools.list_ports.comports()
+        self.ports = serial.tools.list_ports.comports() #Lister les ports disponibles dans l'ordinateur
         self.portList = []
-        for port in self.ports:
+        for port in self.ports: #Affiche les ports et leur description dans l'interface
             self.portList.append(f"{port.device}, {port.description}")
 
         self.selected_port = tk.StringVar()
@@ -174,7 +174,7 @@ class InterfaceWattpiti(tk.Tk):
 
 
         #Création d'un display pour la puissance instantanée
-        self.powerVar = tk.StringVar()
+        self.powerVar = tk.StringVar() #Variable de la puissance
         self.powerVar.set("00.00")
 
         self.powerDisplayLabel = ttk.Label(self, text= "Puissance instantanée (W):", font = ("Inter", 14, "bold"))
@@ -192,9 +192,9 @@ class InterfaceWattpiti(tk.Tk):
         self.wavelenghtDisplay.place(x= 1330, y = 100)
 
         #Création d'un display pour la position centrale du faisceau
-        self.positionXVar = tk.StringVar()
+        self.positionXVar = tk.StringVar() #Variable de la position sur l'axe x
         self.positionXVar.set("0")
-        self.positionYVar = tk.StringVar()
+        self.positionYVar = tk.StringVar() #Variable de la position sur l'axe y
         self.positionYVar.set("0")
 
         self.positionDisplayLabel = ttk.Label(self, text="Position (mm):", font = ("Inter", 14, "bold"))
@@ -316,7 +316,7 @@ class InterfaceWattpiti(tk.Tk):
                                 levels=150,
                                 cmap='turbo')
                 
-                for row in self.dataContainer.thermalCaptorPosition:
+                for row in self.dataContainer.thermalCaptorPosition: #Affichage de la grille de capteurs sur le graphique
                     for (x, y) in row:
                         rect = patches.Rectangle((x - 1.5, y - 1.5), 0.75, 0.75, linewidth=1.5, edgecolor='white', facecolor='none', alpha=0.5)
                         self.axPos.add_patch(rect)
@@ -488,10 +488,16 @@ class InterfaceWattpiti(tk.Tk):
         #Effacer le message d'erreur
         self.errorLabel.destroy()
 
-    def on_close(self):
-        if self.serialManager.serialListener is not None:
+    def on_close(self): #Permet de fermer la fenêtre et de fermer le port série
+
+        if self.running == True: #Arrête la simulation si elle est en cours
+            self.click_stop()
+
+        if self.serialManager.serialListener is not None: #Déconnecte le port série
             self.serialManager.closePort()
-        self.destroy()
+            print("toto")
+
+        self.destroy() #Ferme la fenêtre
 
 
 

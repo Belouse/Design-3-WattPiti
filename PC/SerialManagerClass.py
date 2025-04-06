@@ -67,8 +67,8 @@ class SerialManager():
         if self.serialListener is None:
             raise Exception("Serial port not set. Please set the port name first.")
         
-
         rawData = self.serialListener.readData(numberOfData, printExecutionTime)
+        print(rawData)
         thermalCountsMatrix, wavelengthCountsMatrix = self.formatData(rawData)
         temperatureMatrix = self.convertCountsToTemperature(thermalCountsMatrix)
 
