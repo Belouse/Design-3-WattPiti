@@ -136,7 +136,8 @@ class AlgoWavelength:
         float: Longueur d'onde prédite en nanomètres
         """
         # Corriger pour le offset de la mise à zéro
-        self.sensor_values = sensor_values - self.zero_offset
+        # Assurer que les valeurs ne deviennent pas négatives
+        self.sensor_values = np.maximum(0, sensor_values - self.zero_offset)
 
         # Normaliser les ratios des sensor values
         self._normalize_sensor_values()
