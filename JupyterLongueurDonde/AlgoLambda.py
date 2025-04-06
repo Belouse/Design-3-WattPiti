@@ -6,13 +6,19 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, r2_score
 from scipy import constants 
 import pickle
+from time import perf_counter
 import os
+
+from sympy import print_rcode
+
 from EntrainementLambda import EntrainementLambda
 from CapteursDataProcess import DataPreProcess
 from matplotlib.gridspec import GridSpec
 import seaborn as sns
 from tqdm import tqdm
 import torch
+
+
 from NN_Pytorch_Lambda import WavelengthPredictor
 
 
@@ -45,6 +51,8 @@ class AlgoWavelength:
         try:
             self.model = WavelengthPredictor(dropout_rate=0.11276492753388213)  # Recreate the model
             self.model.load_state_dict(torch.load(model_path))
+            # Mettre le modèle en mode évaluation
+            self.model.eval()
             # print(self.model)
             #with open(model_path_abs, 'rb') as f:
             #    self.model = pickle.load(f)
@@ -53,38 +61,44 @@ class AlgoWavelength:
         
         # Stocker l'ordre des capteurs pour référence
         self.sensor_order = ['P_IR1', 'P_IR1xP', 'P_IR2', 'P_UV', 'C_UV', 'C_VISG', 'C_VISB', 'C_VISR']
+
+        # Offset pour mise à zéro
+        self.zero_offset = np.zeros(len(self.sensor_order))
+
+        # Initialiser les sensor values
+        self.sensor_values = np.zeros(len(self.sensor_order))
         
         # Créer une instance de EntrainementLambda pour avoir accès aux réponses des capteurs
         self.data_preprocess = DataPreProcess()
         self.angular_dict = self.data_preprocess.angular_dict
         self.responses = self.data_preprocess.all_sensors
         self.response_dict = self.data_preprocess.dict_capteurs
-        
-        
+
+
     def angular_factor(self, faisceau_pos=(0,0,0)):
         # Parcourir tous les capteurs et calculer les angles
         geo_factor_list = []
-        
+
         for sensor_name in self.sensor_order:
             f_x, f_y, f_z = faisceau_pos
             p_x, p_y, p_z = self.response_dict[sensor_name]['position']
-            
+
             # Calcul de l'angle entre le faisceau et le capteur
-            angle = (180/np.pi) * (np.arccos(abs(p_z - f_z) / 
+            angle = (180/np.pi) * (np.arccos(abs(p_z - f_z) /
                                             np.sqrt((f_x - p_x)**2 + (f_y - p_y)**2 + (f_z - p_z)**2)))
-            
+
             distance = np.sqrt((f_x - p_x)**2 + (f_y - p_y)**2 + (f_z - p_z)**2)
-            
+
             angles = self.angular_dict[sensor_name]['angles']
             intensite_450_interp = self.angular_dict[sensor_name]['intensite_450nm']
             intensite_976_interp = self.angular_dict[sensor_name]['intensite_976nm']
             intensite_1976_interp = self.angular_dict[sensor_name]['intensite_1976nm']
-  
+
             # Trouver les intensités relatives correspondantes pour chaque longueur d'onde
             # Pour 450nm
             idx_450 = np.abs(angles - angle).argmin()
             intensite_450 = intensite_450_interp[idx_450]
-           
+
             # Pour 976nm
             idx_976 = np.abs(angles - angle).argmin()
             intensite_976 = intensite_976_interp[idx_976]
@@ -92,9 +106,9 @@ class AlgoWavelength:
             # Pour 1976nm
             idx_1976 = np.abs(angles - angle).argmin()
             intensite_1976 = intensite_1976_interp[idx_1976]
-            
+
             ref_factor_450, ref_factor_976, ref_factor_1976  = self.response_dict[sensor_name]['geo_factor']
-            
+
             # Calculer le facteur géométrique
             geo_factor = []
             for i in range(3):
@@ -104,15 +118,12 @@ class AlgoWavelength:
                     geo_factor.append(ref_factor_976 / (intensite_976 / (distance**2)))
                 elif i == 2:
                     geo_factor.append(ref_factor_1976 / (intensite_1976 / (distance**2)))
-            
+
             geo_factor_list.append(geo_factor)
-        
+
         return geo_factor_list
-  
-        
 
 
-        
     def calculate_wavelength(self, sensor_values, faisceau_pos=(0,0,0), correction_factor_ind=0, enable_print=False):
         """
         Prédit la longueur d'onde à partir des valeurs des capteurs.
@@ -124,16 +135,19 @@ class AlgoWavelength:
         Returns:
         float: Longueur d'onde prédite en nanomètres
         """
+        # Corriger pour le offset de la mise à zéro
+        self.sensor_values = sensor_values - self.zero_offset
+
+        # Normaliser les ratios des sensor values
+        self._normalize_sensor_values()
+
         geo_factor_list = self.angular_factor(faisceau_pos)
-        
+
         for i, k in enumerate(geo_factor_list):
-            sensor_values[i] = sensor_values[i] / k[correction_factor_ind]
+            self.sensor_values_norm[i] = self.sensor_values_norm[i] / k[correction_factor_ind]
             
         # Convertir le tableau numpy en tensor PyTorch
-        tensor_input = torch.tensor(sensor_values, dtype=torch.float32)
-
-        # Mettre le modèle en mode évaluation
-        self.model.eval()
+        tensor_input = torch.tensor(self.sensor_values_norm, dtype=torch.float32)
 
         # Faire la prédiction
         with torch.no_grad():
@@ -144,7 +158,27 @@ class AlgoWavelength:
             print(f"Longueur d'onde prédite: {predicted_wavelength:.2f} nm\n")
         
         return predicted_wavelength
-        
+
+    def _normalize_sensor_values(self):
+        """
+        Normalise les valeurs des capteurs en divisant par la valeur maximale.
+        """
+        self.sensor_values_norm = self.sensor_values / np.max(self.sensor_values)
+
+    def mise_a_zero(self):
+        """
+        Met à zéro les valeurs des capteurs → Soustraire le background
+        pour mesure de longueur d'onde
+        """
+        self.zero_offset = self.sensor_values
+
+    def reset_mise_a_zero(self):
+        """
+        Réinitialise les valeurs de mise à zéro des capteurs. Offset = 0
+        """
+        self.zero_offset = np.zeros(len(self.sensor_order))
+
+
     def get_sensor_ratios_for_wavelength(self, wavelength, enable_print=False):
         """
         Extrait les ratios d'illumination de chaque capteur pour une longueur d'onde donnée.
@@ -667,25 +701,36 @@ if __name__ == "__main__":
     
     def extraction_reponses_laser():
         algo = AlgoWavelength(model_path='model_nn_pytorch_weights.pth')
+
+        bruit = [20.02098894, 17.89683616, 15.70257174, 303.10787518, 2.88497193, 995.92691598, 1127.36721619, 388.34201666]
+        algo.calculate_wavelength(np.array(bruit), enable_print=True)
+        algo.mise_a_zero()
         
         # Test du modèle avec une longueur d'onde spécifique
         test_wavelength = 450
         # ratios_dict, ratios_list = algo.get_sensor_ratios_for_wavelength(test_wavelength)
         responses_dict, responses_list = algo.get_sensor_response_for_wavelength(test_wavelength, enable_print=True)
         ratios_list = np.array(responses_list)/ np.max(responses_list)
-        predicted_wavelength = algo.calculate_wavelength(ratios_list, enable_print=True)
+        start_pred = perf_counter()
+        predicted_wavelength = algo.calculate_wavelength(np.array([x + y for x, y in zip(responses_list, bruit)]), enable_print=True)
+        print(f"Temps de prédiction: {perf_counter() - start_pred:.8f} secondes")
+        algo.reset_mise_a_zero()
     
         test_wavelength = 976
         # ratios_dict, ratios_list = algo.get_sensor_ratios_for_wavelength(test_wavelength)
         responses_dict, responses_list = algo.get_sensor_response_for_wavelength(test_wavelength, enable_print=True)
         ratios_list = np.array(responses_list) / np.max(responses_list)
-        predicted_wavelength = algo.calculate_wavelength(ratios_list, enable_print=True)
+        pred2 = perf_counter()
+        predicted_wavelength = algo.calculate_wavelength(np.array(responses_list), enable_print=True)
+        print(f"Temps de prédiction: {perf_counter() - pred2:.8f} secondes")
         
         test_wavelength = 1976
         # ratios_dict, ratios_list = algo.get_sensor_ratios_for_wavelength(test_wavelength)
         responses_dict, responses_list = algo.get_sensor_response_for_wavelength(test_wavelength, enable_print=True)
         ratios_list = np.array(responses_list) / np.max(responses_list)
-        predicted_wavelength = algo.calculate_wavelength(ratios_list, enable_print=True)
+        pred3 = perf_counter()
+        predicted_wavelength = algo.calculate_wavelength(np.array(responses_list), enable_print=True)
+        print(f"Temps de prédiction: {perf_counter() - pred3:.8f} secondes")
         
     def plot_reponses_et_ratios():
         algo = AlgoWavelength(model_path='model_nn_pytorch_weights.pth')
@@ -694,16 +739,10 @@ if __name__ == "__main__":
         algo.plot_spectral_response()
         algo.plot_spectral_ratios()
     
-    # plot_reponses_et_ratios()
-    # extraction_reponses_laser()  
-    # analyse_sensibilite()
-    # map_position_error()
-        
-    
+    #plot_reponses_et_ratios()
+    extraction_reponses_laser()
+    #analyse_sensibilite()
+    #map_position_error()
 
 
-    
-    
-    
-    
-    
+

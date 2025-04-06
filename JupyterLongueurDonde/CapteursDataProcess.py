@@ -104,7 +104,7 @@ class DataPreProcess:
             # Calcul de l'angle entre le faisceau et le capteur
             angle = (180/np.pi) * (np.arccos(abs(p_z - f_z) / 
                                             np.sqrt((f_x - p_x)**2 + (f_y - p_y)**2 + (f_z - p_z)**2)))
-            
+
             distance = np.sqrt((f_x - p_x)**2 + (f_y - p_y)**2 + (f_z - p_z)**2)
             
             angles = self.angular_dict[sensor_name]['angles']
