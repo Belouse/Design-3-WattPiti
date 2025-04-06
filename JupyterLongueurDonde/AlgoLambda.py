@@ -15,6 +15,7 @@ from tqdm import tqdm
 import torch
 from NN_Pytorch_Lambda import WavelengthPredictor
 
+
 class AlgoWavelength:
     """
     Classe pour charger et utiliser un modèle entraîné pour prédire la longueur d'onde
@@ -55,10 +56,64 @@ class AlgoWavelength:
         
         # Créer une instance de EntrainementLambda pour avoir accès aux réponses des capteurs
         self.data_preprocess = DataPreProcess()
+        self.angular_dict = self.data_preprocess.angular_dict
         self.responses = self.data_preprocess.all_sensors
         self.response_dict = self.data_preprocess.dict_capteurs
         
-    def calculate_wavelength(self, sensor_values, enable_print=False):
+        
+    def angular_factor(self, faisceau_pos=(0,0,0)):
+        # Parcourir tous les capteurs et calculer les angles
+        geo_factor_list = []
+        
+        for sensor_name in self.sensor_order:
+            f_x, f_y, f_z = faisceau_pos
+            p_x, p_y, p_z = self.response_dict[sensor_name]['position']
+            
+            # Calcul de l'angle entre le faisceau et le capteur
+            angle = (180/np.pi) * (np.arccos(abs(p_z - f_z) / 
+                                            np.sqrt((f_x - p_x)**2 + (f_y - p_y)**2 + (f_z - p_z)**2)))
+            
+            distance = np.sqrt((f_x - p_x)**2 + (f_y - p_y)**2 + (f_z - p_z)**2)
+            
+            angles = self.angular_dict[sensor_name]['angles']
+            intensite_450_interp = self.angular_dict[sensor_name]['intensite_450nm']
+            intensite_976_interp = self.angular_dict[sensor_name]['intensite_976nm']
+            intensite_1976_interp = self.angular_dict[sensor_name]['intensite_1976nm']
+  
+            # Trouver les intensités relatives correspondantes pour chaque longueur d'onde
+            # Pour 450nm
+            idx_450 = np.abs(angles - angle).argmin()
+            intensite_450 = intensite_450_interp[idx_450]
+           
+            # Pour 976nm
+            idx_976 = np.abs(angles - angle).argmin()
+            intensite_976 = intensite_976_interp[idx_976]
+
+            # Pour 1976nm
+            idx_1976 = np.abs(angles - angle).argmin()
+            intensite_1976 = intensite_1976_interp[idx_1976]
+            
+            ref_factor_450, ref_factor_976, ref_factor_1976  = self.response_dict[sensor_name]['geo_factor']
+            
+            # Calculer le facteur géométrique
+            geo_factor = []
+            for i in range(3):
+                if i == 0:
+                    geo_factor.append(ref_factor_450 / (intensite_450 / (distance**2)))
+                elif i == 1:
+                    geo_factor.append(ref_factor_976 / (intensite_976 / (distance**2)))
+                elif i == 2:
+                    geo_factor.append(ref_factor_1976 / (intensite_1976 / (distance**2)))
+            
+            geo_factor_list.append(geo_factor)
+        
+        return geo_factor_list
+  
+        
+
+
+        
+    def calculate_wavelength(self, sensor_values, faisceau_pos=(0,0,0), correction_factor_ind=0, enable_print=False):
         """
         Prédit la longueur d'onde à partir des valeurs des capteurs.
         
@@ -69,14 +124,11 @@ class AlgoWavelength:
         Returns:
         float: Longueur d'onde prédite en nanomètres
         """
-        # Convertir les valeurs d'entrée en tableau numpy et les reformater pour la prédiction
-        if isinstance(sensor_values, list):
-            sensor_values = np.array(sensor_values)
+        geo_factor_list = self.angular_factor(faisceau_pos)
         
-        # Reformater pour avoir la forme attendue par le modèle (1 échantillon, 8 caractéristiques)
-        if sensor_values.ndim == 1:
-            sensor_values = sensor_values.reshape(1, -1)
-
+        for i, k in enumerate(geo_factor_list):
+            sensor_values[i] = sensor_values[i] / k[correction_factor_ind]
+            
         # Convertir le tableau numpy en tensor PyTorch
         tensor_input = torch.tensor(sensor_values, dtype=torch.float32)
 
@@ -442,7 +494,159 @@ def plot_wavelength_errors(results):
     plt.tight_layout()
     plt.savefig('error_vs_noise.png')
     plt.show()
+    
+    def dependance_angulaire(self, wavelength, angle, enable_print=False):
+        return
 
+def map_position_error():
+    """
+    Fonction qui mappe l'erreur sur la longueur d'onde estimée en fonction de la position
+    du faisceau pour les trois indices de correction (0, 1, 2).
+    Génère trois heatmaps, une pour chaque indice, avec l'erreur en pourcentage.
+    Les positions sont incluses dans un cercle de 25 de diamètre centré à l'origine.
+    """
+    algo = AlgoWavelength(model_path='model_nn_pytorch_weights.pth')
+    
+    # Définir les longueurs d'onde de test
+    wavelengths = [450, 976, 1976]
+    
+    # Définir la grille de positions x,y
+    radius = 25/2  # Rayon du cercle
+    resolution = 21  # Nombre de points dans chaque direction
+    
+    # Créer les grilles de coordonnées x et y
+    x_positions = np.linspace(-radius, radius, resolution)
+    y_positions = np.linspace(-radius, radius, resolution)
+    
+    # Préparer les conteneurs pour les résultats
+    results = {
+        'correction_factor_ind': [],
+        'wavelength': [],
+        'x_pos': [],
+        'y_pos': [],
+        'error_percent': []
+    }
+    
+    # Pour chaque indice de correction
+    for correction_factor_ind in [0, 1, 2]:
+        print(f"Traitement avec indice de correction: {correction_factor_ind}")
+        
+        # Pour chaque longueur d'onde
+        for wavelength in wavelengths:
+            print(f"  - Longueur d'onde: {wavelength} nm")
+            
+            # Obtenir les réponses des capteurs pour cette longueur d'onde
+            _, responses_list = algo.get_sensor_response_for_wavelength(wavelength)
+            ratios_list = np.array(responses_list) / np.max(responses_list)
+            
+            # Valeur de référence à la position (0,0,0)
+            reference_wavelength = algo.calculate_wavelength(
+                ratios_list.copy(), 
+                faisceau_pos=(0, 0, 0), 
+                correction_factor_ind=correction_factor_ind
+            )
+            
+            # Pour chaque position x, y
+            for x in x_positions:
+                for y in y_positions:
+                    # Vérifier si la position est dans le cercle
+                    if x**2 + y**2 <= radius**2:
+                        # Prédire la longueur d'onde avec la position du faisceau
+                        predicted_wavelength = algo.calculate_wavelength(
+                            ratios_list.copy(),
+                            faisceau_pos=(x, y, 0),
+                            correction_factor_ind=correction_factor_ind
+                        )
+                        
+                        # Calculer l'erreur en pourcentage par rapport à la valeur à la position d'origine
+                        # (pour isoler l'effet de la position)
+                        error_percent = abs(predicted_wavelength - reference_wavelength) / reference_wavelength * 100
+                        
+                        # Stocker les résultats
+                        results['correction_factor_ind'].append(correction_factor_ind)
+                        results['wavelength'].append(wavelength)
+                        results['x_pos'].append(x)
+                        results['y_pos'].append(y)
+                        results['error_percent'].append(error_percent)
+    
+    # Convertir les résultats en DataFrame
+    df_results = pd.DataFrame(results)
+    
+    # Créer les heatmaps
+    plot_position_error_heatmaps(df_results, radius, resolution)
+
+def plot_position_error_heatmaps(df_results, radius, resolution):
+    """
+    Génère trois heatmaps montrant l'erreur en fonction de la position pour chaque indice de correction.
+    
+    Parameters:
+    df_results (pandas.DataFrame): DataFrame contenant les résultats
+    radius (float): Rayon du cercle de positions
+    resolution (int): Résolution de la grille
+    """
+    # Obtenir les valeurs uniques des indices de correction et des longueurs d'onde
+    correction_indices = sorted(df_results['correction_factor_ind'].unique())
+    wavelengths = sorted(df_results['wavelength'].unique())
+    
+    # Créer une figure avec des sous-graphiques (1 ligne, 3 colonnes)
+    fig, axes = plt.subplots(len(correction_indices), len(wavelengths), 
+                            figsize=(15, 12), 
+                            constrained_layout=True)
+    
+    # Configuration des niveaux de contour pour les heatmaps
+    levels = np.linspace(0, df_results['error_percent'].max(), 20)
+    
+    # Créer un maillage de coordonnées pour le graphique
+    x_grid = np.linspace(-radius, radius, resolution)
+    y_grid = np.linspace(-radius, radius, resolution)
+    X, Y = np.meshgrid(x_grid, y_grid)
+    
+    # Pour chaque indice de correction
+    for i, correction_ind in enumerate(correction_indices):
+        # Pour chaque longueur d'onde
+        for j, wavelength in enumerate(wavelengths):
+            # Filtrer les données pour cet indice de correction et cette longueur d'onde
+            subset = df_results[(df_results['correction_factor_ind'] == correction_ind) & 
+                               (df_results['wavelength'] == wavelength)]
+            
+            # Créer une grille pour la heatmap
+            error_grid = np.zeros((resolution, resolution)) * np.nan
+            
+            # Remplir la grille avec les erreurs
+            for _, row in subset.iterrows():
+                # Trouver les indices de la grille correspondant aux positions x, y
+                x_idx = np.abs(x_grid - row['x_pos']).argmin()
+                y_idx = np.abs(y_grid - row['y_pos']).argmin()
+                error_grid[y_idx, x_idx] = row['error_percent']
+            
+            # Masquer les points en dehors du cercle
+            mask = X**2 + Y**2 > radius**2
+            error_grid = np.ma.array(error_grid, mask=mask)
+            
+            # Tracer la heatmap dans le sous-graphique correspondant
+            ax = axes[i, j]
+            contour = ax.contourf(X, Y, error_grid, levels=levels, cmap='viridis', extend='max')
+            
+            # Ajouter un cercle pour montrer la limite
+            circle = plt.Circle((0, 0), radius, fill=False, color='r', linestyle='--')
+            ax.add_patch(circle)
+            
+            # Ajouter des titres et étiquettes
+            ax.set_title(f"Indice {correction_ind}, λ = {wavelength} nm")
+            ax.set_xlabel("Position X")
+            ax.set_ylabel("Position Y")
+            ax.set_aspect('equal')
+            
+            # Ajouter une barre de couleur
+            plt.colorbar(contour, ax=ax, label="Erreur (%)")
+    
+    # Ajouter un titre global
+    fig.suptitle("Erreur (%) sur la longueur d'onde estimée selon la position du faisceau", fontsize=16)
+    
+    # Sauvegarder la figure
+    plt.savefig('position_error_heatmaps.png', dpi=300, bbox_inches='tight')
+    plt.show()
+    
 # Exemple d'utilisation:
 if __name__ == "__main__":
     def analyse_sensibilite():
@@ -489,12 +693,11 @@ if __name__ == "__main__":
         # Afficher les courbes de réponse spectrale
         algo.plot_spectral_response()
         algo.plot_spectral_ratios()
-        
-        
-        
+    
     # plot_reponses_et_ratios()
     # extraction_reponses_laser()  
     # analyse_sensibilite()
+    # map_position_error()
         
     
 

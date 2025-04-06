@@ -15,7 +15,7 @@ class DataPreProcess:
     """
     Classe pour charger et traiter les données des capteurs
     """
-    def __init__(self, gains = None, plastic_name: str='Petri'):
+    def __init__(self, callibration = None, callib_point='point1', plastic_name: str='Petri'):
         """
         Initialisation de l'objet des courbes de réponses
 
@@ -23,6 +23,15 @@ class DataPreProcess:
         :param plastic_name: Nom du plastique pour la transmission. (Default = 'Petri')
         """
 
+        if callibration is None:
+            self.callibration = {'point1':{'puissance#W':1, 'longueur_donde#nm':450, 'counts':[17.6316, 15.7135, 8.9103, 236.3130, 9.5582, 232.6271, 1455.2121, 217.1186]},
+                                 'point2':{'puissance#W':1, 'longueur_donde#nm':976, 'counts':[718.4668, 647.4318, 453.5327, 639.2649, 0.0000, 0.0000, 0.0000, 0.0000]},
+                                 'point3':{'puissance#W':1, 'longueur_donde#nm':1976, 'counts':[2734.6400, 2214.5632, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000]},
+                                 'gains': [1, 1, 1, 1, 1, 1, 1, 1]}
+            # ['P_IR1', 'P_IR1xP', 'P_IR2', 'P_UV', 'C_UV', 'C_VISG', 'C_VISB', 'C_VISR']
+        else:
+            self.callibration = callibration
+        
         # Initialiser les courbes des capteurs
         self.UV1 = None  # Courbe de réponse capteur UV1
         self.UV2 = None  # Courbe de réponse capteur UV2
@@ -36,16 +45,6 @@ class DataPreProcess:
         self.plastic_t_file = None  # Courbes de transmission de tous les plastiques
         self.plastic_name = plastic_name  # Nom du plastique pour la transmission
 
-        # À corriger !!! Calcul de l'aire de la surface des capteurs I2C pour convertir en Counts/W
-        self.P_IR1_area = 2
-        self.P_IR1xP_area = 2
-        self.P_IR2_area = 2
-        self.P_UV_area = 2
-        self.C_UV_area = 0.28E-3 ** 2
-        self.C_VISG_area = 0.2E-3 ** 2
-        self.C_VISB_area = 0.2E-3 ** 2
-        self.C_VISR_area = 0.2E-3 ** 2
-
         # Initialiser les positions des capteurs (x, y, z)
         self.P_IR1_pos = (-9.7, 21.34, -23.16)  # Position du capteur IR1 [mm]
         self.P_IR1xP_pos = (9.25, 21.18, -23.238)  # Position du capteur IR1xP [mm]
@@ -55,47 +54,149 @@ class DataPreProcess:
         self.C_VISG_pos = (5.97, 16.97, -29.91)  # Position du capteur VIS I2C Green [mm]
         self.C_VISB_pos = (5.97, 16.97, -29.91)  # Position du capteur VIS I2C Blue [mm]
         self.C_VISR_pos = (5.97, 16.97, -29.91)  # Position du capteur VIS I2C Red [mm]
+        
+        # Utiliser les gains fournis
+        self.gain_IR1 = self.callibration['gains'][0]
+        self.gain_IR1xP = self.callibration['gains'][1]
+        self.gain_IR2 = self.callibration['gains'][2]
+        self.gain_UV = self.callibration['gains'][3]
+        self.gain_C_UV = self.callibration['gains'][4]
+        self.gain_C_VISG = self.callibration['gains'][5]
+        self.gain_C_VISB = self.callibration['gains'][6]
+        self.gain_C_VISR = self.callibration['gains'][7]
 
-        # Configurer les gains des capteurs
-        if gains is None:
-            # Valeurs par défaut si aucun gain n'est fourni
-            self.gain_IR1 = 2                       # Gain de la photodiode IR 2500
-            self.gain_IR1xP = 2                     # Gain de la photodiode IR 2500 PMMA
-            self.gain_IR2 = 2                       # Gain de la photodiode IR 1700
-            self.gain_UV = 2                        # Gain de la photodiode UV
-            self.gain_C_UV = 100 / 4e9 * 4095       # Gain du capteur I2C UV
-            self.gain_C_VISG = 100 / 4e11 * 4095    # Gain du capteur I2C VIS channel Green
-            self.gain_C_VISB = 100 / 4e11 * 4095    # Gain du capteur I2C VIS channel Blue
-            self.gain_C_VISR = 100 / 4e11 * 4095    # Gain du capteur I2C VIS channel Red
-        else:
-            # Utiliser les gains fournis
-            self.gain_IR1 = gains[0]
-            self.gain_IR1xP = gains[1]
-            self.gain_IR2 = gains[2]
-            self.gain_UV = gains[3]
-            self.gain_C_UV = gains[4]
-            self.gain_C_VISG = gains[5]
-            self.gain_C_VISB = gains[6]
-            self.gain_C_VISR = gains[7]
+        self.sensor_order = ['P_IR1', 'P_IR1xP', 'P_IR2', 'P_UV', 'C_UV', 'C_VISG', 'C_VISB', 'C_VISR']
 
         # Créé un dictionnaire pour les capteurs
         self.dict_capteurs = {
-            'P_IR1': {'gain': self.gain_IR1, 'sensor_area': self.P_IR1_area, 'position': self.P_IR1_pos},
-            'P_IR1xP': {'gain': self.gain_IR1xP, 'sensor_area': self.P_IR1xP_area, 'position': self.P_IR1xP_pos},
-            'P_IR2': {'gain': self.gain_IR2, 'sensor_area': self.P_IR2_area, 'position': self.P_IR2_pos},
-            'P_UV': {'gain': self.gain_UV, 'sensor_area': self.P_UV_area, 'position': self.P_UV_pos},
-            'C_UV': {'gain': self.gain_C_UV, 'sensor_area': self.C_UV_area, 'position': self.C_UV_pos},
-            'C_VISG': {'gain': self.gain_C_VISG, 'sensor_area': self.C_VISG_area, 'position': self.C_VISG_pos},
-            'C_VISB': {'gain': self.gain_C_VISB, 'sensor_area': self.C_VISB_area, 'position': self.C_VISB_pos},
-            'C_VISR': {'gain': self.gain_C_VISR, 'sensor_area': self.C_VISR_area, 'position': self.C_VISR_pos}}
+            'P_IR1': {'gain': self.gain_IR1, 'position': self.P_IR1_pos, 'geo_factor': [1, 1, 1],},
+            'P_IR1xP': {'gain': self.gain_IR1xP, 'position': self.P_IR1xP_pos, 'geo_factor': [1, 1, 1],},
+            'P_IR2': {'gain': self.gain_IR2, 'position': self.P_IR2_pos, 'geo_factor': [1, 1, 1],},
+            'P_UV': {'gain': self.gain_UV, 'position': self.P_UV_pos, 'geo_factor': [1, 1, 1],},
+            'C_UV': {'gain': self.gain_C_UV, 'position': self.C_UV_pos, 'geo_factor': [1, 1, 1],},
+            'C_VISG': {'gain': self.gain_C_VISG, 'position': self.C_VISG_pos, 'geo_factor': [1, 1, 1],},
+            'C_VISB': {'gain': self.gain_C_VISB, 'position': self.C_VISB_pos, 'geo_factor': [1, 1, 1],},
+            'C_VISR': {'gain': self.gain_C_VISR, 'position': self.C_VISR_pos, 'geo_factor': [1, 1, 1],}}
+        
+        
         
         # Charger des données
         self._load_data()
 
+        # Charger les données expérimentales de dépendance angulaire
+        self.angular_dict = self.variation_angulaire()
+        
+        # Définir le facteur de correction de référence pour chaque capteur
+        self.set_ref_geo_factor()
+
         # Traiter les données
-        self._process_data()
+        self._process_data(point=callib_point)
+        
+    def set_ref_geo_factor(self, faisceau_pos=(0,0,0)):
+        """
+        Fonction pour calculer le facteur angulaire des capteurs
+        """
+        # Parcourir tous les capteurs et calculer les angles
+        for sensor_name in self.sensor_order:
+            f_x, f_y, f_z = faisceau_pos
+            p_x, p_y, p_z = self.dict_capteurs[sensor_name]['position']
+            
+            # Calcul de l'angle entre le faisceau et le capteur
+            angle = (180/np.pi) * (np.arccos(abs(p_z - f_z) / 
+                                            np.sqrt((f_x - p_x)**2 + (f_y - p_y)**2 + (f_z - p_z)**2)))
+            
+            distance = np.sqrt((f_x - p_x)**2 + (f_y - p_y)**2 + (f_z - p_z)**2)
+            
+            angles = self.angular_dict[sensor_name]['angles']
+            intensite_450_interp = self.angular_dict[sensor_name]['intensite_450nm']
+            intensite_976_interp = self.angular_dict[sensor_name]['intensite_976nm']
+            intensite_1976_interp = self.angular_dict[sensor_name]['intensite_1976nm']
+  
+            # Trouver les intensités relatives correspondantes pour chaque longueur d'onde
+            # Pour 450nm
+            idx_450 = np.abs(angles - angle).argmin()
+            intensite_450 = intensite_450_interp[idx_450]
+           
+            # Pour 976nm
+            idx_976 = np.abs(angles - angle).argmin()
+            intensite_976 = intensite_976_interp[idx_976]
 
+            # Pour 1976nm
+            idx_1976 = np.abs(angles - angle).argmin()
+            intensite_1976 = intensite_1976_interp[idx_1976]
+            
+            # Calculer le facteur géométrique
+            geo_factor = []
+            for i in range(3):
+                if i == 0:
+                    geo_factor.append(intensite_450 / (distance**2))
+                elif i == 1:
+                    geo_factor.append(intensite_976 / (distance**2))
+                elif i == 2:
+                    geo_factor.append(intensite_1976 / (distance**2))
 
+            self.dict_capteurs[sensor_name]['geo_factor'] = geo_factor
+            
+        
+
+    def variation_angulaire(self):
+        # Dictionnaire pour stocker les résultats
+        resultats = {}
+        
+        # Préparation des données et interpolation pour les 3 courbes
+        # 450nm
+        angle_450 = 90 - np.array([75, 70, 65, 60, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37])
+        intensite_rel_450 = [37.5, 34.8, 31.1, 27.8, 24.5, 24, 23.2, 22.6, 22.2, 21.7, 21.2, 20.5, 20, 19.4, 18.9, 18.3, 18.1, 17.5, 17.2, 16.6, 16.2, 15.7, 15.3]
+        intensite_rel_450 = np.array(intensite_rel_450) / np.max(intensite_rel_450)
+        
+        # 976nm
+        angle_976 = 90 - np.array([75, 70, 65, 60, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35])
+        intensite_rel_976 = [56.8, 54.3, 51.2, 48.4, 44.4, 43.4, 43.2, 42.6, 41.3, 40.7, 40.1, 38.7, 38, 37.3, 36.5, 35.5, 34.7, 34, 33.2, 32.8, 32, 31.1, 30.5, 29.4, 29]
+        intensite_rel_976 = np.array(intensite_rel_976) / np.max(intensite_rel_976)
+        
+        # 1976nm
+        tension_ref = 148
+        angle_1976 = 90 - np.array([75, 71, 69, 64, 59, 54, 49, 44, 39, 34, 29, 24])
+        tension_mesuree = np.array([66, 70, 72, 73, 80, 82, 85, 89, 93, 101, 106, 110])
+        intensite_rel_1976 = (tension_ref / tension_mesuree) / np.max(tension_ref / tension_mesuree)
+        
+        # Interpolation pour avoir 100 points pour chaque courbe
+        # Déterminer les plages d'angle pour chaque courbe
+        min_angle_450, max_angle_450 = min(angle_450), max(angle_450)
+        min_angle_976, max_angle_976 = min(angle_976), max(angle_976)
+        min_angle_1976, max_angle_1976 = min(angle_1976), max(angle_1976)
+        
+        angle_min = max(min_angle_450, min_angle_976, min_angle_1976)
+        angle_max = min(max_angle_450, max_angle_976, max_angle_1976)
+        
+        # Créer des grilles de 100 points pour chaque courbe
+        angles = np.linspace(angle_min, angle_max, 100)
+        
+        # Interpolation des valeurs d'intensité relative
+        from scipy.interpolate import interp1d
+        
+        f_450 = interp1d(angle_450, intensite_rel_450, kind='cubic', bounds_error=False, fill_value='extrapolate')
+        f_976 = interp1d(angle_976, intensite_rel_976, kind='cubic', bounds_error=False, fill_value='extrapolate')
+        f_1976 = interp1d(angle_1976, intensite_rel_1976, kind='cubic', bounds_error=False, fill_value='extrapolate')
+        
+        intensite_450_interp = f_450(angles)
+        intensite_976_interp = f_976(angles)
+        intensite_1976_interp = f_1976(angles)
+        
+        # Parcourir tous les capteurs et calculer les angles
+        for sensor_name in self.sensor_order:       
+            # Stocker les résultats
+            resultats[sensor_name] = {
+                'angles': angles,
+                'intensite_450nm': intensite_450_interp,
+                'intensite_976nm': intensite_976_interp,
+                'intensite_1976nm': intensite_1976_interp
+            }
+        
+        return resultats
+
+        
+        
     def _load_data(self):
         """
         Charger les fichiers CSV
@@ -181,25 +282,8 @@ class DataPreProcess:
         return ApW_arr
 
     @staticmethod
-    def _photodiode_ADC(current_data, gain_transimp=1, ADC_max=4095, voltage_max=3.3):
-        """
-        Convertit le courant en valeurs ADC
-
-        :param current_data: Données de courant
-        :param gain_transimp: Gain du transimpédance (Default = 1)
-        :param ADC_max: Valeur maximale de l'ADC (Default = 4095)
-        :param voltage_max: Valeur maximale du voltage (Default = 3.3)
-        :return: Données converties en valeurs ADC
-        """
-        # 4095*Voltage/3.3
-        ADC_arr = np.zeros(np.shape(current_data))
-        ADC_arr[:, 1] = current_data[:, 1] * gain_transimp * ADC_max / voltage_max
-        ADC_arr[:, 0] = current_data[:, 0]
-        return ADC_arr
-
-    @staticmethod
     def _denormalize_curve(normalized_data, reference_wavelength, reference_value,
-                          scaling_factor: float =1.0, sensor_area: float =1.0) -> np.ndarray:
+                          scaling_factor: float =1.0) -> np.ndarray:
         """
         Dénormalise une courbe en utilisant un point de référence.
 
@@ -228,7 +312,7 @@ class DataPreProcess:
         scale_factor = reference_value / normalized_value_at_ref
 
         # Appliquer le facteur d'échelle à toutes les valeurs normalisées
-        denormalized_data[:, 1] = normalized_data[:, 1] * scale_factor * scaling_factor / sensor_area
+        denormalized_data[:, 1] = normalized_data[:, 1] * scale_factor * scaling_factor
 
         return denormalized_data
 
@@ -259,48 +343,93 @@ class DataPreProcess:
 
         return normalized_data
 
-    def _process_data(self):
+    def _process_data(self, point):
         """
         Traiter les données. Appliquer les méthodes de prétraitement nécessaires.
         """
         # Interpoler les données
         self._interpolate_data()
 
+        ref_wavelength = self.callibration[point]['longueur_donde#nm']
+
         # ------------ P_IR1 --------------
-        P_IR1_interp = self._photodiode_ADC(self._QE2ApW(self.IR), self.dict_capteurs['P_IR1']['gain'])
+        P_IR1_interp = self._QE2ApW(self.IR)
+        P_IR1_interp[:, 1] = P_IR1_interp[:, 1]/np.max(P_IR1_interp[:, 1])
+        
+        ref_value = self.callibration[point]['counts'][0] / self.callibration[point]['puissance#W'] 
+        
+        P_IR1_interp = self._denormalize_curve(P_IR1_interp, 
+                                               ref_wavelength, 
+                                               ref_value,
+                                               self.dict_capteurs['P_IR1']['gain'])
 
         # ------------ P_IR1xP ------------
         P_IR1xP_interp = self.IR
         P_IR1xP_interp[:, 1] = self.IR[:, 1] * self.plastic_transmission[:, 1]
-        P_IR1xP_interp = self._photodiode_ADC(self._QE2ApW(P_IR1xP_interp), self.dict_capteurs['P_IR1xP']['gain'])
+        P_IR1xP_interp = self._QE2ApW(P_IR1xP_interp)
+        P_IR1xP_interp[:, 1] = P_IR1xP_interp[:, 1]/np.max(P_IR1xP_interp[:, 1])
+
+        ref_value = self.callibration[point]['counts'][1] / self.callibration[point]['puissance#W']
+        
+        P_IR1xP_interp = self._denormalize_curve(P_IR1xP_interp,
+                                                  ref_wavelength, 
+                                                  ref_value,
+                                                  self.dict_capteurs['P_IR1xP']['gain'])
 
         # ------------ P_IR2 --------------
-        P_IR2_interp = self._photodiode_ADC(self._QE2ApW(self.IR2), self.dict_capteurs['P_IR2']['gain'])
+        P_IR2_interp = self._QE2ApW(self.IR2)
+        P_IR2_interp[:, 1] = P_IR2_interp[:, 1]/np.max(P_IR2_interp[:, 1])
+        
+        ref_value = self.callibration[point]['counts'][2] / self.callibration[point]['puissance#W']
+        
+        P_IR2_interp = self._denormalize_curve(P_IR2_interp,
+                                               ref_wavelength, 
+                                               ref_value,
+                                               self.dict_capteurs['P_IR2']['gain'])
+        
 
         # ------------ P_UV ---------------
-        P_UV_interp = self._photodiode_ADC(self._QE2ApW(self.UV2), self.dict_capteurs['P_UV']['gain'])
+        P_UV_interp = self._QE2ApW(self.UV2)
+        P_UV_interp[:, 1] = P_UV_interp[:, 1]/np.max(P_UV_interp[:, 1])
+        
+        ref_value = self.callibration[point]['counts'][3] / self.callibration[point]['puissance#W']
+        
+        P_UV_interp = self._denormalize_curve(P_UV_interp,
+                                              ref_wavelength, 
+                                              ref_value,
+                                              self.dict_capteurs['P_UV']['gain'])
 
 
         # ------------ C_UV ---------------
-        C_UV_interp = self._denormalize_curve(self.UV1, 310, 160/70,
-                                        self.dict_capteurs['C_UV']['gain'],
-                                        self.dict_capteurs['C_UV']['sensor_area'])
+        ref_value = self.callibration[point]['counts'][4] / self.callibration[point]['puissance#W']
+        
+        C_UV_interp = self._denormalize_curve(self.UV1, 
+                                              ref_wavelength, ref_value,
+                                              self.dict_capteurs['C_UV']['gain'])
 
         # ------------ C_VISG -------------
-        C_VISG_interp = abs(self._denormalize_curve(self.VIS_green, 518, 74,
-                                              self.dict_capteurs['C_VISG']['gain'],
-                                              self.dict_capteurs['C_VISG'][
-                                                  'sensor_area']))
+        ref_value = self.callibration[point]['counts'][5] / self.callibration[point]['puissance#W']
+        
+        C_VISG_interp = abs(self._denormalize_curve(self.VIS_green, 
+                                                    ref_wavelength, 
+                                                    ref_value,
+                                                    self.dict_capteurs['C_VISG']['gain']))
 
         # ------------ C_VISB -------------
-        C_VISB_interp = self._denormalize_curve(self.VIS_Blue, 467, 56,
-                                          self.dict_capteurs['C_VISB']['gain'],
-                                          self.dict_capteurs['C_VISB']['sensor_area'])
-
+        ref_value = self.callibration[point]['counts'][6] / self.callibration[point]['puissance#W']
+        
+        C_VISB_interp = self._denormalize_curve(self.VIS_Blue, 
+                                                ref_wavelength, 
+                                                ref_value,
+                                                self.dict_capteurs['C_VISB']['gain'])
+        
         # ------------ C_VISR -------------
-        C_VISR_interp = self._denormalize_curve(self.VIS_red, 619, 96,
-                                          self.dict_capteurs['C_VISR']['gain'],
-                                          self.dict_capteurs['C_VISR']['sensor_area'])
+        ref_value = self.callibration[point]['counts'][7] / self.callibration[point]['puissance#W']
+        
+        C_VISR_interp = self._denormalize_curve(self.VIS_red, 
+                                                ref_wavelength, 
+                                                ref_value,
+                                                self.dict_capteurs['C_VISR']['gain'])
 
         # Ajouter les valeurs au dict_capteurs pour chaque capteur
         self.dict_capteurs['P_IR1']['data'] = P_IR1_interp
@@ -361,3 +490,4 @@ class DataPreProcess:
         plt.legend()
         plt.grid()
         plt.show()
+
