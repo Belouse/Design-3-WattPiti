@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 from time import perf_counter
 import os
 
-from EntrainementLambda import EntrainementLambda
 from CapteursDataProcess import DataPreProcess
 from matplotlib.gridspec import GridSpec
 import seaborn as sns
@@ -21,12 +20,11 @@ class AlgoWavelength:
     à partir des valeurs des capteurs.
     """
 
-    def __init__(self, model_path='heavyModel.pkl'):
+    def __init__(self, model_path: str ='heavyModel.pkl'):
         """
         Initialise l'algorithme de prédiction de longueur d'onde en chargeant le modèle préentraîné.
-        
-        Parameters:
-        model_path (str): Chemin vers le fichier du modèle entraîné
+
+        :param model_path: Chemin vers le fichier du modèle entraîné (str)
         """
         # Obtenir le chemin du répertoire contenant le script en cours d'exécution
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -60,6 +58,9 @@ class AlgoWavelength:
 
         # Initialiser les sensor values
         self.sensor_values = np.zeros(len(self.sensor_order))
+
+        # Initialiser moving window size
+        self.moving_window_size = None
         
         # Créer une instance de EntrainementLambda pour avoir accès aux réponses des capteurs
         self.data_preprocess = DataPreProcess()
@@ -69,6 +70,12 @@ class AlgoWavelength:
 
 
     def angular_factor(self, faisceau_pos=(0,0,0)):
+        """
+        Calcule le facteur géométrique pour chaque capteur en fonction de la position du faisceau.
+
+        :param faisceau_pos: Position du faisceau (x, y, z) pour le calcul de l'angle
+        :return: Liste des facteurs géométriques pour chaque capteur (list)
+        """
         # Parcourir tous les capteurs et calculer les angles
         geo_factor_list = []
 
@@ -117,17 +124,33 @@ class AlgoWavelength:
         return geo_factor_list
 
 
-    def calculate_wavelength(self, sensor_values, faisceau_pos=(0,0,0), correction_factor_ind=0, enable_print=False):
+    def calculate_wavelength(self, sensor_values, faisceau_pos=(0,0,0), correction_factor_ind=0, moving_window_size: int = None, enable_print=False):
         """
         Prédit la longueur d'onde à partir des valeurs des capteurs.
-        
-        Parameters:
-        sensor_values (list or numpy.ndarray): Liste ou tableau des valeurs normalisées des capteurs
-                                               dans l'ordre [P_IR1, P_IR1xP, P_IR2, P_UV, C_UV, C_VISG, C_VISB, C_VISR]
-        
-        Returns:
-        float: Longueur d'onde prédite en nanomètres
+
+        :param sensor_values: Liste ou tableau des valeurs normalisées des capteurs
+        dans l'ordre [P_IR1, P_IR1xP, P_IR2, P_UV, C_UV, C_VISG, C_VISB, C_VISR]
+        :param faisceau_pos: Position du faisceau (x, y, z) pour le calcul de l'angle
+        :param correction_factor_ind: Indice du facteur de correction à appliquer
+        :param moving_window_size: Taille de la fenêtre mobile pour le moyennage (int)
+        :param enable_print: Si True, affiche les résultats
+
+        :return: Longueur d'onde prédite en nanomètres (float)
         """
+
+        if not moving_window_size:
+            self.moving_window_size = sensor_values.shape[0]
+        else:
+            if moving_window_size > sensor_values.shape[0]:
+                self.moving_window_size = sensor_values.shape[0]
+            else:
+                self.moving_window_size = moving_window_size
+
+        # Calculer la moyenne des n premières valeurs des données reçues
+        if sensor_values.shape[0] > 1:
+            sensor_values = self.calculate_average_window(sensor_values, self.moving_window_size)
+
+
         # Corriger pour le offset de la mise à zéro
         # Assurer que les valeurs ne deviennent pas négatives
         self.sensor_values = np.maximum(0, sensor_values - self.zero_offset)
@@ -171,6 +194,23 @@ class AlgoWavelength:
         Réinitialise les valeurs de mise à zéro des capteurs. Offset = 0
         """
         self.zero_offset = np.zeros(len(self.sensor_order))
+
+    @staticmethod
+    def calculate_average_window(sensor_values, moving_window_size):
+        """
+        Calcule la moyenne des premières valeurs d'un tableau 2D sur l'axe 0.
+
+        :param sensor_values: Tableau de valeurs de dimension (n, 8)
+        :param moving_window_size: Nombre de lignes à moyenner
+        :return: Vecteur de dimension (8,) contenant les moyennes pour chaque capteur
+        """
+        # Assurer que moving_window_size ne dépasse pas le nombre de lignes disponibles
+        window_size = min(moving_window_size, sensor_values.shape[0])
+
+        # Calculer la moyenne sur les window_size premières lignes
+        averaged_values = np.mean(sensor_values[:window_size], axis=0)
+
+        return averaged_values
 
 
     def get_sensor_ratios_for_wavelength(self, wavelength, enable_print=False):
