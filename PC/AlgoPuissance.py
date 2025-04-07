@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from dataclasses import dataclass
 from DataContainerClass import DataContainer
+import pandas as pd
+from scipy.interpolate import interp1d
+import os
 
 class AlgoPower:
     def __init__(self):
@@ -21,77 +24,139 @@ class AlgoPower:
 
 
 
-    def calculatePowerTest(self, dataContainer):
-        """
+    #def calculatePowerTest(self, nom_fichier):
         
-        Fonction de test ici qui n'interrompt pas le main...
+        # Aller dans /Thermique/SimulationCSV depuis le script dans PC/
+        #base_path = os.path.dirname(os.path.abspath(__file__))  # /Design-3-WattPiti/PC
+        #dossier_csv = os.path.join(base_path, "..", "Thermique", "SimulationCSV")
+        #dossier_csv = os.path.normpath(dossier_csv)  # Nettoyer le chemin
+
+        # Créer le chemin complet vers le fichier
+        #chemin_fichier = os.path.join(dossier_csv, nom_fichier)
+
+        # --- Données réponses aux échelons pour interpolation ---
+        #T_points = np.array([3.73, 10.53, 17.33, 24.13])
+        #K_points = np.array([1.492, 2.106, 2.311, 2.413])
+        #tau_points = np.array([1.0196, 1.3203, 1.3881, 1.4183])
+
+        # Fonctions interpolées linéaires
+        #calculate_K = interp1d(T_points, K_points, kind='linear', fill_value="extrapolate")
+        #calculate_tau = interp1d(T_points, tau_points, kind='linear', fill_value="extrapolate")
+
+
+        # Lire le fichier CSV
+        #df = pd.read_csv(chemin_fichier)
+    
+        # Garder uniquement les données des nodes 121 et 241
+        #df_121 = df[df["Node_ID"] == 121]
+        #df_241 = df[df["Node_ID"] == 241]
+
+        # S'assurer qu'ils sont bien triés par le temps
+        #df_121 = df_121.sort_values(by="Time")
+        #df_241 = df_241.sort_values(by="Time")
+    
+        # Extraire le temps et les températures
+        #temps = df_121["Time"].values
+        #T_121 = df_121["NDTEMP.T"].values # max_temperature in dataContainerClass
+        #T_241 = df_241["NDTEMP.T"].values # 17e élément du vecteur temperature in dataContainerClass
+    
+        # Calcul de la température normalisée
+        #T_norm = T_121 - T_241
+
+        # Supprimer les premières valeurs (trimer pour avoir la bonne valeur de température)
+        #T_norm = T_norm[8:] - T_norm[8]
+        #temps = temps[8:] - temps[8]
+
+        # Identifier l’indice correspondant à t >= 10 secondes
+        #indices_regime_permanent = np.where(temps >= 10)[0]
+
+        # Prendre la première valeur après 10 secondes
+        #i = indices_regime_permanent[0]
+        #T_regime = T_norm[i]
+        #K_regime = calculate_K(T_regime)
+        #P_regime = T_regime / K_regime
+
+        # Calcul du terme transitoire de puissance
+        #tau_regime = calculate_tau(T_regime)
+        #dT_dt = np.gradient(T_norm, temps)
+        #dT_dt_regime = dT_dt[i]
+        #P_transitoire = (tau_regime / K_regime) * dT_dt_regime
+
+        #Puissance totale
+        #P_total = P_regime + P_transitoire
+
+        # Affichage
+        #print(f"--- Terme transitoire ---")
+        #print(f"Constante de temps tau(T) = {tau_regime:.5f}")
+        #print(f"dT/dt ≈ {dT_dt_regime:.5f}")
+        #print(f"Terme transitoire (tau/K * dT/dt) = {P_transitoire:.5f}")
+
+        #print(f"\n--- Puissance totale ---")
+        #print(f"P_total = P_regime + P_transitoire = {P_total:.5f}")
+
+
+        #print(f"--- Régime permanent à t = {temps[i]:.2f} s ---")
+        #print(f"Température normalisée T(t) = {T_regime:.5f}")
+        #print(f"Gain K(T) = {K_regime:.5f}")
+        #print(f"Puissance P(t) = T(t) / K(T) = {P_regime:.5f}")
+    
+        #return P_total
+
+# Crée une instance de la classe
+#mon_algo = AlgoPower()
+#mon_algo.calculatePowerTest("TestEchelon5W.csv") # mettre le nom du fichier test
+
+
+######################
+
+    def __init__(self):
+        # Données expérimentales si on ne trime pas les premiers éléments
+        T_points = np.array([6.82, 13.72, 20.63, 27.54])
+        K_points = np.array([2.728, 2.744, 2.751, 2.754])
+        tau_points = np.array([0.8962, 1.1798, 1.2716, 1.3178])
+
+        # Fonctions interpolées sauvegardées comme attributs de l'objet
+        self.calculate_K = interp1d(T_points, K_points, kind='linear', fill_value="extrapolate")
+        self.calculate_tau = interp1d(T_points, tau_points, kind='linear', fill_value="extrapolate")
+
+    def calculer_puissance(self, container):
+        temperature_ailette = container.temperature[-1]
+        T_t = container.max_temperature - temperature_ailette
+
+        dT_dt = ((container.max_temperature - temperature_ailette) -(container.old_max_temperature - temperature_ailette)) / container.Delta_t
+
+        K = self.calculate_K(T_t)
+        tau = self.calculate_tau(T_t)
+
+        P = T_t / K + (tau / K) * dT_dt
+
+        print(f"T(t) = {T_t:.5f}")
+        print(f"dT/dt = {dT_dt:.5f}")
+        print(f"K(T) = {K:.5f}")
+        print(f"tau(T) = {tau:.5f}")
+        print(f"Puissance P(t) = {P:.5f} W")
+
+        return P
+
         
-        """
-        temperatures = dataContainer.temperature
-        thermistor_temps = temperatures[:-1]  # 16 premières valeurs
-        T0 = temperatures[-1]                 # Température de référence (17e élément)
-
-        # Rayon plaque (mm)
-        radius = 30
-
-        # Positions radiales : 16 points répartis uniformément + 1 point pour T0
-        radial_positions = np.linspace(0, radius, len(thermistor_temps) + 1)
-
-        # Températures mesurées incluant la température de référence
-        all_temperatures = np.append(thermistor_temps, T0)
-
-        # Approximation d'une gaussienne
-        def gaussian(x, a, b, c):
-            return a * np.exp(-((x - b) ** 2) / (2 * c ** 2))
-
-        # Paramètres de la gaussienne
-        a = np.max(thermistor_temps)  
-        b = 0                         
-        c = radius / 3                
-
-        # Génération des températures gaussiennes
-        gaussian_temps = gaussian(radial_positions, a, b, c)
-
-        # Modèle pour le calcul de la puissance --> trouvé avec curvfit des courbes à Tom (*pas précis*)
-        def calculate_laser_power(T_r, r):
-            return (T_r - T0) / (2.70 * np.exp(-0.0018 * r**2))
-
-        # Calcul des puissances individuelles
-        laser_powers = np.array([calculate_laser_power(T_r, r) 
-                                for T_r, r in zip(thermistor_temps, radial_positions[:-1])])
-
-        # Puissance totale du laser
-        total_power = np.sum(laser_powers)
-
-        # Graphique pour températures
-        plt.figure(figsize=(8, 5))
-        plt.plot(radial_positions, all_temperatures, 'o-', label='Températures mesurées')
-        plt.plot(radial_positions, gaussian_temps, '--', label='Gaussienne ajustée')
-        plt.title('Distribution des températures sur la plaque chauffée')
-        plt.xlabel('Position radiale (mm)')
-        plt.ylabel('Température (°C)')
-        plt.legend()
-        plt.grid(True)
-        plt.show()
-
-        # Graphique pour puissances
-        plt.figure(figsize=(8, 5))
-        plt.plot(radial_positions[:-1], laser_powers, 'o-', label='Puissance estimée (W)')
-        plt.title('Estimation de la puissance du laser en fonction de la position radiale')
-        plt.xlabel('Position radiale (mm)')
-        plt.ylabel('Puissance (W)')
-        plt.legend()
-        plt.grid(True)
-        plt.show()
-
-        print(f"Puissance totale du laser estimée : {total_power:.2f} W")
-        return total_power
-
-# Exemple d'utilisation
-sensor_data = DataContainer(
-    temperature=np.array([50, 48, 46, 44, 42, 40, 38, 36, 34, 32, 
-                            30, 28, 26, 24, 22, 20, 30])  # Dernier élément = température de référence
-)
+        
 if __name__ == "__main__":
+    # redéfinir une classe simul
+    class FakeDataContainer:
+        def __init__(self):
+            self.max_temperature = 4.31
+            self.old_max_temperature = 4.073
+            self.temperature = [0]*16 + [8.064]  # ailette
+            self.Delta_t = 0.2 - 0.1
+
+    # Créer l'objet test
+    container = FakeDataContainer()
     algo = AlgoPower()
-    algo.calculatePowerTest(sensor_data)
+
+    # Lancer le test
+    puissance = algo.calculer_puissance(container)
+
+    print(f"\n Puissance calculée : {puissance:.5f} W")
+
+# fonctionne en régime permanent
+# fonctionne pas pour les premières secondes

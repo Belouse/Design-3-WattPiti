@@ -31,6 +31,7 @@ if __name__ == '__main__':
 
 
     csv_simulation_1 = "Thermique\SimulationCSV\Offset_1_10W_parsed.csv"
+    csv_simulation_2 = "Thermique\SimulationCSV\TestEchelon75W.csv"
 
     # Define the grid size and spacing
     position_xy = np.array([
@@ -43,7 +44,7 @@ if __name__ == '__main__':
 
 
     # Read the CSV file into a DataFrame
-    df = pd.read_csv(csv_simulation_1)
+    df = pd.read_csv(csv_simulation_2)
 
     # create de X, Y arrays with the themperature values
     x_simulation_1 = df['COORDINATES.X']
@@ -113,12 +114,12 @@ if __name__ == '__main__':
     print("data after =", data)
 
     print("data.thermalCaptorPosition =", data.thermalCaptorPosition)
-
+    
     # Plot in 3D, take the X,Y,Z value
-    AlgoPosition.plot_2d(data.interpolatedTemperatureGrid[0], data.interpolatedTemperatureGrid[1], data.interpolatedTemperatureGrid[2], original_points=np.concatenate([position_xy, data.temperature], axis=2).reshape(-1, 3))
+    AlgoPosition.plot_2d_v2(data.interpolatedTemperatureGrid[0], data.interpolatedTemperatureGrid[1], data.interpolatedTemperatureGrid[2], original_points=data.thermalCaptorPosition)
+    
 
-
-    if(False):
+    if(True):
         # Prend la coubre de température dans le dossier /Thermique/Simulation 03-26/Test Lecture CSV.py
         #print("heatsink_temperature=", heatsink_temperature)
         #print("temp_min=" , temp_min)
@@ -135,6 +136,9 @@ if __name__ == '__main__':
 
         # Affichage de la surface 
         AlgoPosition.plot_matrix_color(Temp+heatsink_temperature)
+
+        print("Temp=", Temp)
+        
         AlgoPosition.plot_2d(X, Y, Z+heatsink_temperature, original_points=np.concatenate([position_xy, Temp[:, :, None]], axis=2).reshape(-1, 3))
         AlgoPosition.plot_3d(X, Y, Z+heatsink_temperature, title="Interpolation/extrapolation dans un cercle")
     

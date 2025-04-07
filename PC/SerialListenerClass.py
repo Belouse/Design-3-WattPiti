@@ -8,6 +8,7 @@ class SerialListener():
         self.port = serial.Serial(portName, 115200)
 
     def updatePortName(self, portName):
+        self.closePort()
         self.port = serial.Serial(portName, 115200)
     
     def readData(self, numberOfData, printExecutionTime):
@@ -22,6 +23,10 @@ class SerialListener():
                 except json.JSONDecodeError:
                     pass
         if printExecutionTime:
-            print(f"Temps d'execution de la réception de données {time.time() - start}")
-
+            #print(f"Temps d'execution de la réception de données {time.time() - start}")
+            pass
         return dataRead
+    
+    def closePort(self):
+        self.port.close()
+

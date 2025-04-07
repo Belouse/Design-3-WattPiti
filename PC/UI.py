@@ -4,32 +4,41 @@ import os
 from PIL import ImageTk, Image
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure 
+import matplotlib.patches as patches
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,  
 NavigationToolbar2Tk) 
 import numpy as np
 import time
 from DataContainerClass import DataContainer
 from AlgoPosition import AlgoPosition
+from AlgorithmManagerClass import AlgorithmManager
+from SerialManagerClass import SerialManager
+import serial.tools.list_ports
+from datetime import datetime
 
 
 class InterfaceWattpiti(tk.Tk):
     def __init__(self):
         super().__init__()
 
+        #Donnée du temps
+        self.startTime = time.time()
 
-        #Importation des classes externes pour stocker les données
-        self.data = DataContainer()
-        self.algoPosition = AlgoPosition()
+        #Création d'une instance de la classe DataContainer pour stocker les données
+        self.dataContainer = DataContainer() #Instance de la classe DataContainer
+        self.algorithmManager = AlgorithmManager(self.dataContainer) #Instance de la classe AlgorithmManager
+        self.algoPosition = AlgoPosition() #Instance de la classe Algoposition (pour le graphique de la position)
+        self.serialManager = SerialManager(self.dataContainer, maxData=1) #Instance de la classe SerialManager
 
         #création de l'interface
         self.title("Puissance-mètre Wattpiti")
-        #self.geometry("{0}x{1}+0+0".format(self.winfo_screenwidth(), self.winfo_screenheight()))
-        self.geometry("1000x1000")
+        self.geometry("{0}x{1}+0+0".format(self.winfo_screenwidth(), self.winfo_screenheight()))
+        #self.geometry("1000x1000")
         self.configure(background="white")
 
         #Style des FrameLabels pour l'interface
         frameLabelStyle = ttk.Style()
-        frameLabelStyle.theme_use('default')   # choose other theme
+        frameLabelStyle.theme_use('default')
         frameLabelStyle.configure('frameLabelStyle.TLabelframe', borderwidth=10)
         frameLabelStyle.configure('frameLabelStyle.TLabelframe.Label', font=('Inter', 11, 'bold'))
 
@@ -85,25 +94,32 @@ class InterfaceWattpiti(tk.Tk):
 
 
         #Création d'une liste déroulante pour choisir le port
-        self.portList = ["COM1", "COM2", "COM3", "COM4"]
-        self.portComboBox = ttk.Combobox(self, values=self.portList)
-        self.portComboBox.place(x = 445, y=50)
-        self.portComboBox.current(0)
+        self.ports = serial.tools.list_ports.comports() #Lister les ports disponibles dans l'ordinateur
+        self.portList = []
+        for port in self.ports: #Affiche les ports et leur description dans l'interface
+            if "Bluetooth" not in port.description: #Enlever les ports Bluetooth de la liste
+                self.portList.append(f"{port.device}, {port.description}")
+
+        self.selected_port = tk.StringVar()
+        if len(self.portList) == 1: #Si un seul port est disponible, le sélectionner par défaut
+            self.selected_port.set(self.portList[0])
+        self.portComboBox = ttk.Combobox(self, values=self.portList, width=35, textvariable= self.selected_port)
+        self.portComboBox.place(x=350, y=50)
 
         #Création d'un label pour le choix du port
         self.labelFreq = ttk.Label(self, text="Choix du port:", style = "labelStyle.TLabel")
         self.labelFreq.place(x=250, y = 50)
 
 
-        #Création d'une entrée pour le temps de moyennage
-        timeVar = tk.StringVar()
-        timeVar.trace_add("write", self.time_value)
-        self.timeEntry = ttk.Entry(self, textvariable = timeVar)
-        self.timeEntry.place(x= 445, y=100)
+        #Choix de la longueur d'onde
+        self.waveLenghtList = ["À déterminer", "450", "976", "1976"]
+        self.waveLenghtComboBox = ttk.Combobox(self, values=self.waveLenghtList, width=20)
+        self.waveLenghtComboBox.place(x=440, y=80)
+        self.waveLenghtComboBox.current(0) 
 
-        #Création d'un label pour le temps d'acquisition
-        self.labelTime = ttk.Label(self, text="Temps de moyennage (s):", style= "labelStyle.TLabel")
-        self.labelTime.place(x = 250, y = 100)
+        #Label pour le choix de la longueur d'onde
+        self.labelWaveLength = ttk.Label(self, text="Longueur d'onde (nm):", style = "labelStyle.TLabel")
+        self.labelWaveLength.place(x=250, y=80)
 
 
 
@@ -136,14 +152,17 @@ class InterfaceWattpiti(tk.Tk):
         self.wavelengthCheckButtonBool = tk.BooleanVar()
         self.wavelengthCheckButton = ttk.Checkbutton(self, text= "Longueur d'onde", variable = self.wavelengthCheckButtonBool)
         self.wavelengthCheckButton.place(x=810, y=120)
+        self.wavelengthCheckButtonBool.set(True)
         #Puissance
         self.powerCheckButtonBool = tk.BooleanVar()
         self.powerCheckButton = ttk.Checkbutton(self, text="Puissance", variable = self.powerCheckButtonBool)
         self.powerCheckButton.place(x=810, y = 100)
+        self.powerCheckButtonBool.set(True)
         #Position
         self.positionCheckButtonBool = tk.BooleanVar()
         self.positionCheckButton = ttk.Checkbutton(self, text="Position", variable = self.positionCheckButtonBool)
         self.positionCheckButton.place(x = 810, y = 140)
+        self.positionCheckButtonBool.set(True)
 
         #Création d'un bouton pour enregister les données
         self.saveButtonStyle = ttk.Style()
@@ -165,7 +184,7 @@ class InterfaceWattpiti(tk.Tk):
 
 
         #Création d'un display pour la puissance instantanée
-        self.powerVar = tk.StringVar()
+        self.powerVar = tk.StringVar() #Variable de la puissance
         self.powerVar.set("00.00")
 
         self.powerDisplayLabel = ttk.Label(self, text= "Puissance instantanée (W):", font = ("Inter", 14, "bold"))
@@ -183,35 +202,35 @@ class InterfaceWattpiti(tk.Tk):
         self.wavelenghtDisplay.place(x= 1330, y = 100)
 
         #Création d'un display pour la position centrale du faisceau
-        self.positionXVar = tk.StringVar()
+        self.positionXVar = tk.StringVar() #Variable de la position sur l'axe x
         self.positionXVar.set("0")
-        self.positionYVar = tk.StringVar()
+        self.positionYVar = tk.StringVar() #Variable de la position sur l'axe y
         self.positionYVar.set("0")
 
         self.positionDisplayLabel = ttk.Label(self, text="Position (mm):", font = ("Inter", 14, "bold"))
         self.positionDisplayLabel.place(x = 1050, y = 158)
         
         self.positionXDisplay = ttk.Label(self, textvariable= self.positionXVar, font = ("Inter", 24, "bold"))
-        self.positionXDisplay.place(x = 1290, y= 150)
+        self.positionXDisplay.place(x = 1230, y= 150)
         self.positionYDisplay = ttk.Label(self, textvariable=self.positionYVar, font = ("Inter", 24, "bold"))
-        self.positionYDisplay.place(x = 1390, y= 150)
+        self.positionYDisplay.place(x = 1340, y= 150)
 
         self.positionXLabel = ttk.Label(self, text = "x :", font= ("Inter", 24, "bold"))
-        self.positionXLabel.place(x = 1240, y = 149)
+        self.positionXLabel.place(x = 1190, y = 149)
 
         self.positionYLabel = ttk.Label(self, text = "y :", font= ("Inter", 24, "bold"))
-        self.positionYLabel.place(x = 1340, y = 149)
+        self.positionYLabel.place(x = 1300, y = 149)
 
 
         ###Création du frame pour le graphique de la puissance en fonction du temps
-        self.powerPlotFrame = ttk.Frame(self, width=850, height=600, borderwidth=3, style = "frameLabelStyle.TLabelframe")
+        self.powerPlotFrame = ttk.Frame(self, width=850, height=685, borderwidth=3, style = "frameLabelStyle.TLabelframe")
         self.powerPlotFrame.grid(row = 2, column= 0 , columnspan = 3, rowspan = 1, padx = 5, pady = 5, sticky = "nsew")
 
         self.powerPlotLabel = ttk.Label(self, text= "Graphique de la puissance en fonction du temps", style = "frameLabelStyle.TLabelframe.Label")
         self.powerPlotLabel.place(x = 10, y = 230)
 
         #Création du graphique pour la puissance en fonction du temps
-        self.powerFig = Figure(figsize = (8, 5), dpi = 100)
+        self.powerFig = Figure(figsize = (8, 5.8), dpi = 100)
         self.axPow = self.powerFig.add_subplot(111)
         self.axPow.set_xlabel("Temps (s)")
         self.axPow.set_ylabel("Puissance (W)")
@@ -221,41 +240,42 @@ class InterfaceWattpiti(tk.Tk):
         self.powerPlot = self.powerCanvas.get_tk_widget()
         self.powerPlot.place(x=20, y=280)
 
-        #Création d'un bouton pour afficher le graphique de la puissance en fonction du temps
-        self.powerPlotButton = ttk.Button(self, text="Afficher le graphique", command=self.power_plot, style = "saveButtonStyle.TButton")
-        self.powerPlotButton.place(x = 400, y = 235)
 
 
 
         ###Création du frame du graphique de la position centrale du faisceau
-        self.posPlotFrame = ttk.Frame(self, width=575, height=600, borderwidth=3, style = "frameLabelStyle.TLabelframe")
-        #self.posPlotFrame.grid(row = 2, column= 4 , columnspan = 3, rowspan = 1, padx = 5, pady = 5, sticky = "nsew")
+        self.posPlotFrame = ttk.Frame(self, width=575, height=685, borderwidth=3, style = "frameLabelStyle.TLabelframe")
         self.posPlotFrame.place(x = 860, y = 217)
 
         self.posPlotLabel = ttk.Label(self, text= "Position centrale du faisceau", style = "frameLabelStyle.TLabelframe.Label")
         self.posPlotLabel.place(x = 870, y = 230)
 
         #Création du graphique pour la position centrale du faisceau
-        self.posFig = Figure(figsize = (5, 5), dpi = 100)
+        self.posFig = Figure(figsize = (5, 5.8), dpi = 100)
         self.axPos = self.posFig.add_subplot(111)
         self.axPos.set_xlabel("Position x (mm)")
         self.axPos.set_ylabel("Position y (mm)")
 
-        #Création d'un bouton pour afficher le graphique
-        self.posPlotButton = ttk.Button(self, text="Afficher le graphique", command=self.pos_plot, style = "saveButtonStyle.TButton")
-        self.posPlotButton.place(x = 1100, y = 235)
 
         self.posCanvas = FigureCanvasTkAgg(self.posFig, master = self)
         self.posPlot = self.posCanvas.get_tk_widget()
         self.posPlot.place(x = 900, y = 280)
 
-        #Création d'un frame pour les erreurs
-        self.errorFrame = ttk.Frame(self, width=400, height=100, borderwidth=3, style = "frameLabelStyle.TLabelframe")
-        self.errorFrame.grid(row = 3, column = 0, padx=5, pady=5, sticky = "nsew", columnspan = 2)
-        self.errorFrame.grid_propagate(False)
+        #Création d'un bouton pour calibrer les capteurs
+        self.tareButton = ttk.Button(self, text= "Tare", style="saveButtonStyle.TButton", command = self.click_tare)
+        self.tareButton.place(x = 420, y = 110)
+        self.tareLabel = ttk.Label(self, text = "Calibration des capteurs:", style = "labelStyle.TLabel")
+        self.tareLabel.place(x=250, y = 110)
 
 
+        #Première calibration des capteurs
+        #À faire
 
+
+        #Gestion de la loop
+        self.running = False
+        self.dataArray = []
+        self.powArray = []
 
 
 
@@ -266,128 +286,279 @@ class InterfaceWattpiti(tk.Tk):
 
     #Fonction du bouton pour démarrer la simulation
     def click_start(self):
+        try:
+        #Importation des classes externes pour stocker les données
+            self.serialManager.setPortName(self.selected_port.get().split(",")[0])
+            if not self.running:
+                self.running = True
+                self.loop() 
+        except serial.SerialException as e:
+            self.error_handling("Erreur de connexion au port série")
+            self.running = False
 
-        #Changer la valeur des variables de la classe DataContainer
-        self.positionXVar.set(str(self.data.position[0]))
-        self.positionYVar.set(str(self.data.position[1]))
-        self.powerVar.set(str(self.data.power))
-        self.wavelenghtVar.set(str(self.data.wavelength))
-        
 
-    #Fonction du bouton pour arrêter la simulation
-    def click_stop(self):
-        pass
+    def loop(self):
+        if self.running: #Vérifier si une simulation est en cours
+            for i  in range(1): # initialisation de la loop
+                self.currentTime = time.time() - self.startTime #Calculer le temps écoulé depuis l'ouverture de l'interface
+
+                #Importation des données de dataContainer
+                self.serialManager.updateDataFromMCU(1)
+                self.algorithmManager.calculatePosition()
+                self.algorithmManager.calculateWavelength()
+                self.algorithmManager.calculatePower()
+                self.newposition = self.dataContainer.position
+                self.newWaveLenght = self.dataContainer.wavelength
+                self.newpower = self.dataContainer.power    
+                self.rawTemperatureMatrix = self.dataContainer.rawTemperatureMatrix
+
+
+                self.dataArray.append((self.currentTime, self.newpower, self.newWaveLenght, self.newposition)) #Importer les données dans une liste
+                #self.dataArray = np.array(self.dataArray) #Convertir la liste en tableau numpy
+                self.powerVar.set(str(self.rawTemperatureMatrix[0][0])) #liste des différentes puissances (à changer)
+
+
+                #Formater les données pour les afficher dans l'interface graphique
+                self.newpower = "{:.2f}".format(self.newpower) #Formater la puissance
+                self.newWaveLenght = "{:.1f}".format(self.newWaveLenght) #Formater la longueur d'onde
+                self.newposition = [round(x, 2) for x in self.newposition] #Formater la position centrale du faisceau
+                
+                #Mettre à jour les labels dans l'interface graphique
+                #self.powerVar.set(str(self.newpower))
+                self.wavelenghtVar.set(str(self.newWaveLenght))
+                self.positionXVar.set(str(self.newposition[0]))
+                self.positionYVar.set(str(self.newposition[1]))
+                
+
+                #Graphique de la position centrale du faisceau
+                self.axPos.clear()
+                self.axPos.set_xlabel("Position x (mm)")
+                self.axPos.set_ylabel("Position y (mm)")
+                AlgoPosition.calculatePosition(self.algoPosition, self.dataContainer)
+                contour = self.axPos.contourf(self.dataContainer.interpolatedTemperatureGrid[0], 
+                                self.dataContainer.interpolatedTemperatureGrid[1], 
+                                self.dataContainer.interpolatedTemperatureGrid[2], 
+                                levels=150,
+                                cmap='turbo')
+                
+                for row in self.dataContainer.thermalCaptorPosition: #Affichage de la grille de capteurs sur le graphique
+                    for (x, y) in row:
+                        rect = patches.Rectangle((x - 1.5, y - 1.5), 0.75, 0.75, linewidth=1.5, edgecolor='white', facecolor='none', alpha=0.5)
+                        self.axPos.add_patch(rect)
+                self.posCanvas.draw()
+                self.posCanvas.get_tk_widget().update()
+
+                #Graphique de la puissance en fonction du temps
+                self.axPow.clear()
+                self.axPow.set_xlabel("Temps (s)")
+                self.axPow.set_ylabel("Puissance (W)")
+                if len(self.dataArray) > 20: #limiter le nombre de points sur le graphique
+                    self.axPow.set_xlim(self.dataArray[-20][0], self.dataArray[-1][0])
+
+
+                #À changer (mettre des vraies valeurs de temps)
+                self.powArray.append(self.rawTemperatureMatrix[0][0])
+
+                self.timeArray = list(zip(* self.dataArray))[0]
+                self.powValues = list(zip(* self.dataArray))[1]
+                self.axPow.plot(list(self.timeArray), self.powArray, color = "blue")
+                self.powerCanvas.draw()
+                self.powerCanvas.get_tk_widget().update()
+
+        self.after(1, self.loop)
+
+
+    
+    
+    
+    def click_stop(self): #Permet de mettre sur pause la simulation
+        self.running = False
 
     #Fontion du bouton pour réinitialiser la simulation
     def click_reset(self):
-        pass
+        if self.running == True:
+            self.click_stop()
 
-    #Fonction pour la fréquence d'échantillonnage
-    def freq_value(self):
-        pass
+        #Réinitialiser les variables
+        self.dataArray = []
+        self.powArray = []
+        self.powerVar.set("00.00")
+        self.wavelenghtVar.set("000.0")
+        self.positionXVar.set("0")
+        self.positionYVar.set("0") 
+        self.axPos.clear()
+        self.axPow.clear()
+        self.click_start()
+        
 
-    #Fonction pour le temps d'acquisition
-    def time_value(self):
+
+    def click_tare(self):
+        #Fonction pour calibrer les capteurs
         pass
 
     #Fonction pour enregistrer les données
     def save_data(self):
-        self.choiceArray = [self.powerCheckButtonBool.get(),self.wavelengthCheckButtonBool.get(), self.positionCheckButtonBool.get()]
+        self.savingTimeRef = time.time()
+        self.date = datetime.now()
+        self.dtstring = self.date.strftime("%d-%m-%Y %H_%M_%S")
+
+        if self.running == True:
+            self.click_stop()
+        
+        #Désactiver les widgets de l'interface
+        self.disable_widgets()
+
+       
+        self.choiceArray = [self.powerCheckButtonBool.get(), self.wavelengthCheckButtonBool.get(), self.positionCheckButtonBool.get()]
 
         #Enregistrer les données dans un fichier txt
         
-        file_name = self.fileNameVar.get()
-        if not file_name.endswith('.csv'):
-            file_name += '.csv'
+        self.file_name = self.fileNameVar.get()
+        if self.fileNameVar.get() == "":
+            self.file_name = f"{self.dtstring}.csv"
+
+        if not self.file_name.endswith('.csv'):
+            self.file_name += '.csv'
         # Créer un dossier "savedData" s'il n'existe pas
         save_dir = os.path.join(os.path.dirname(__file__), "savedData")
         os.makedirs(save_dir, exist_ok=True)
         
         # Chemin complet du fichier
-        file_name = os.path.join(save_dir, file_name)
+        self.file_name = os.path.join(save_dir, self.file_name)
+            
 
-        #Mettre des conditions selon les choix de l'utilisateur
         if self.choiceArray == [True, True, True]:
-            with open(file_name, 'w') as file:
-                file.write("Puissance (W),Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
-                file.write(f"{self.powerVar.get()},{self.wavelenghtVar.get()},{self.positionXVar.get()},{self.positionYVar.get()}\n")
+            with open(self.file_name, 'w') as file:
+                file.write("Temps (s), Puissance (W),Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
+                for i in self.dataArray:
+                    file.write(f"{i[0]},{i[1]},{i[2]},{i[3][0]},{i[3][1]}\n")
         
         elif self.choiceArray == [True, True, False]:
-            with open(file_name, 'w') as file:
-                file.write("Puissance (W),Longueur d'onde (nm)\n")
-                file.write(f"{self.powerVar.get()},{self.wavelenghtVar.get()}\n")
+            with open(self.file_name, 'w') as file:
+                file.write("Temps (s), Puissance (W),Longueur d'onde (nm)\n")
+                for i in self.dataArray:
+                    file.write(f"{i[0]},{i[1]},{i[2]}\n")
         
         elif self.choiceArray == [True, False, True]:
-            with open(file_name, 'w') as file:
-                file.write("Puissance (W),Position x (mm),Position y (mm)\n")   
+            with open(self.file_name, 'w') as file:
+                file.write("Temps (s), Puissance (W),Position x (mm),Position y (mm)\n")   
+                for i in self.dataArray:
+                    file.write(f"{i[0]},{i[1]},{i[3][0]},{i[3][1]}\n")
 
         elif self.choiceArray == [False, True, True]:
-            with open(file_name, 'w') as file:
-                file.write("Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
-        
+            with open(self.file_name, 'w') as file:
+                file.write("Temps (s), Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
+                for i in self.dataArray:
+                    file.write(f"{i[0]},{i[2]},{i[3][0]},{i[3][1]}\n")
+            
         elif self.choiceArray == [True, False, False]:
-            with open(file_name, 'w') as file:
-                file.write("Puissance (W)\n")
-                file.write(f"{self.powerVar.get()}\n")
-        
+            with open(self.file_name, 'w') as file:
+                file.write("Temps (s), Puissance (W)\n")
+                for i in self.dataArray:
+                    file.write(f"{i[0]}, {i[1]}\n")
+            
         elif self.choiceArray == [False, True, False]:
-            with open(file_name, 'w') as file:
+            with open(self.file_name, 'w') as file:
                 file.write("Longueur d'onde (nm)\n")
-                file.write(f"{self.wavelenghtVar.get()}\n")
+                for i in self.dataArray:
+                    file.write(f"{i[0]},{i[1]}\n")
 
         elif self.choiceArray == [False, False, True]:
-            with open(file_name, 'w') as file:
+            with open(self.file_name, 'w') as file:
                 file.write("Position x (mm),Position y (mm)\n")
+                for i in self.dataArray:
+                    file.write(f"{i[0]}, {i[3][0]},{i[3][1]}\n")
 
         elif self.choiceArray == [False, False, False]:
-            self.error_handling("ERREUR: Aucune donnée pour l'enregistrement n'a été sélectionnée.")
+            self.error_handling("Aucune donnée sélectionnée à enregistrer")
 
+        self.savingTime = time.time() - self.savingTimeRef #Calculer le temps d'enregistrement
+
+
+
+            
+                
+
+        #Réactiver les widgets de l'interface
+        if self.choiceArray != [False, False, False]:
+            self.after(int(self.savingTime), self.enable_widgets())
+            self.sucess_message(f"Données enregistrées avec succès en {self.savingTime:.8f} secondes")
+
+        
+    def disable_widgets(self):
+        #Désactiver les widgets de l'interface
+        self.startButton.configure(state = "disabled")
+        self.stopButton.configure(state = "disabled")
+        self.resetButton.configure(state = "disabled")
+        self.saveButton.configure(state = "disabled")
+        self.portComboBox.configure(state = "disabled")
+        self.wavelengthCheckButton.configure(state = "disabled") 
+        self.powerCheckButton.configure(state = "disabled")
+        self.positionCheckButton.configure(state = "disabled")
+        self.waveLenghtComboBox.configure(state = "disabled")
+        self.tareButton.configure(state= "disabled")
+        self.fileName.configure(state = "disabled")
+
+    def enable_widgets(self):
+        #Réactiver les widgets de l'interface
+        self.startButton.configure(state = "normal")
+        self.stopButton.configure(state = "normal")
+        self.resetButton.configure(state = "normal")
+        self.saveButton.configure(state = "normal")
+        self.portComboBox.configure(state = "normal")
+        self.wavelengthCheckButton.configure(state = "normal") 
+        self.powerCheckButton.configure(state = "normal")
+        self.positionCheckButton.configure(state = "normal")
+        self.waveLenghtComboBox.configure(state = "normal")
+        self.tareButton.configure(state= "normal")
+        self.fileName.configure(state = "normal")
+
+
+
+    def sucess_message(self, message):
+        #Création d'un label pour les messages de succès
+        self.errorLabel = ttk.Label(self, text = message, font=("Inter", 20, "bold"), foreground = "green")
+        self.errorLabel.place(x = 10, y = 870)
+
+        self.disable_widgets()
+        #Afficher le message pendant 3 secondes
+        self.errorLabel.after(3000, self.erase_error)
+
+        if self.running == False:
+            if len(self.dataArray) != 0:
+                self.click_start()
     
-    #Fonction pour le format du fichier enregistré
-    def file_format(self):
-        pass
-    
-    #Fonction pour la valeur de puissance lue
-    def power_value(self):
-        pass
-
-    #Fonction pour la valeur de la longueur d'onde lue
-    def wavelenght_value(self):
-        pass
-
-    #Fonction pour la valeur de la position lue
-    def position_value(self):
-        pass
 
     def error_handling(self, message):
         #Création d'un label pour les erreurs
-        self.errorLabel = ttk.Label(self, text = message, style = "labelStyle.TLabel")
+        self.errorLabel = ttk.Label(self, text = message, font=("Inter", 20, "bold"), foreground = "red")
         self.errorLabel.place(x = 10, y = 870)
-        self.errorFrame.grid_propagate(False)
+
+        #Désactiver les widgets de l'interface
+        self.disable_widgets()
+
+        #Afficher l'erreur pendant 3 secondes
+        self.errorLabel.after(3000, self.erase_error)
     
     def erase_error(self):
         #Effacer le message d'erreur
         self.errorLabel.destroy()
 
-    def power_plot(self):
-        pass
+        #Réactiver les widgets de l'interface
+        self.enable_widgets()
 
-    def pos_plot(self):
-        #Fonction pour afficher le graphique de la position centrale du faisceau
-        self.data.temperature = np.array([39.4394989,  40.51720047, 40.40250015, 39.22230148, 41.09389877, 43.10359955, 42.76750183, 40.5965004,43.02610016, 48.70330048, 47.12360001, 41.83250046,42.22079849, 58.96350098, 50.47050095, 40.92689896, 0])
-        self.axPos.clear()
-        self.axPos.set_xlabel("Position x (mm)")
-        self.axPos.set_ylabel("Position y (mm)")
-        AlgoPosition.calculatePosition(self.algoPosition, self.data)
-        contour = self.axPos.contourf(self.data.interpolatedTemperatureGrid[0], 
-                          self.data.interpolatedTemperatureGrid[1], 
-                          self.data.interpolatedTemperatureGrid[2], 
-                          levels=50,
-                          cmap='viridis')
-        self.posCanvas.draw()
-        self.posCanvas.get_tk_widget().update()
+    def on_close(self): #Permet de fermer la fenêtre et de fermer le port série
+
+        if self.running == True: #Arrête la simulation si elle est en cours
+            self.click_stop()
+
+        if self.serialManager.serialListener is not None: #Déconnecte le port série
+            self.serialManager.closePort()
+        self.destroy() #Ferme la fenêtre
+
 
 
 if __name__ == "__main__":
     app = InterfaceWattpiti()
+    app.protocol("WM_DELETE_WINDOW", app.on_close)  # Handle window close event
     app.mainloop()

@@ -4,7 +4,7 @@
 # The time of the data is also included in the JSON data.
 
 import time
-
+import pyb
 
 class JSONFormatter():
     """ 
@@ -36,7 +36,7 @@ class JSONFormatter():
 
     def format_data(self, thermal_readings, wavelength_readings):
 
-        self.data["time"] = time.time()
+        self.data["time"] = pyb.millis()
         self.data["thermal"] = thermal_readings
         self.data["wavelength"] = wavelength_readings
 
