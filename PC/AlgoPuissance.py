@@ -24,88 +24,139 @@ class AlgoPower:
 
 
 
-    def calculatePowerTest(self, nom_fichier):
-        """
+    #def calculatePowerTest(self, nom_fichier):
         
-        Fonction de test ici qui n'interrompt pas le main...
-        
-        """
         # Aller dans /Thermique/SimulationCSV depuis le script dans PC/
-        base_path = os.path.dirname(os.path.abspath(__file__))  # /Design-3-WattPiti/PC
-        dossier_csv = os.path.join(base_path, "..", "Thermique", "SimulationCSV")
-        dossier_csv = os.path.normpath(dossier_csv)  # Nettoyer le chemin
+        #base_path = os.path.dirname(os.path.abspath(__file__))  # /Design-3-WattPiti/PC
+        #dossier_csv = os.path.join(base_path, "..", "Thermique", "SimulationCSV")
+        #dossier_csv = os.path.normpath(dossier_csv)  # Nettoyer le chemin
 
         # Créer le chemin complet vers le fichier
-        chemin_fichier = os.path.join(dossier_csv, nom_fichier)
+        #chemin_fichier = os.path.join(dossier_csv, nom_fichier)
 
         # --- Données réponses aux échelons pour interpolation ---
-        T_points = np.array([3.73, 10.53, 17.33, 24.13])
-        K_points = np.array([1.492, 2.106, 2.311, 2.413])
-        tau_points = np.array([1.0196, 1.3203, 1.3881, 1.4183])
+        #T_points = np.array([3.73, 10.53, 17.33, 24.13])
+        #K_points = np.array([1.492, 2.106, 2.311, 2.413])
+        #tau_points = np.array([1.0196, 1.3203, 1.3881, 1.4183])
 
         # Fonctions interpolées linéaires
-        calculate_K = interp1d(T_points, K_points, kind='linear', fill_value="extrapolate")
-        calculate_tau = interp1d(T_points, tau_points, kind='linear', fill_value="extrapolate")
+        #calculate_K = interp1d(T_points, K_points, kind='linear', fill_value="extrapolate")
+        #calculate_tau = interp1d(T_points, tau_points, kind='linear', fill_value="extrapolate")
 
 
         # Lire le fichier CSV
-        df = pd.read_csv(chemin_fichier)
+        #df = pd.read_csv(chemin_fichier)
     
         # Garder uniquement les données des nodes 121 et 241
-        df_121 = df[df["Node_ID"] == 121]
-        df_241 = df[df["Node_ID"] == 241]
+        #df_121 = df[df["Node_ID"] == 121]
+        #df_241 = df[df["Node_ID"] == 241]
 
         # S'assurer qu'ils sont bien triés par le temps
-        df_121 = df_121.sort_values(by="Time")
-        df_241 = df_241.sort_values(by="Time")
+        #df_121 = df_121.sort_values(by="Time")
+        #df_241 = df_241.sort_values(by="Time")
     
         # Extraire le temps et les températures
-        temps = df_121["Time"].values
-        T_121 = df_121["NDTEMP.T"].values # max_temperature in dataContainerClass
-        T_241 = df_241["NDTEMP.T"].values # 17e élément du vecteur temperature in dataContainerClass
+        #temps = df_121["Time"].values
+        #T_121 = df_121["NDTEMP.T"].values # max_temperature in dataContainerClass
+        #T_241 = df_241["NDTEMP.T"].values # 17e élément du vecteur temperature in dataContainerClass
     
         # Calcul de la température normalisée
-        T_norm = T_121 - T_241
+        #T_norm = T_121 - T_241
 
         # Supprimer les premières valeurs (trimer pour avoir la bonne valeur de température)
-        T_norm = T_norm[8:] - T_norm[8]
-        temps = temps[8:] - temps[8]
+        #T_norm = T_norm[8:] - T_norm[8]
+        #temps = temps[8:] - temps[8]
 
         # Identifier l’indice correspondant à t >= 10 secondes
-        indices_regime_permanent = np.where(temps >= 10)[0]
+        #indices_regime_permanent = np.where(temps >= 10)[0]
 
         # Prendre la première valeur après 10 secondes
-        i = indices_regime_permanent[0]
-        T_regime = T_norm[i]
-        K_regime = calculate_K(T_regime)
-        P_regime = T_regime / K_regime
+        #i = indices_regime_permanent[0]
+        #T_regime = T_norm[i]
+        #K_regime = calculate_K(T_regime)
+        #P_regime = T_regime / K_regime
 
         # Calcul du terme transitoire de puissance
-        tau_regime = calculate_tau(T_regime)
-        dT_dt = np.gradient(T_norm, temps)
-        dT_dt_regime = dT_dt[i]
-        P_transitoire = (tau_regime / K_regime) * dT_dt_regime
+        #tau_regime = calculate_tau(T_regime)
+        #dT_dt = np.gradient(T_norm, temps)
+        #dT_dt_regime = dT_dt[i]
+        #P_transitoire = (tau_regime / K_regime) * dT_dt_regime
 
         #Puissance totale
-        P_total = P_regime + P_transitoire
+        #P_total = P_regime + P_transitoire
 
         # Affichage
-        print(f"--- Terme transitoire ---")
-        print(f"Constante de temps tau(T) = {tau_regime:.5f}")
-        print(f"dT/dt ≈ {dT_dt_regime:.5f}")
-        print(f"Terme transitoire (tau/K * dT/dt) = {P_transitoire:.5f}")
+        #print(f"--- Terme transitoire ---")
+        #print(f"Constante de temps tau(T) = {tau_regime:.5f}")
+        #print(f"dT/dt ≈ {dT_dt_regime:.5f}")
+        #print(f"Terme transitoire (tau/K * dT/dt) = {P_transitoire:.5f}")
 
-        print(f"\n--- Puissance totale ---")
-        print(f"P_total = P_regime + P_transitoire = {P_total:.5f}")
+        #print(f"\n--- Puissance totale ---")
+        #print(f"P_total = P_regime + P_transitoire = {P_total:.5f}")
 
 
-        print(f"--- Régime permanent à t = {temps[i]:.2f} s ---")
-        print(f"Température normalisée T(t) = {T_regime:.5f}")
-        print(f"Gain K(T) = {K_regime:.5f}")
-        print(f"Puissance P(t) = T(t) / K(T) = {P_regime:.5f}")
+        #print(f"--- Régime permanent à t = {temps[i]:.2f} s ---")
+        #print(f"Température normalisée T(t) = {T_regime:.5f}")
+        #print(f"Gain K(T) = {K_regime:.5f}")
+        #print(f"Puissance P(t) = T(t) / K(T) = {P_regime:.5f}")
     
-        return P_total
+        #return P_total
 
 # Crée une instance de la classe
-mon_algo = AlgoPower()
-mon_algo.calculatePowerTest("TestEchelon5W.csv") # mettre le nom du fichier test
+#mon_algo = AlgoPower()
+#mon_algo.calculatePowerTest("TestEchelon5W.csv") # mettre le nom du fichier test
+
+
+######################
+
+    def __init__(self):
+        # Données expérimentales si on ne trime pas les premiers éléments
+        T_points = np.array([6.82, 13.72, 20.63, 27.54])
+        K_points = np.array([2.728, 2.744, 2.751, 2.754])
+        tau_points = np.array([0.8962, 1.1798, 1.2716, 1.3178])
+
+        # Fonctions interpolées sauvegardées comme attributs de l'objet
+        self.calculate_K = interp1d(T_points, K_points, kind='linear', fill_value="extrapolate")
+        self.calculate_tau = interp1d(T_points, tau_points, kind='linear', fill_value="extrapolate")
+
+    def calculer_puissance(self, container):
+        temperature_ailette = container.temperature[-1]
+        T_t = container.max_temperature - temperature_ailette
+
+        dT_dt = ((container.max_temperature - temperature_ailette) -(container.old_max_temperature - temperature_ailette)) / container.Delta_t
+
+        K = self.calculate_K(T_t)
+        tau = self.calculate_tau(T_t)
+
+        P = T_t / K + (tau / K) * dT_dt
+
+        print(f"T(t) = {T_t:.5f}")
+        print(f"dT/dt = {dT_dt:.5f}")
+        print(f"K(T) = {K:.5f}")
+        print(f"tau(T) = {tau:.5f}")
+        print(f"Puissance P(t) = {P:.5f} W")
+
+        return P
+
+        
+        
+if __name__ == "__main__":
+    # redéfinir une classe simul
+    class FakeDataContainer:
+        def __init__(self):
+            self.max_temperature = 4.31
+            self.old_max_temperature = 4.073
+            self.temperature = [0]*16 + [8.064]  # ailette
+            self.Delta_t = 0.2 - 0.1
+
+    # Créer l'objet test
+    container = FakeDataContainer()
+    algo = AlgoPower()
+
+    # Lancer le test
+    puissance = algo.calculer_puissance(container)
+
+    print(f"\n Puissance calculée : {puissance:.5f} W")
+
+# fonctionne en régime permanent
+# fonctionne pas pour les premières secondes
