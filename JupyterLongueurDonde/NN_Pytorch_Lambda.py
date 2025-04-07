@@ -11,7 +11,7 @@ import torch.nn as nn
 from torchvision import datasets, transforms
 from tqdm import tqdm
 
-from CapteursDataProcess import DataPreProcess
+from JupyterLongueurDonde.CapteursDataProcess import DataPreProcess
 
 # -------- Organisation des données dans une classe Dataset PyTorch -------
 class CapteursDataset(Dataset):
