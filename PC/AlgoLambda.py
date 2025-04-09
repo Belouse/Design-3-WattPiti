@@ -120,7 +120,7 @@ class AlgoWavelength:
 
         return geo_factor_list
 
-    def calculate_wavelength(self, sensor_values, faisceau_pos=(0, 0, 0),
+    def calculateWavelength(self, sensor_values, faisceau_pos=(0, 0, 0),
                              correction_factor_ind=0,
                              moving_window_size: int = None, enable_print=False):
         """
@@ -216,7 +216,7 @@ if __name__ == "__main__":
     data = DataContainer(wavelengthCounts=np.array([1,2,3,4,5,6,7,8]))
 
     algo = AlgoWavelength()
-    wavelength = algo.calculate_wavelength(data.wavelengthCounts,
+    wavelength = algo.calculateWavelength(data.wavelengthCounts,
                                            faisceau_pos=(0, 0, 0),
                                            correction_factor_ind=0,
                                            moving_window_size=3,
