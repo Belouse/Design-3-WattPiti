@@ -124,7 +124,7 @@ class AlgoWavelength:
         return geo_factor_list
 
 
-    def calculate_wavelength(self, sensor_values, faisceau_pos=(0,0,0), correction_factor_ind=0, moving_window_size: int = None, enable_print=False):
+    def calculateWavelength(self, sensor_values, faisceau_pos=(0,0,0), correction_factor_ind=0, moving_window_size: int = None, enable_print=False):
         """
         Prédit la longueur d'onde à partir des valeurs des capteurs.
 
@@ -310,7 +310,7 @@ class AlgoWavelength:
         _, sensor_ratios = self.get_sensor_ratios_for_wavelength(test_wavelength, entrainement_instance)
         
         # Utiliser le modèle pour prédire la longueur d'onde à partir des ratios
-        predicted_wavelength = self.calculate_wavelength(sensor_ratios)
+        predicted_wavelength = self.calculateWavelength(sensor_ratios)
         
         # Calculer l'erreur absolue
         error = abs(predicted_wavelength - test_wavelength)
@@ -427,7 +427,7 @@ def test_noise_influence(wavelengths=[450, 976, 1976], noise_levels=np.arange(0,
                 noisy_ratios = np.array(noisy_responses) / np.max(noisy_responses)
                 
                 # Prédire la longueur d'onde avec les ratios bruités
-                predicted_wavelength = algo.calculate_wavelength(noisy_ratios)
+                predicted_wavelength = algo.calculateWavelength(noisy_ratios)
                 
                 # Calculer l'erreur en pourcentage
                 error_percent = abs(predicted_wavelength - wavelength) / wavelength * 100
@@ -608,7 +608,7 @@ def map_position_error():
             ratios_list = np.array(responses_list) / np.max(responses_list)
             
             # Valeur de référence à la position (0,0,0)
-            reference_wavelength = algo.calculate_wavelength(
+            reference_wavelength = algo.calculateWavelength(
                 ratios_list.copy(), 
                 faisceau_pos=(0, 0, 0), 
                 correction_factor_ind=correction_factor_ind
@@ -620,7 +620,7 @@ def map_position_error():
                     # Vérifier si la position est dans le cercle
                     if x**2 + y**2 <= radius**2:
                         # Prédire la longueur d'onde avec la position du faisceau
-                        predicted_wavelength = algo.calculate_wavelength(
+                        predicted_wavelength = algo.calculateWavelength(
                             ratios_list.copy(),
                             faisceau_pos=(x, y, 0),
                             correction_factor_ind=correction_factor_ind
@@ -737,7 +737,7 @@ if __name__ == "__main__":
         algo = AlgoWavelength(model_path='model_nn_pytorch_weights.pth')
 
         bruit = [20.02098894, 17.89683616, 15.70257174, 303.10787518, 2.88497193, 995.92691598, 1127.36721619, 388.34201666]
-        algo.calculate_wavelength(np.array(bruit), enable_print=True)
+        algo.calculateWavelength(np.array(bruit), enable_print=True)
         algo.mise_a_zero()
         
         # Test du modèle avec une longueur d'onde spécifique
@@ -746,7 +746,7 @@ if __name__ == "__main__":
         responses_dict, responses_list = algo.get_sensor_response_for_wavelength(test_wavelength, enable_print=True)
         ratios_list = np.array(responses_list)/ np.max(responses_list)
         start_pred = perf_counter()
-        predicted_wavelength = algo.calculate_wavelength(np.array([x + y for x, y in zip(responses_list, bruit)]), enable_print=True)
+        predicted_wavelength = algo.calculateWavelength(np.array([x + y for x, y in zip(responses_list, bruit)]), enable_print=True)
         print(f"Temps de prédiction: {perf_counter() - start_pred:.8f} secondes")
         algo.reset_mise_a_zero()
     
@@ -755,7 +755,7 @@ if __name__ == "__main__":
         responses_dict, responses_list = algo.get_sensor_response_for_wavelength(test_wavelength, enable_print=True)
         ratios_list = np.array(responses_list) / np.max(responses_list)
         pred2 = perf_counter()
-        predicted_wavelength = algo.calculate_wavelength(np.array(responses_list), enable_print=True)
+        predicted_wavelength = algo.calculateWavelength(np.array(responses_list), enable_print=True)
         print(f"Temps de prédiction: {perf_counter() - pred2:.8f} secondes")
         
         test_wavelength = 1976
@@ -763,7 +763,7 @@ if __name__ == "__main__":
         responses_dict, responses_list = algo.get_sensor_response_for_wavelength(test_wavelength, enable_print=True)
         ratios_list = np.array(responses_list) / np.max(responses_list)
         pred3 = perf_counter()
-        predicted_wavelength = algo.calculate_wavelength(np.array(responses_list), enable_print=True)
+        predicted_wavelength = algo.calculateWavelength(np.array(responses_list), enable_print=True)
         print(f"Temps de prédiction: {perf_counter() - pred3:.8f} secondes")
         
     def plot_reponses_et_ratios():
