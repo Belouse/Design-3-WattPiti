@@ -24,6 +24,7 @@ GAIN_VALUE = 0x03
 # I2C setup for Pyboard (Y9=SCL, Y10=SDA)
 i2c = I2C(2, freq=400000)
 
+
 def write_register(reg, value):
     i2c.writeto_mem(LTR390_I2C_ADDR, reg, bytes([value]))
 
@@ -62,4 +63,4 @@ init_sensor()
 while True:
     als, uvs = read_als_uv()
     print("ALS:", als, "UVS:", uvs)
-    # time.sleep(1)
+    time.sleep(1)
