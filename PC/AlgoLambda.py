@@ -9,8 +9,8 @@ from tqdm import tqdm
 import torch
 
 from DataContainerClass import DataContainer
-from JupyterLongueurDonde.CapteursDataProcess import DataPreProcess
-from JupyterLongueurDonde.NN_Pytorch_Lambda import WavelengthPredictor
+from CapteursDataProcess import DataPreProcess
+from NN_Pytorch_Lambda import WavelengthPredictor
 
 class AlgoWavelength:
     """
