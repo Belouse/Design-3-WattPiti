@@ -39,7 +39,7 @@ class AlgoWavelength:
         # Charger le modèle entraîné
         try:
             self.model = WavelengthPredictor(dropout_rate=0.11276492753388213)  # Recreate the model
-            self.model.load_state_dict(torch.load(model_path))
+            self.model.load_state_dict(torch.load(model_path_abs))
             # Mettre le modèle en mode évaluation
             self.model.eval()
             # print(self.model)
