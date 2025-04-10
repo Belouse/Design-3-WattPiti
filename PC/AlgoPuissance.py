@@ -109,24 +109,14 @@ class AlgoPower:
 
 ######################
 
-    def __init__(self):
-        # Données expérimentales si on ne trime pas les premiers éléments
-        T_points = np.array([6.82, 13.72, 20.63, 27.54])
-        K_points = np.array([2.728, 2.744, 2.751, 2.754])
-        tau_points = np.array([0.8962, 1.1798, 1.2716, 1.3178])
-
-        # Fonctions interpolées sauvegardées comme attributs de l'objet
-        self.calculate_K = interp1d(T_points, K_points, kind='linear', fill_value="extrapolate")
-        self.calculate_tau = interp1d(T_points, tau_points, kind='linear', fill_value="extrapolate")
-
     def calculer_puissance(self, container):
         temperature_ailette = container.temperature[-1]
         T_t = container.max_temperature - temperature_ailette
 
         dT_dt = ((container.max_temperature - temperature_ailette) -(container.old_max_temperature - temperature_ailette)) / container.Delta_t
 
-        K = self.calculate_K(T_t)
-        tau = self.calculate_tau(T_t)
+        K = 2.704
+        tau = 0.4553
 
         P = T_t / K + (tau / K) * dT_dt
 
@@ -144,10 +134,10 @@ if __name__ == "__main__":
     # redéfinir une classe simul
     class FakeDataContainer:
         def __init__(self):
-            self.max_temperature = 4.31
-            self.old_max_temperature = 4.073
-            self.temperature = [0]*16 + [8.064]  # ailette
-            self.Delta_t = 0.2 - 0.1
+            self.max_temperature = 32.35
+            self.old_max_temperature = 32.22
+            self.temperature = [0]*16 + [25.4]  # ailette
+            self.Delta_t =  17.2 - 11.43
 
     # Créer l'objet test
     container = FakeDataContainer()
@@ -157,6 +147,3 @@ if __name__ == "__main__":
     puissance = algo.calculer_puissance(container)
 
     print(f"\n Puissance calculée : {puissance:.5f} W")
-
-# fonctionne en régime permanent
-# fonctionne pas pour les premières secondes
