@@ -1,4 +1,4 @@
-from pyb import I2C
+from machine import I2C
 import time
 
 class VEML6040:
@@ -29,10 +29,11 @@ class VEML6040:
         return {'red': r, 'green': g, 'blue': b, 'white': w}
 
 
-i2c = I2C(2, I2C.MASTER) # I2C bus 1, standard frequency
+i2c = I2C(2, freq=4000) # I2C bus 1, standard frequency
 sensor = VEML6040(i2c)
 
-while True:
-    colors = sensor.read_rgbw()
-    print("R: {}, G: {}, B: {}, W: {}".format(colors['red'], colors['green'], colors['blue'], colors['white']))
-    time.sleep(1)
+if __name__ == "__main__":
+    while True:
+        colors = sensor.read_rgbw()
+        print("R: {}, G: {}, B: {}, W: {}".format(colors['red'], colors['green'], colors['blue'], colors['white']))
+        time.sleep(1)
