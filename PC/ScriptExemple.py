@@ -8,11 +8,11 @@ from AlgorithmManagerClass import AlgorithmManager
 import numpy as np
 # number of data points to average for each sensor befor
 # sending the data to the algorithms
-numberOfDataPoints = 1
-numberOfLoops = 20
+numberOfDataPoints = 20
+numberOfLoops = 1
 
 # Open the serial connection (replace with the correct port name)
-portName = "COM7" 
+portName = "/dev/cu.usbmodem3976347232332" 
 
 dataContainer = DataContainer()
 algorithmManager = AlgorithmManager(dataContainer)
@@ -39,11 +39,11 @@ for i in range(numberOfLoops):
 
     end = time.time()
 
-    # print(f"Réception des données brutes et calcul des nouvelles valeurs en {end-start} ms")
-    # print(f"La nouvelle valeur de position est {newPosition}")
-    # print(f"La nouvelle valeur de longueur d'onde est {newWavelength}")
-    # print(f"La nouvelle valeur de puissance est {newPower}")
-    # print(f"La température du heatsink est {dataContainer.temperature[-1]}")
+    print(f"Réception des données brutes et calcul des nouvelles valeurs en {end-start} ms")
+    print(f"La nouvelle valeur de position est {newPosition}")
+    print(f"La nouvelle valeur de longueur d'onde est {newWavelength}")
+    print(f"La nouvelle valeur de puissance est {newPower}")
+    print(f"La température du heatsink est {dataContainer.temperature[-1]}")
 
 
 
