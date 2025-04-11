@@ -52,7 +52,7 @@ delayBetweenReadings = 50 # µsec
 #       ------- I2C bus -------
 i2c = I2C(2, freq=400000)
 
-#       ------- LTR_390 -------
+#       ------- LTR_390 UV -------
 #  Choices for resolution: 
     #           13 bits (integration time = 12.5ms),
     #           16 bits (inegration time = 25ms), 
@@ -68,13 +68,13 @@ ltr390_resolution = 20
     #           x6, 
     #           x9,
     #           x18
-ltr390_gain = 18
+ltr390_gain = 3
 
 ltr390 = LTR_390(i2c, ltr390_resolution, ltr390_gain)
 
 
 #       ------- MCP9880 -------
-mcp9808 = MCP9808(i2c)
+# mcp9808 = MCP9808(i2c)
 
 
 #      ------- VEML6040 -------
@@ -133,7 +133,7 @@ while True:
     thermalReadings = thermalMatrix.readMatrix(delay=delayBetweenReadings)
 
     #          ----- MCP9808 -----
-    mcp9808Temp = mcp9808.readTemperature()
+    mcp9808Temp = 25
 
     # List of thermal readings
     thermalReadings.append(mcp9808Temp)
