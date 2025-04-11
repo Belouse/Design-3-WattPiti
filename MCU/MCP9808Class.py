@@ -1,5 +1,5 @@
-
-
+import pyb
+from machine import I2C
 class MCP9808:
 
     def __init__(self, i2c):
@@ -20,3 +20,15 @@ class MCP9808:
             temp_celsius -= 256
     
         return temp_celsius
+
+if __name__ == "__main__":
+
+    # ---- I2C bus ----
+    i2c = I2C(2, freq=400000)
+
+
+    mcp9808 = MCP9808(i2c)
+    while(True):
+        start = pyb.micros()
+        print(mcp9808.readTemperature())
+        print(pyb.micros() - start)

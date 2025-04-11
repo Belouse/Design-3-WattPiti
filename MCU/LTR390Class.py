@@ -158,7 +158,7 @@ class LTR_390:
                 self.update_uv_reading()
                 self.set_als_mode()
 
-            elif self.is_in_als_mode():
+            else:
                 self.update_als_reading()
                 self.set_uv_mode()
 
@@ -189,5 +189,7 @@ if __name__ == "__main__":
 
     # ltr_390.set_uv_mode()
     while True:
+        start = pyb.micros()
         als_reading, uv_reading = ltr390.get_als_and_uv_readings()
         print(uv_reading, als_reading)
+        print(pyb.micros() - start)
