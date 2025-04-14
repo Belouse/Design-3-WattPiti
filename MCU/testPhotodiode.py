@@ -19,7 +19,7 @@ photoDiode2 = PhotoDiode(photoDiode2Pin)
 photoDiode3 = PhotoDiode(photoDiode3Pin)
 photoDiode4 = PhotoDiode(photoDiode4Pin)
 
-
+names = ["IR2_#1", "IR1_#2", "IR1xP_#3", "UV_#4"]
 while True:
 
     # photodiode analog readings
@@ -33,5 +33,7 @@ while True:
                             readingPhotoDiode3,
                             readingPhotoDiode4
                             ]
+    print("--------------------")
+    print(names)
     print(photoReadings)
     pyb.delay(1000)
