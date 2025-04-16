@@ -143,7 +143,19 @@ class InterfaceWattpiti(tk.Tk):
 
         #Création d'un label pour le choix des données à enregistrer
         self.LabelDataChoice = ttk.Label(self, text = "Données à enregistrer:", style = "labelStyle.TLabel")
-        self.LabelDataChoice.place(x = 670, y= 100)
+        self.LabelDataChoice.place(x = 670, y= 120)
+
+
+        #Option pour jouer des données déjà enregistrées
+        self.replayData = ttk.Label(self, text = "Rejouer données", style = "labelStyle.TLabel")
+        self.replayData.place(x = 670, y = 90)
+
+        self.replayDataCheckButtonBool = tk.BooleanVar()
+        self.replayDataCheckButton = ttk.Checkbutton(self, variable = self.replayDataCheckButtonBool)
+        self.replayDataCheckButton.place(x=790, y=90)
+        self.replayDataCheckButtonBool.set(False)
+        self.replayDataCheckButton.configure(command = self.replay_data)
+
         
 
 
@@ -151,17 +163,17 @@ class InterfaceWattpiti(tk.Tk):
         #Longueur d'onde
         self.wavelengthCheckButtonBool = tk.BooleanVar()
         self.wavelengthCheckButton = ttk.Checkbutton(self, text= "Longueur d'onde", variable = self.wavelengthCheckButtonBool)
-        self.wavelengthCheckButton.place(x=810, y=120)
+        self.wavelengthCheckButton.place(x=810, y=140)
         self.wavelengthCheckButtonBool.set(True)
         #Puissance
         self.powerCheckButtonBool = tk.BooleanVar()
         self.powerCheckButton = ttk.Checkbutton(self, text="Puissance", variable = self.powerCheckButtonBool)
-        self.powerCheckButton.place(x=810, y = 100)
+        self.powerCheckButton.place(x=810, y = 120)
         self.powerCheckButtonBool.set(True)
         #Position
         self.positionCheckButtonBool = tk.BooleanVar()
         self.positionCheckButton = ttk.Checkbutton(self, text="Position", variable = self.positionCheckButtonBool)
-        self.positionCheckButton.place(x = 810, y = 140)
+        self.positionCheckButton.place(x = 810, y = 160)
         self.positionCheckButtonBool.set(True)
 
         #Création d'un bouton pour enregister les données
@@ -174,7 +186,7 @@ class InterfaceWattpiti(tk.Tk):
 
 
         #Création d'un frame pour les résultats de la simulation
-        self.resultsFrame = ttk.Frame(self, width=400, height=200, borderwidth=3, style = "frameLabelStyle.TLabelframe")
+        self.resultsFrame = ttk.Frame(self, width=480, height=200, borderwidth=3, style = "frameLabelStyle.TLabelframe")
         self.resultsFrame.grid(row = 0, column = 4, padx=5, pady=5, sticky = "nsew")
         self.resultsFrame.grid_propagate(False)
 
@@ -190,7 +202,7 @@ class InterfaceWattpiti(tk.Tk):
         self.powerDisplayLabel = ttk.Label(self, text= "Puissance instantanée (W):", font = ("Inter", 14, "bold"))
         self.powerDisplayLabel.place(x=1050, y=58)                                                           
         self.powerDisplay = ttk.Label(self, textvariable = self.powerVar , font = ("Inter", 24, "bold"))
-        self.powerDisplay.place(x=1330, y =50)
+        self.powerDisplay.place(x=1380, y =50)
 
         #Création d'un display pour la longueur d'onde
         self.wavelenghtVar = tk.StringVar()
@@ -199,7 +211,7 @@ class InterfaceWattpiti(tk.Tk):
         self.wavelenghtDisplayLabel = ttk.Label(self, text= "Longueur d'onde (nm):", font = ("Inter", 14, "bold"))
         self.wavelenghtDisplayLabel.place(x=1050, y=108)                                                           
         self.wavelenghtDisplay = ttk.Label(self, textvariable = self.wavelenghtVar , font = ("Inter", 24, "bold"))
-        self.wavelenghtDisplay.place(x= 1330, y = 100)
+        self.wavelenghtDisplay.place(x= 1380, y = 100)
 
         #Création d'un display pour la position centrale du faisceau
         self.positionXVar = tk.StringVar() #Variable de la position sur l'axe x
@@ -211,26 +223,26 @@ class InterfaceWattpiti(tk.Tk):
         self.positionDisplayLabel.place(x = 1050, y = 158)
         
         self.positionXDisplay = ttk.Label(self, textvariable= self.positionXVar, font = ("Inter", 24, "bold"))
-        self.positionXDisplay.place(x = 1230, y= 150)
+        self.positionXDisplay.place(x = 1280, y= 150)
         self.positionYDisplay = ttk.Label(self, textvariable=self.positionYVar, font = ("Inter", 24, "bold"))
-        self.positionYDisplay.place(x = 1340, y= 150)
+        self.positionYDisplay.place(x = 1420, y= 150)
 
         self.positionXLabel = ttk.Label(self, text = "x :", font= ("Inter", 24, "bold"))
-        self.positionXLabel.place(x = 1190, y = 149)
+        self.positionXLabel.place(x = 1230, y = 149)
 
         self.positionYLabel = ttk.Label(self, text = "y :", font= ("Inter", 24, "bold"))
-        self.positionYLabel.place(x = 1300, y = 149)
+        self.positionYLabel.place(x = 1370, y = 149)
 
 
         ###Création du frame pour le graphique de la puissance en fonction du temps
-        self.powerPlotFrame = ttk.Frame(self, width=850, height=685, borderwidth=3, style = "frameLabelStyle.TLabelframe")
+        self.powerPlotFrame = ttk.Frame(self, width=925, height=700, borderwidth=3, style = "frameLabelStyle.TLabelframe")
         self.powerPlotFrame.grid(row = 2, column= 0 , columnspan = 3, rowspan = 1, padx = 5, pady = 5, sticky = "nsew")
 
         self.powerPlotLabel = ttk.Label(self, text= "Graphique de la puissance en fonction du temps", style = "frameLabelStyle.TLabelframe.Label")
         self.powerPlotLabel.place(x = 10, y = 230)
 
         #Création du graphique pour la puissance en fonction du temps
-        self.powerFig = Figure(figsize = (8, 5.8), dpi = 100)
+        self.powerFig = Figure(figsize = (8.9, 5.8), dpi = 100)
         self.axPow = self.powerFig.add_subplot(111)
         self.axPow.set_xlabel("Temps (s)")
         self.axPow.set_ylabel("Puissance (W)")
@@ -244,11 +256,11 @@ class InterfaceWattpiti(tk.Tk):
 
 
         ###Création du frame du graphique de la position centrale du faisceau
-        self.posPlotFrame = ttk.Frame(self, width=575, height=685, borderwidth=3, style = "frameLabelStyle.TLabelframe")
-        self.posPlotFrame.place(x = 860, y = 217)
+        self.posPlotFrame = ttk.Frame(self, width=575, height=700, borderwidth=3, style = "frameLabelStyle.TLabelframe")
+        self.posPlotFrame.place(x = 940, y = 217)
 
         self.posPlotLabel = ttk.Label(self, text= "Position centrale du faisceau", style = "frameLabelStyle.TLabelframe.Label")
-        self.posPlotLabel.place(x = 870, y = 230)
+        self.posPlotLabel.place(x = 950, y = 230)
 
         #Création du graphique pour la position centrale du faisceau
         self.posFig = Figure(figsize = (5, 5.8), dpi = 100)
@@ -259,7 +271,7 @@ class InterfaceWattpiti(tk.Tk):
 
         self.posCanvas = FigureCanvasTkAgg(self.posFig, master = self)
         self.posPlot = self.posCanvas.get_tk_widget()
-        self.posPlot.place(x = 900, y = 280)
+        self.posPlot.place(x = 970, y = 280)
 
         #Création d'un bouton pour calibrer les capteurs
         self.tareButton = ttk.Button(self, text= "Tare", style="saveButtonStyle.TButton", command = self.click_tare)
@@ -268,8 +280,22 @@ class InterfaceWattpiti(tk.Tk):
         self.tareLabel.place(x=250, y = 110)
 
 
-        #Première calibration des capteurs
-        #À faire
+        #Rejouer données
+        self.save_dir = os.path.join(os.path.dirname(__file__), "savedData")
+        if not os.path.exists(self.save_dir):
+            os.makedirs(self.save_dir)
+
+
+        self.saved_files = [f for f in os.listdir(self.save_dir) if os.path.isfile(os.path.join(self.save_dir, f))]
+
+
+        self.replayFile = ttk.Combobox(self, values=self.saved_files, width=10)
+        self.replayFile.place(x=820, y=90)
+        self.replayFile.configure(state="disabled")
+
+        self.replayButton = ttk.Button(self, text="Rejouer", style="saveButtonStyle.TButton", command=self.replay_data_button)
+        self.replayButton.place(x=900, y=90)
+        self.replayButton.configure(state="disabled")
 
 
         #Gestion de la loop
@@ -555,6 +581,26 @@ class InterfaceWattpiti(tk.Tk):
         if self.serialManager.serialListener is not None: #Déconnecte le port série
             self.serialManager.closePort()
         self.destroy() #Ferme la fenêtre
+
+    def replay_data(self):
+        #Fonction pour rejouer les données enregistrées
+        if self.running == True:
+            self.click_stop()
+        #Désactiver les widgets de l'interface
+        self.disable_widgets()
+        self.replayFile.configure(state="normal")
+        self.replayButton.configure(state="normal")
+
+        if self.replayDataCheckButtonBool.get() == False:
+            self.enable_widgets()
+            self.replayFile.configure(state="disabled")
+            self.replayButton.configure(state="disabled")
+    
+    def replay_data_button(self):
+        #Fonction pour rejouer les données enregistrées
+        pass
+        
+        
 
 
 
