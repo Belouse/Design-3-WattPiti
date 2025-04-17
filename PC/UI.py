@@ -455,31 +455,31 @@ class InterfaceWattpiti(tk.Tk):
 
         if self.choiceArray == [True, True, True]:
             with open(self.file_name, 'w') as file:
-                file.write("Temps (s), Puissance (W),Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
+                file.write("Temps (s),Puissance (W),Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
                 for i in self.dataArray:
                     file.write(f"{i[0]},{i[1]},{i[2]},{i[3][0]},{i[3][1]}\n")
         
         elif self.choiceArray == [True, True, False]:
             with open(self.file_name, 'w') as file:
-                file.write("Temps (s), Puissance (W),Longueur d'onde (nm)\n")
+                file.write("Temps (s),Puissance (W),Longueur d'onde (nm)\n")
                 for i in self.dataArray:
                     file.write(f"{i[0]},{i[1]},{i[2]}\n")
         
         elif self.choiceArray == [True, False, True]:
             with open(self.file_name, 'w') as file:
-                file.write("Temps (s), Puissance (W),Position x (mm),Position y (mm)\n")   
+                file.write("Temps (s),Puissance (W),Position x (mm),Position y (mm)\n")   
                 for i in self.dataArray:
                     file.write(f"{i[0]},{i[1]},{i[3][0]},{i[3][1]}\n")
 
         elif self.choiceArray == [False, True, True]:
             with open(self.file_name, 'w') as file:
-                file.write("Temps (s), Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
+                file.write("Temps (s),Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
                 for i in self.dataArray:
                     file.write(f"{i[0]},{i[2]},{i[3][0]},{i[3][1]}\n")
             
         elif self.choiceArray == [True, False, False]:
             with open(self.file_name, 'w') as file:
-                file.write("Temps (s), Puissance (W)\n")
+                file.write("Temps (s),Puissance (W)\n")
                 for i in self.dataArray:
                     file.write(f"{i[0]}, {i[1]}\n")
             
@@ -598,7 +598,42 @@ class InterfaceWattpiti(tk.Tk):
     
     def replay_data_button(self):
         #Fonction pour rejouer les données enregistrées
-        pass
+        if self.running == True:
+            self.click_stop()
+
+        file_path = os.path.join(self.save_dir, self.replayFile.get())
+        with open(file_path, 'r') as file:
+            lines = file.readlines()
+
+        headers = lines[0].strip().split(",")  
+        print(headers)# Extract headers
+        data = [line.strip().split(",") for line in lines[1:]]  # Extract data rows
+
+        # Initialize lists for each column
+        time_list = []
+        power_list = []
+        wavelength_list = []
+        position_x_list = []
+        position_y_list = []
+
+        # Populate lists based on headers
+        for row in data:
+
+            if "Temps (s)" in headers:
+                time_list.append(float(row[headers.index("Temps (s)")]))
+            if " Puissance (W)" in headers:
+                power_list.append(int(row[headers.index(" Puissance (W)")]))
+            if "Longueur d'onde (nm)" in headers:
+                wavelength_list.append(float(row[headers.index("Longueur d'onde (nm)")]))
+            if "Position x (mm)" in headers:
+                position_x_list.append(float(row[headers.index("Position x (mm)")]))
+            if "Position y (mm)" in headers:
+                position_y_list.append(float(row[headers.index("Position y (mm)")]))
+
+
+        print(power_list)
+                
+        
         
         
 
