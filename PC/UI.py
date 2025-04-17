@@ -606,36 +606,74 @@ class InterfaceWattpiti(tk.Tk):
             lines = file.readlines()
 
         headers = lines[0].strip().split(",")  
-        print(headers)# Extract headers
         data = [line.strip().split(",") for line in lines[1:]]  # Extract data rows
 
-        # Initialize lists for each column
-        time_list = []
-        power_list = []
-        wavelength_list = []
-        position_x_list = []
-        position_y_list = []
+        self.time_list = []
+        self.power_list = []
+        self.wavelength_list = []
+        self.position_x_list = []
+        self.position_y_list = []
 
-        # Populate lists based on headers
+
         for row in data:
 
             if "Temps (s)" in headers:
-                time_list.append(float(row[headers.index("Temps (s)")]))
+                self.time_list.append(float(row[headers.index("Temps (s)")]))
             if " Puissance (W)" in headers:
-                power_list.append(int(row[headers.index(" Puissance (W)")]))
+                self.power_list.append(int(row[headers.index(" Puissance (W)")]))
             if "Longueur d'onde (nm)" in headers:
-                wavelength_list.append(float(row[headers.index("Longueur d'onde (nm)")]))
+                self.wavelength_list.append(float(row[headers.index("Longueur d'onde (nm)")]))
             if "Position x (mm)" in headers:
-                position_x_list.append(float(row[headers.index("Position x (mm)")]))
+                self.position_x_list.append(float(row[headers.index("Position x (mm)")]))
             if "Position y (mm)" in headers:
-                position_y_list.append(float(row[headers.index("Position y (mm)")]))
+                self.position_y_list.append(float(row[headers.index("Position y (mm)")]))
+
+        self.count = 0
+        self.replay_loop()
+
+    
+    def replay_loop(self):
+        #Faire GESTION D'ERREUR
+        if self.running == False:
+            self.click_stop()
+
+        if self.replayDataCheckButtonBool.get() == False:
+            pass
+
+        else:
+            self.fpositionXVar = "{:.2f}".format(self.position_x_list[self.count])
+            self.fpositionYVar = "{:.2f}".format(self.position_y_list[self.count])
+            self.wavelenghtVar.set(str(self.wavelength_list[self.count]))
+            self.positionXVar.set(self.fpositionXVar)
+            self.positionYVar.set(self.fpositionYVar)
+            self.powerVar.set(str(self.power_list[self.count]))
+
+            self.axPos.clear()
+            self.axPos.set_xlabel("Position x (mm)")
+            self.axPos.set_ylabel("Position y (mm)")
+            #Mettre graphique de la position centrale du faisceau
+
+            self.axPow.clear()
+            self.axPow.set_xlabel("Temps (s)")
+            self.axPow.set_ylabel("Puissance (W)")
+            
+            self.axPow.plot(self.time_list[:self.count+1], self.power_list[:self.count+1], color = "blue")
+            self.powerCanvas.draw()
+            self.powerCanvas.get_tk_widget().update()
 
 
-        print(power_list)
+
+            if self.count < len(self.power_list) - 1:
+                self.count += 1
+                self.after(1000, self.replay_loop)
+
+
+
+        
+
+
+            
                 
-        
-        
-        
 
 
 
