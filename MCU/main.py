@@ -19,14 +19,14 @@ startIndicator() # lights will blink on the MCU to show that the code excution i
 photoDiode1Pin = "X19"  # MTPD2601T-100
 photoDiode2Pin = "X20"  # MTPD3001D3-030 sans verre
 photoDiode3Pin = "X21"  # MTPD3001D3-030 avec verre
-photoDiode4Pin = "X22"  # 019-101-411
+photoDiode4Pin = "X2"  # 019-101-411
 
-muxPin1 = "X7"    # LSB
-muxPin2 = "X8"
-muxPin3 = "X9"
-muxPin4 = "X10"   # MSB
+muxPin1 = "Y7"    # LSB
+muxPin2 = "Y8"
+muxPin3 = "X11"
+muxPin4 = "X12"   # MSB
 
-thermalMatrixPin = "X12"
+thermalMatrixPin = "X22"
 
 
 # Initialization of the sensors

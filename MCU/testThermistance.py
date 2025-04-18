@@ -1,14 +1,8 @@
 import pyb # normal error here
 from machine import I2C # normal error here
 from startindicator import startIndicator
-from PhotodiodeClass import PhotoDiode
-from MCUSerialPortClass import MCUSerialPort
-from JSONFormatterClass import JSONFormatter
 from MUXClass import Mux
 from ThermalMatrixClass import ThermalMatrix
-from MCP9808Class import MCP9808
-from LTR390Class import LTR_390
-from VELM6040Class import VEML6040
 
 
 # Start up of the MCU
@@ -22,6 +16,7 @@ muxPin4 = "X12"   # MSB
 
 thermalMatrixPin = "X22"
 
+thermistanceNumber = 4 # from 1 to 16
 
 # ---------- THERMAL MATRIX ----------
 
@@ -33,5 +28,5 @@ delayBetweenReadings = 1000000 # µsec
 
 while True:
     #       ----- THERMAL MATRIX -----
-    thermalReadings = thermalMatrix.readMatrix(delay=delayBetweenReadings)
-    print(thermalReadings)
+    reading = thermalMatrix.readChannel(thermistanceNumber, delay=delayBetweenReadings)
+    print(f"Reading #{thermistanceNumber}: {reading}")
