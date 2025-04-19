@@ -16,7 +16,6 @@ muxPin4 = "X12"   # MSB
 
 thermalMatrixPin = "X22"
 
-thermistanceNumber = 4 # from 1 to 16
 
 # ---------- THERMAL MATRIX ----------
 
@@ -28,5 +27,5 @@ delayBetweenReadings = 1000000 # µsec
 
 while True:
     #       ----- THERMAL MATRIX -----
-    reading = thermalMatrix.readChannel(thermistanceNumber, delay=delayBetweenReadings)
-    print(f"Reading #{thermistanceNumber}: {reading}")
+    readings = thermalMatrix.readChannel(thermistanceNumber, delay=delayBetweenReadings)
+    print(readings)
