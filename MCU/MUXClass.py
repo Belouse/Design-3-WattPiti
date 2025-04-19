@@ -18,7 +18,8 @@ class Mux():
         for i in range(4):
             value = (sensorNumber >> i) & 1
             self.pins[i].value(value)  # Extract bit i and set pin
-
+            # print(value, end=" ")  # Debugging output
+        # print("\n")
 
 
 

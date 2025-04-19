@@ -14,15 +14,15 @@ muxPin2 = "Y8"
 muxPin3 = "X11"
 muxPin4 = "X12"   # MSB
 
-thermalMatrixPin = "X22"
+thermalMatrixPin = "X19"
 
-thermistanceNumber = 4 # from 1 to 16
+thermistanceNumber = 1 # from 1 to 16
 
-# ---------- THERMAL MATRIX ----------
+# ---------- THERMAL MATRIX ----------S
 
 mux = Mux(muxPin1, muxPin2, muxPin3, muxPin4)
 thermalMatrix = ThermalMatrix(thermalMatrixPin, mux)
-delayBetweenReadings = 1000000 # µsec
+delayBetweenReadings = 100000 # µsec
 
 
 

@@ -18,6 +18,7 @@ class ThermalMatrix():
 
     def readChannel(self, channelNumber, delay):
         self.mux.channelSensor(channelNumber)
+        # print(f"Reading channel {channelNumber - 1}...")
         pyb.udelay(delay)
         reading = self.adc.read()
         return reading
