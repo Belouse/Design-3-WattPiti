@@ -16,7 +16,7 @@ muxPin4 = "X12"   # MSB
 
 thermalMatrixPin = "X19"
 
-thermistanceNumber = 1 # from 1 to 16
+thermistanceNumber = 2 # from 1 to 16
 
 # ---------- THERMAL MATRIX ----------S
 

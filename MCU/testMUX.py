@@ -30,4 +30,4 @@ while True:
     #       ----- THERMAL MATRIX -----
     thermalReadings = thermalMatrix.readMatrix(delay=delayBetweenReadings)
     print(thermalReadings)
-    pyb.delay(1000)
+    pyb.delay(1)
