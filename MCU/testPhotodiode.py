@@ -7,10 +7,10 @@ print("Pyboard start up...")
 startIndicator() # lights will blink on the MCU to show that the code excution is starting
 
 # pins
-photoDiode1Pin = "X19"  # MTPD2601T-100
-photoDiode2Pin = "X20"  # MTPD3001D3-030 sans verre
-photoDiode3Pin = "X21"  # MTPD3001D3-030 avec verre
-photoDiode4Pin = "X22"  # 019-101-411
+photoDiode1Pin = "X20"  # MTPD2601T-100
+photoDiode2Pin = "X21"  # MTPD3001D3-030 sans verre
+photoDiode3Pin = "X22"  # MTPD3001D3-030 avec verre
+photoDiode4Pin = "X2"  # 019-101-411
 
 
 # Initialization of the sensors
