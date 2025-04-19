@@ -26,7 +26,7 @@ muxPin2 = "Y8"
 muxPin3 = "X11"
 muxPin4 = "X12"   # MSB
 
-thermalMatrixPin = "X22"
+thermalMatrixPin = "X19"
 
 
 # Initialization of the sensors
