@@ -143,19 +143,8 @@ class InterfaceWattpiti(tk.Tk):
 
         #Création d'un label pour le choix des données à enregistrer
         self.LabelDataChoice = ttk.Label(self, text = "Données à enregistrer:", style = "labelStyle.TLabel")
-        self.LabelDataChoice.place(x = 670, y= 120)
-
-
-        #Option pour jouer des données déjà enregistrées
-        self.replayData = ttk.Label(self, text = "Rejouer données", style = "labelStyle.TLabel")
-        self.replayData.place(x = 670, y = 90)
-
-        self.replayDataCheckButtonBool = tk.BooleanVar()
-        self.replayDataCheckButton = ttk.Checkbutton(self, variable = self.replayDataCheckButtonBool)
-        self.replayDataCheckButton.place(x=790, y=90)
-        self.replayDataCheckButtonBool.set(False)
-        self.replayDataCheckButton.configure(command = self.replay_data)
-
+        self.LabelDataChoice.place(x = 670, y= 80)
+                
         
 
 
@@ -163,17 +152,17 @@ class InterfaceWattpiti(tk.Tk):
         #Longueur d'onde
         self.wavelengthCheckButtonBool = tk.BooleanVar()
         self.wavelengthCheckButton = ttk.Checkbutton(self, text= "Longueur d'onde", variable = self.wavelengthCheckButtonBool)
-        self.wavelengthCheckButton.place(x=810, y=140)
+        self.wavelengthCheckButton.place(x=810, y=110)
         self.wavelengthCheckButtonBool.set(True)
         #Puissance
         self.powerCheckButtonBool = tk.BooleanVar()
         self.powerCheckButton = ttk.Checkbutton(self, text="Puissance", variable = self.powerCheckButtonBool)
-        self.powerCheckButton.place(x=810, y = 120)
+        self.powerCheckButton.place(x=810, y = 90)
         self.powerCheckButtonBool.set(True)
         #Position
         self.positionCheckButtonBool = tk.BooleanVar()
         self.positionCheckButton = ttk.Checkbutton(self, text="Position", variable = self.positionCheckButtonBool)
-        self.positionCheckButton.place(x = 810, y = 160)
+        self.positionCheckButton.place(x = 810, y = 130)
         self.positionCheckButtonBool.set(True)
 
         #Création d'un bouton pour enregister les données
@@ -281,21 +270,21 @@ class InterfaceWattpiti(tk.Tk):
 
 
         #Rejouer données
-        self.save_dir = os.path.join(os.path.dirname(__file__), "savedData")
+        """self.save_dir = os.path.join(os.path.dirname(__file__), "savedData")
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
 
 
-        self.saved_files = [f for f in os.listdir(self.save_dir) if os.path.isfile(os.path.join(self.save_dir, f))]
+        self.saved_files = [f for f in os.listdir(self.save_dir) if os.path.isfile(os.path.join(self.save_dir, f))]"""
 
 
-        self.replayFile = ttk.Combobox(self, values=self.saved_files, width=10)
+        """self.replayFile = ttk.Combobox(self, values=self.saved_files, width=10)
         self.replayFile.place(x=820, y=90)
         self.replayFile.configure(state="disabled")
 
         self.replayButton = ttk.Button(self, text="Rejouer", style="saveButtonStyle.TButton", command=self.replay_data_button)
         self.replayButton.place(x=900, y=90)
-        self.replayButton.configure(state="disabled")
+        self.replayButton.configure(state="disabled")"""
 
 
         #Gestion de la loop
@@ -582,90 +571,6 @@ class InterfaceWattpiti(tk.Tk):
             self.serialManager.closePort()
         self.destroy() #Ferme la fenêtre
 
-    def replay_data(self):
-        #Fonction pour rejouer les données enregistrées
-        if self.running == True:
-            self.click_stop()
-        #Désactiver les widgets de l'interface
-        self.disable_widgets()
-        self.replayFile.configure(state="normal")
-        self.replayButton.configure(state="normal")
-
-        if self.replayDataCheckButtonBool.get() == False:
-            self.enable_widgets()
-            self.replayFile.configure(state="disabled")
-            self.replayButton.configure(state="disabled")
-    
-    def replay_data_button(self):
-        #Fonction pour rejouer les données enregistrées
-        if self.running == True:
-            self.click_stop()
-
-        file_path = os.path.join(self.save_dir, self.replayFile.get())
-        with open(file_path, 'r') as file:
-            lines = file.readlines()
-
-        headers = lines[0].strip().split(",")  
-        data = [line.strip().split(",") for line in lines[1:]]  # Extract data rows
-
-        self.time_list = []
-        self.power_list = []
-        self.wavelength_list = []
-        self.position_x_list = []
-        self.position_y_list = []
-
-
-        for row in data:
-
-            if "Temps (s)" in headers:
-                self.time_list.append(float(row[headers.index("Temps (s)")]))
-            if " Puissance (W)" in headers:
-                self.power_list.append(int(row[headers.index(" Puissance (W)")]))
-            if "Longueur d'onde (nm)" in headers:
-                self.wavelength_list.append(float(row[headers.index("Longueur d'onde (nm)")]))
-            if "Position x (mm)" in headers:
-                self.position_x_list.append(float(row[headers.index("Position x (mm)")]))
-            if "Position y (mm)" in headers:
-                self.position_y_list.append(float(row[headers.index("Position y (mm)")]))
-
-        self.count = 0
-        self.replay_loop()
-
-    
-    def replay_loop(self):
-        #Faire GESTION D'ERREUR
-        if self.running == False:
-            self.click_stop()
-
-        if self.replayDataCheckButtonBool.get() == False:
-            pass
-
-        else:
-            self.fpositionXVar = "{:.2f}".format(self.position_x_list[self.count])
-            self.fpositionYVar = "{:.2f}".format(self.position_y_list[self.count])
-            self.wavelenghtVar.set(str(self.wavelength_list[self.count]))
-            self.positionXVar.set(self.fpositionXVar)
-            self.positionYVar.set(self.fpositionYVar)
-            self.powerVar.set(str(self.power_list[self.count]))
-
-            self.axPos.clear()
-            self.axPos.set_xlabel("Position x (mm)")
-            self.axPos.set_ylabel("Position y (mm)")
-            #Mettre graphique de la position centrale du faisceau
-
-            self.axPow.clear()
-            self.axPow.set_xlabel("Temps (s)")
-            self.axPow.set_ylabel("Puissance (W)")
-            
-            self.axPow.plot(self.time_list[:self.count+1], self.power_list[:self.count+1], color = "blue")
-            self.powerCanvas.draw()
-            self.powerCanvas.get_tk_widget().update()
-
-
-
-            if self.count < len(self.power_list) - 1:
-                self.count += 1
-                self.after(1000, self.replay_loop)
 
 
 
