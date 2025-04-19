@@ -27,5 +27,5 @@ delayBetweenReadings = 1000000 # µsec
 
 while True:
     #       ----- THERMAL MATRIX -----
-    readings = thermalMatrix.readChannel(thermistanceNumber, delay=delayBetweenReadings)
-    print(readings)
+    reading = thermalMatrix.readChannel(thermistanceNumber, delay=delayBetweenReadings)
+    print(f"Reading #{thermistanceNumber}: {reading}")
