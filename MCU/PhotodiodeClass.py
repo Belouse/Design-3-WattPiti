@@ -11,8 +11,6 @@ class PhotoDiode():
         """
         if type(pinNumber) != str:
             raise TypeError("pinNumber argument should a string.")
-        if len(pinNumber) != 3:
-            raise Exception("pinNumber sould be of the following format X10")
         
         self.pinNumber = pinNumber
         self.adc = pyb.ADC(pyb.Pin(str(self.pinNumber)))
@@ -25,3 +23,7 @@ class PhotoDiode():
         # reading = 10
 
         return reading
+
+
+#         if len(pinNumber) != 3:
+#             raise Exception("pinNumber sould be of the following format X10")
