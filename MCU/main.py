@@ -74,7 +74,7 @@ ltr390 = LTR_390(i2c, ltr390_resolution, ltr390_gain)
 
 
 #       ------- MCP9880 -------
-# mcp9808 = MCP9808(i2c)
+mcp9808 = MCP9808(i2c)
 
 
 #      ------- VEML6040 -------
@@ -126,14 +126,14 @@ while True:
                             readingPhotoDiode4,
                             ltr390_uv_reading,
                             ltr390_als_reading]
-    
+
     # ---------- THERMAL SENSORS ----------
 
     #       ----- THERMAL MATRIX -----
     thermalReadings = thermalMatrix.readMatrix(delay=delayBetweenReadings)
 
     #          ----- MCP9808 -----
-    mcp9808Temp = 25
+    mcp9808Temp = mcp9808.readTemperature()
 
     # List of thermal readings
     thermalReadings.append(mcp9808Temp)
