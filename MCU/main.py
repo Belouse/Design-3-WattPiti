@@ -85,7 +85,7 @@ mcp9808 = MCP9808(i2c)
     #           320 ms, 
     #           640 ms,
     #           1280 ms
-integration_time = 1280
+integration_time = 40
 
 veml6040 = VEML6040(i2c, integration_time)
 
