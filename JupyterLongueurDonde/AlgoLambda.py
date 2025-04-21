@@ -287,7 +287,7 @@ class AlgoWavelength:
         """
         Affiche les courbes de réponse spectrale des capteurs.
         """
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(6, 4))
         
         for sensor_name in self.sensor_order:
             sensor_data = self.responses[sensor_name]
@@ -298,22 +298,22 @@ class AlgoWavelength:
         plt.ylabel("Réponse normalisée")
         plt.legend()
         plt.grid(True)
+        plt.ylim(0, 1)  # Limiter l'axe y entre 0 et 1.1 pour une meilleure visualisation
         plt.show()
     
     def plot_spectral_response(self):
         """
         Affiche les courbes de réponse spectrale des capteurs.
         """
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(6,4))
         
         for sensor_name in self.sensor_order:
             sensor_data = self.response_dict[sensor_name]['data']
             plt.plot(sensor_data[:, 0], sensor_data[:, 1], label=sensor_name)
-        
-        plt.title("Réponses spectrales des capteurs")
+        plt.ylim(0, 1)
         plt.xlabel("Longueur d'onde (nm)")
         plt.ylabel("Réponse normalisée")
-        plt.legend()
+        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.grid(True)
         plt.show()
 
@@ -675,6 +675,243 @@ def plot_position_error_heatmaps(df_results, radius, resolution):
     plt.savefig('position_error_heatmaps.png', dpi=300, bbox_inches='tight')
     plt.show()
     
+    
+    
+def test_noise_influence_improved(wavelengths=[450, 976, 1976], noise_levels=np.arange(0, 0.21, 0.02), 
+                        num_iterations=10, num_tests=30, model_path='model_nn_pytorch_weights.pth'):
+    """
+    Teste l'influence du bruit sur la précision des prédictions de longueur d'onde 
+    avec plusieurs tests pour moyenner les résultats.
+    
+    Parameters:
+    wavelengths (list): Liste des longueurs d'onde à tester
+    noise_levels (array): Niveaux de bruit à appliquer (proportion de la valeur)
+    num_iterations (int): Nombre d'itérations pour chaque combinaison pour obtenir des statistiques
+    num_tests (int): Nombre de tests indépendants à effectuer pour calculer la moyenne et l'écart-type
+    model_path (str): Chemin vers le modèle entraîné
+    
+    Returns:
+    tuple: (results, sensor_variations) 
+           - results: dict contenant les pourcentages d'erreur moyens pour chaque combinaison
+           - sensor_variations: dict contenant les variations moyennes de chaque capteur avec leur signe
+    """
+    # Initialiser l'algorithme de prédiction
+    algo = AlgoWavelength(model_path=model_path)
+    
+    # Préparer la structure pour stocker les résultats
+    results = {
+        'wavelength': [],
+        'noise_level': [],
+        'error_percent_mean': [],
+        'error_percent_std': []
+    }
+    
+    # Structure pour stocker les variations des réponses des capteurs
+    sensor_variations = {
+        'wavelength': [],
+        'noise_level': [],
+        'sensor_name': [],
+        'variation_percent_mean': [],
+        'variation_percent_std': []
+    }
+    
+    # Pour chaque longueur d'onde
+    for wavelength in wavelengths:
+        print(f"Traitement de la longueur d'onde: {wavelength} nm")
+        
+        # Obtenir les réponses des capteurs pour cette longueur d'onde
+        _, responses_list = algo.get_sensor_response_for_wavelength(wavelength)
+        
+        # Pour chaque niveau de bruit
+        for noise_level in noise_levels:
+            # Listes pour stocker les erreurs de tous les tests
+            all_error_percents = []
+            
+            # Pour chaque capteur, initialiser une liste pour stocker les variations de tous les tests
+            all_sensor_variations = [[] for _ in range(len(algo.sensor_order))]
+            
+            # Effectuer plusieurs tests indépendants
+            for test in range(num_tests):
+                test_error_percents = []
+                test_sensor_variations = [[] for _ in range(len(algo.sensor_order))]
+                
+                # Répéter plusieurs fois pour obtenir des statistiques dans chaque test
+                for _ in range(num_iterations):
+                    # Ajouter du bruit aux réponses brutes (avant normalisation)
+                    noisy_responses = []
+                    for i, response in enumerate(responses_list):
+                        # Générer un bruit aléatoire entre -noise_level et +noise_level de la valeur
+                        noise = np.random.uniform(-noise_level, noise_level) * response
+                        noisy_response = response + noise
+                        noisy_response = max(0, noisy_response)  # Assurer des valeurs positives
+                        
+                        # Calculer la variation en pourcentage avec signe
+                        if response > 0:  # Éviter division par zéro
+                            # Garder le signe de la variation (positif = augmentation, négatif = diminution)
+                            variation_percent = (noisy_response - response) / response * 100
+                            test_sensor_variations[i].append(variation_percent)
+                        
+                        noisy_responses.append(noisy_response)
+                    
+                    # Normaliser les réponses avec bruit
+                    noisy_ratios = np.array(noisy_responses) / np.max(noisy_responses)
+                    
+                    # Prédire la longueur d'onde avec les ratios bruités
+                    predicted_wavelength = algo.calculate_wavelength(noisy_ratios)
+                    
+                    # Calculer l'erreur en pourcentage
+                    error_percent = abs(predicted_wavelength - wavelength) / wavelength * 100
+                    test_error_percents.append(error_percent)
+                
+                # Calculer la moyenne des erreurs pour ce test
+                mean_error_percent = np.mean(test_error_percents)
+                all_error_percents.append(mean_error_percent)
+                
+                # Calculer la moyenne des variations pour chaque capteur dans ce test
+                for i, variations in enumerate(test_sensor_variations):
+                    if variations:  # S'assurer qu'il y a des données
+                        all_sensor_variations[i].append(np.mean(variations))
+            
+            # Calculer la moyenne et l'écart-type des erreurs sur tous les tests
+            mean_error = np.mean(all_error_percents)
+            std_error = np.std(all_error_percents)
+            
+            # Stocker les résultats d'erreur
+            results['wavelength'].append(wavelength)
+            results['noise_level'].append(noise_level)
+            results['error_percent_mean'].append(mean_error)
+            results['error_percent_std'].append(std_error)
+            
+            # Stocker les variations moyennes et écarts-types pour chaque capteur
+            for i, sensor_name in enumerate(algo.sensor_order):
+                if all_sensor_variations[i]:  # S'assurer qu'il y a des données
+                    sensor_variations['wavelength'].append(wavelength)
+                    sensor_variations['noise_level'].append(noise_level)
+                    sensor_variations['sensor_name'].append(sensor_name)
+                    sensor_variations['variation_percent_mean'].append(np.mean(all_sensor_variations[i]))
+                    sensor_variations['variation_percent_std'].append(np.std(all_sensor_variations[i]))
+    
+    return results, sensor_variations
+
+def plot_separate_heatmaps_improved(results, sensor_variations):
+    """
+    Crée deux figures séparées avec des barres d'erreur:
+    1. Une heatmap d'erreur de prédiction pour chaque longueur d'onde
+    2. Une figure avec trois heatmaps empilées verticalement montrant la variation des capteurs pour chaque longueur d'onde
+    
+    Parameters:
+    results (dict): Résultats d'erreur obtenus de la fonction test_noise_influence_improved
+    sensor_variations (dict): Variations des capteurs obtenues de la fonction test_noise_influence_improved
+    """
+    # Convertir les résultats en DataFrame
+    df_results = pd.DataFrame(results)
+    df_sensors = pd.DataFrame(sensor_variations)
+    
+    # FIGURE 1: Heatmap d'erreur de prédiction avec barres d'erreur
+    plt.figure(figsize=(10, 6))
+    
+    # Créer un pivot pour la heatmap d'erreur
+    pivot_error = df_results.pivot(index='noise_level', columns='wavelength', values='error_percent_mean')
+    pivot_error_std = df_results.pivot(index='noise_level', columns='wavelength', values='error_percent_std')
+    
+    # Créer la heatmap d'erreur
+    ax = sns.heatmap(pivot_error, annot=True, fmt=".2f", cmap="YlOrRd", 
+                cbar_kws={'label': 'Erreur moyenne (%)'})
+    
+    # Ajouter des titres et étiquettes
+    plt.title("Erreur de prédiction moyenne par longueur d'onde (sur plusieurs tests)", fontsize=14)
+    plt.xlabel("Longueur d'onde (nm)", fontsize=12)
+    plt.ylabel("Niveau de bruit", fontsize=12)
+    
+    # Améliorer les étiquettes de l'axe des x
+    ax.set_xticklabels([f"{int(wl)} nm" for wl in pivot_error.columns])
+    
+    # Améliorer les étiquettes de l'axe des y
+    ax.set_yticklabels([f"{nl:.2f}" for nl in pivot_error.index])
+    
+    plt.tight_layout()
+    plt.savefig('heatmap_error_prediction_mean.png', dpi=300)
+    plt.show()
+    
+    # Figure supplémentaire pour les écarts-types
+    plt.figure(figsize=(10, 6))
+    ax_std = sns.heatmap(pivot_error_std, annot=True, fmt=".2f", cmap="Greens", 
+                     cbar_kws={'label': 'Écart-type de l\'erreur (%)'})
+    plt.title("Écart-type de l'erreur de prédiction par longueur d'onde", fontsize=14)
+    plt.xlabel("Longueur d'onde (nm)", fontsize=12)
+    plt.ylabel("Niveau de bruit", fontsize=12)
+    ax_std.set_xticklabels([f"{int(wl)} nm" for wl in pivot_error_std.columns])
+    ax_std.set_yticklabels([f"{nl:.2f}" for nl in pivot_error_std.index])
+    plt.tight_layout()
+    plt.savefig('heatmap_error_prediction_std.png', dpi=300)
+    plt.show()
+    
+    # FIGURE 3: Heatmaps empilées des variations moyennes des capteurs pour chaque longueur d'onde
+    wavelengths = df_results['wavelength'].unique()
+    num_wavelengths = len(wavelengths)
+    
+    # Créer une figure plus haute pour accueillir les trois heatmaps empilées
+    fig, axes = plt.subplots(num_wavelengths, 1, figsize=(10, 3 * num_wavelengths))
+    
+    # Définir une palette de couleurs divergente avec le point central à 0
+    cmap = sns.diverging_palette(240, 10, as_cmap=True)
+    
+    # Pour chaque longueur d'onde
+    for i, wavelength in enumerate(wavelengths):
+        # Filtrer pour cette longueur d'onde spécifique
+        df_sensors_filtered = df_sensors[df_sensors['wavelength'] == wavelength]
+        
+        # Créer un pivot pour la heatmap de variation des capteurs
+        pivot_sensors = df_sensors_filtered.pivot(index='noise_level', columns='sensor_name', values='variation_percent_mean')
+        
+        # Créer la heatmap de variation des capteurs sur l'axe correspondant
+        ax = axes[i] if num_wavelengths > 1 else axes
+        
+        # Trouver la valeur absolue maximale pour centrer correctement la carte de couleurs
+        vmax = max(abs(pivot_sensors.values.min()), abs(pivot_sensors.values.max()))
+        
+        # Créer la heatmap avec une coloration divergente (bleu = négatif, rouge = positif)
+        sns.heatmap(pivot_sensors, annot=True, fmt="+.2f", cmap=cmap,
+                    vmin=-vmax, vmax=vmax, center=0,
+                    cbar_kws={'label': 'Variation moyenne (%)'}, ax=ax)
+        
+        # Ajouter des titres et étiquettes
+        ax.set_title(f"Variation moyenne des réponses des capteurs pour λ = {wavelength} nm", fontsize=14)
+        ax.set_xlabel("Capteur", fontsize=12)
+        ax.set_ylabel("Niveau de bruit", fontsize=12)
+        
+        # Améliorer les étiquettes de l'axe des y
+        ax.set_yticklabels([f"{nl:.2f}" for nl in pivot_sensors.index])
+    
+    # Ajuster l'espacement entre les sous-graphiques
+    plt.tight_layout()
+    plt.savefig('heatmap_sensor_variations_mean.png', dpi=300)
+    plt.show()
+    
+    # FIGURE 4: Courbes d'erreur avec barres d'erreur
+    plt.figure(figsize=(10, 6))
+    
+    # Tracer les courbes pour chaque longueur d'onde avec des barres d'erreur
+    for wavelength in df_results['wavelength'].unique():
+        subset = df_results[df_results['wavelength'] == wavelength]
+        plt.errorbar(subset['noise_level'], subset['error_percent_mean'], 
+                    yerr=subset['error_percent_std'],
+                    marker='o', capsize=4, label=f"{int(wavelength)} nm")
+    
+    # Ajouter des titres et étiquettes
+    plt.title("Évolution de l'erreur moyenne en fonction du niveau de bruit", fontsize=14)
+    plt.xlabel("Niveau de bruit", fontsize=12)
+    plt.ylabel("Erreur moyenne (%)", fontsize=12)
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.legend()
+    
+    plt.tight_layout()
+    plt.savefig('error_vs_noise_with_error_bars.png', dpi=300)
+    plt.show()
+    
+    
+    
+    
 # Exemple d'utilisation:
 if __name__ == "__main__":
     def analyse_sensibilite():
@@ -733,10 +970,49 @@ if __name__ == "__main__":
         algo.plot_spectral_response()
         algo.plot_spectral_ratios()
     
-    #plot_reponses_et_ratios()
-    extraction_reponses_laser()
-    #analyse_sensibilite()
-    #map_position_error()
+    algo = AlgoWavelength(model_path='model_nn_pytorch_weights.pth')
+    angles = algo.angular_dict['P_IR1']['angles']
+    intensite_450 = algo.angular_dict['P_IR1']['intensite_450nm']
+    intensite_976 = algo.angular_dict['P_IR1']['intensite_976nm']
+    intensite_1976 = algo.angular_dict['P_IR1']['intensite_1976nm']
+    
+    plt.figure(figsize=(6,3))
+    plt.plot(angles, intensite_450, label='450 nm')
+    plt.plot(angles, intensite_976, label='976 nm')
+    plt.plot(angles, intensite_1976, label='1976 nm')
+    plt.xlabel("Angle [°]")
+    plt.ylabel("Intensité normalisée [-]")
+    plt.legend()
+    plt.grid()
+    plt.show()
+    
+    
+    
+    
+    def analyse_sensibilite_amelioree():
+        # Définir les longueurs d'onde à tester
+        wavelengths = [450, 976, 1976]
+        
+        # Définir la plage de niveaux de bruit (de 0% à 40% par incréments de 5%)
+        noise_levels = np.arange(0, 0.41, 0.05)
+        
+        # Tester l'influence du bruit avec moyennage sur 30 tests indépendants
+        results, sensor_variations = test_noise_influence_improved(
+            wavelengths, 
+            noise_levels, 
+            num_iterations=10,  # nombre d'iterations par test
+            num_tests=100,       # nombre de tests indépendants à moyenner
+            model_path='model_nn_pytorch_weights.pth'
+        )
+        
+        # Tracer les heatmaps avec barres d'erreur
+        plot_separate_heatmaps_improved(results, sensor_variations)
+        
+    analyse_sensibilite_amelioree()
+    # plot_reponses_et_ratios()
+    # extraction_reponses_laser()
+    # analyse_sensibilite()
+    # map_position_error()
 
 
 

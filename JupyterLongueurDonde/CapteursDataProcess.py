@@ -436,12 +436,20 @@ class DataPreProcess:
         self.dict_capteurs['P_IR1xP']['data'] = P_IR1xP_interp
         self.dict_capteurs['P_IR2']['data'] = P_IR2_interp
         self.dict_capteurs['P_UV']['data'] = P_UV_interp
+        # self.dict_capteurs['C_UV']['data'] = self.UV1
+        # self.dict_capteurs['C_VISG']['data'] = self.VIS_green
+        # self.dict_capteurs['C_VISB']['data'] = self.VIS_Blue
+        # self.dict_capteurs['C_VISR']['data'] = self.VIS_red
         self.dict_capteurs['C_UV']['data'] = C_UV_interp
         self.dict_capteurs['C_VISG']['data'] = C_VISG_interp
         self.dict_capteurs['C_VISB']['data'] = C_VISB_interp
         self.dict_capteurs['C_VISR']['data'] = C_VISR_interp
 
         # Normaliser les données
+        # normalized_data_list= self._spectral_normalization(
+        #     [P_IR1_interp, P_IR1xP_interp, P_IR2_interp, P_UV_interp,
+        #      self.UV1,self.VIS_green, self.VIS_Blue, self.VIS_red])
+
         normalized_data_list= self._spectral_normalization(
             [P_IR1_interp, P_IR1xP_interp, P_IR2_interp, P_UV_interp,
              C_UV_interp,C_VISG_interp, C_VISB_interp, C_VISR_interp])
