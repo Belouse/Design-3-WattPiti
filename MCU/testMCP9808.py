@@ -23,4 +23,6 @@ def read_temperature():
     
     return temp_celsius
 
-
+while True:
+    temperature = read_temperature()
+    print("Temperature: {:.2f} °C".format(temperature))

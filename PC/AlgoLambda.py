@@ -56,6 +56,7 @@ class AlgoWavelength:
 
         # Initialiser les sensor values
         self.sensor_values = np.zeros(len(self.sensor_order))
+        self.mean_sensor_values = np.zeros_like(self.sensor_values)
 
         # Initialiser moving window size
         self.moving_window_size = None
@@ -120,13 +121,52 @@ class AlgoWavelength:
 
         return geo_factor_list
 
-    def calculateWavelength(self, sensor_values, faisceau_pos=(0, 0, 0),
+    def _prepare_sensor_data(self, raw_data):
+        """
+        Extrait et réorganise les données des capteurs selon l'ordre défini dans self.sensor_order.
+
+        :param raw_data: Données brutes des 10 capteurs (array de taille 10 ou matrice Nx10)
+        :return: Données organisées des 8 capteurs dans l'ordre défini par self.sensor_order
+        """
+        # Mapping entre l'indice dans raw_data et le nom du capteur
+        raw_to_sensor_map = {
+            1: 'P_IR1',  # MTPD3001D3-030 sans verre
+            2: 'P_IR1xP',  # MTPD3001D3-030 avec verre
+            0: 'P_IR2',  # MTPD2601T-100
+            7: 'P_UV',  # 019-101-411
+            8: 'C_UV',  # LTR-390-UV-01 UVS
+            4: 'C_VISG',  # VEML6040A3OG G
+            5: 'C_VISB',  # VEML6040A3OG B
+            3: 'C_VISR'  # VEML6040A3OG R
+        }
+
+        # Indices des capteurs à extraire dans l'ordre de self.sensor_order
+        indices_to_extract = [idx for idx, sensor in raw_to_sensor_map.items()
+                              if sensor in self.sensor_order]
+
+        # Réorganiser les indices selon l'ordre dans self.sensor_order
+        ordered_indices = []
+        for sensor in self.sensor_order:
+            for idx, name in raw_to_sensor_map.items():
+                if name == sensor:
+                    ordered_indices.append(idx)
+                    break
+
+        # Si raw_data est une matrice Nx10
+        if len(raw_data.shape) > 1:
+            return raw_data[:, ordered_indices]
+        # Si raw_data est un vecteur de longueur 10
+        else:
+            return raw_data[ordered_indices]
+
+
+    def calculateWavelength(self, dataContainer, faisceau_pos=(0, 0, 0),
                              correction_factor_ind=0,
                              moving_window_size: int = None, enable_print=False):
         """
         Prédit la longueur d'onde à partir des valeurs des capteurs.
 
-        :param sensor_values: Liste ou tableau des valeurs normalisées des capteurs
+        :param dataContainer: DataContainer object (see class declaration for details)
         dans l'ordre [P_IR1, P_IR1xP, P_IR2, P_UV, C_UV, C_VISG, C_VISB, C_VISR]
         :param faisceau_pos: Position du faisceau (x, y, z) pour le calcul de l'angle
         :param correction_factor_ind: Indice du facteur de correction à appliquer
@@ -135,22 +175,34 @@ class AlgoWavelength:
 
         :return: Longueur d'onde prédite en nanomètres (float)
         """
+        self.sensor_values = dataContainer.rawWavelengthMatrix
 
-        if not moving_window_size:
-            self.moving_window_size = sensor_values.shape[0]
-        else:
-            if moving_window_size > sensor_values.shape[0]:
-                self.moving_window_size = sensor_values.shape[0]
-            else:
-                self.moving_window_size = moving_window_size
+        # Vérifier si les données brutes contiennent 10 capteurs
+        if self.sensor_values.shape[-1] == 10:
+            # Extraire et réorganiser les 8 capteurs nécessaires
+            self.sensor_values = self._prepare_sensor_data(self.sensor_values)
 
-        # Calculer la moyenne des n premières valeurs des données reçues
-        if sensor_values.shape[0] > 1:
-            sensor_values = self.calculate_average_window(sensor_values, self.moving_window_size)
+        # print(f"Longueur sensor values calculate wavelength :{sensor_values}")
+
+        # Moyenner les valeurs de la matrice sur les n lignes de la matrice (dataContainer.rawWavelengthMatrix = sensor_values)
+        self.mean_sensor_values = np.mean(self.sensor_values, axis=0)
+
+        # if len(sensor_values.shape) > 1:
+        #     if not moving_window_size:
+        #         self.moving_window_size = sensor_values.shape[0]
+        #     else:
+        #         if moving_window_size > sensor_values.shape[0]:
+        #             self.moving_window_size = sensor_values.shape[0]
+        #         else:
+        #             self.moving_window_size = moving_window_size
+        #
+        #     # Calculer la moyenne des n premières valeurs des données reçues
+        #     if sensor_values.shape[0] > 1:
+        #         sensor_values = self.calculate_average_window(sensor_values, self.moving_window_size)
 
         # Corriger pour le offset de la mise à zéro
         # Assurer que les valeurs ne deviennent pas négatives
-        self.sensor_values = np.maximum(0, sensor_values - self.zero_offset)
+        self.mean_sensor_values = np.maximum(0, self.mean_sensor_values - self.zero_offset)
 
         # Normaliser les ratios des sensor values
         self._normalize_sensor_values()
@@ -177,14 +229,14 @@ class AlgoWavelength:
         """
         Normalise les valeurs des capteurs en divisant par la valeur maximale.
         """
-        self.sensor_values_norm = self.sensor_values / np.max(self.sensor_values)
+        self.sensor_values_norm = self.mean_sensor_values / np.max(self.mean_sensor_values)
 
     def mise_a_zero(self):
         """
         Met à zéro les valeurs des capteurs → Soustraire le background
         pour mesure de longueur d'onde
         """
-        self.zero_offset = self.sensor_values
+        self.zero_offset = self.mean_sensor_values
 
     def reset_mise_a_zero(self):
         """

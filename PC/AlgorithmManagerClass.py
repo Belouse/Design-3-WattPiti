@@ -63,7 +63,9 @@ class AlgorithmManager():
 
         Associate the result of the calculation to the DataContainer.wavelength
         """
+        # wavelength = self.algoWavelength.calculateWavelength(self.dataContainer.wavelengthCounts)
         wavelength = self.algoWavelength.calculateWavelength(self.dataContainer)
+
         self.dataContainer.wavelength = wavelength
 
 
