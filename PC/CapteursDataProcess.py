@@ -24,11 +24,17 @@ class DataPreProcess:
         """
 
         if callibration is None:
-            self.callibration = {'point1':{'puissance#W':1, 'longueur_donde#nm':450, 'counts':[17.6316, 15.7135, 8.9103, 236.3130, 9.5582, 232.6271, 1455.2121, 217.1186]},
-                                 'point2':{'puissance#W':1, 'longueur_donde#nm':976, 'counts':[718.4668, 647.4318, 453.5327, 639.2649, 0.0000, 0.0000, 0.0000, 0.0000]},
-                                 'point3':{'puissance#W':1, 'longueur_donde#nm':1976, 'counts':[2734.6400, 2214.5632, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000]},
-                                 'gains': [1, 1, 1, 1, 1, 1, 1, 1]}
+            # self.callibration = {'point1':{'puissance#W':1, 'longueur_donde#nm':450, 'counts':[17.6316, 15.7135, 8.9103, 236.3130, 9.5582, 232.6271, 1455.2121, 217.1186]},
+            #                      'point2':{'puissance#W':1, 'longueur_donde#nm':976, 'counts':[718.4668, 647.4318, 453.5327, 639.2649, 0.0000, 0.0000, 0.0000, 0.0000]},
+            #                      'point3':{'puissance#W':1, 'longueur_donde#nm':1976, 'counts':[2734.6400, 2214.5632, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000]},
+            #                      'gains': [1, 1, 1, 1, 1, 1, 1, 1]}
             # ['P_IR1', 'P_IR1xP', 'P_IR2', 'P_UV', 'C_UV', 'C_VISG', 'C_VISB', 'C_VISR']
+            self.callibration = {'point1':{'puissance#W':5, 'longueur_donde#nm':450, 'counts':[4.139000e+01, 6.525000e+01, 3.090000e+01, 4.828100e+02, 0.000000e+00, 1.156371e+04, 3.474400e+04, 8.532880e+03]},
+                                 'point2':{'puissance#W':5, 'longueur_donde#nm':976, 'counts':[3.02180e+02, 3.45420e+02, 2.02793e+03, 1.23944e+03, 6.70000e-01, 0.00000e+00, 0.00000e+00, 0.00000e+00]},
+                                 'point3':{'puissance#W':5, 'longueur_donde#nm':1976, 'counts':[1.62411e+03, 1.79731e+03, 8.10000e-01, 1.92000e+00, 0.00000e+00, 0.00000e+00, 0.00000e+00, 0.00000e+00]},
+                                 'gains': [1, 1, 1, 1, 0.03, 0.03, 0.03, 0.03]}
+            #'gains': [1, 1, 1, 1, 0.0629, 0.0629, 0.0629, 0.0629]}
+            
         else:
             self.callibration = callibration
         
@@ -350,6 +356,7 @@ class DataPreProcess:
         # Interpoler les données
         self._interpolate_data()
 
+        point = 'point3'
         ref_wavelength = self.callibration[point]['longueur_donde#nm']
 
         # ------------ P_IR1 --------------
@@ -376,6 +383,9 @@ class DataPreProcess:
                                                   ref_value,
                                                   self.dict_capteurs['P_IR1xP']['gain'])
 
+        point = 'point2'
+        ref_wavelength = self.callibration[point]['longueur_donde#nm']
+
         # ------------ P_IR2 --------------
         P_IR2_interp = self._QE2ApW(self.IR2)
         P_IR2_interp[:, 1] = P_IR2_interp[:, 1]/np.max(P_IR2_interp[:, 1])
@@ -399,6 +409,8 @@ class DataPreProcess:
                                               ref_value,
                                               self.dict_capteurs['P_UV']['gain'])
 
+        point = 'point1'
+        ref_wavelength = self.callibration[point]['longueur_donde#nm']
 
         # ------------ C_UV ---------------
         ref_value = self.callibration[point]['counts'][4] / self.callibration[point]['puissance#W']
@@ -490,5 +502,24 @@ class DataPreProcess:
         plt.legend()
         plt.grid()
         plt.show()
+        
+# def get_sensor_values_at_wavelength(sensor_dict, wavelength, normalized=True):
+#     values = {}
+#     for sensor_name, info in sensor_dict.items():
+#         if normalized:
+#             data = info if isinstance(info, np.ndarray) else info['data']
+#         else:
+#             data = info['data']
+#         # Trouver l'index le plus proche de la longueur d'onde demandée
+#         idx = np.abs(data[:, 0] - wavelength).argmin()
+#         values[sensor_name] = data[idx, 1]
+#     return values
 
+# data = DataPreProcess()
 
+# wavelength = 976
+
+# valeurs_brutes = get_sensor_values_at_wavelength(data.dict_capteurs, wavelength, normalized=False)
+# print(f"\nValeurs brutes des capteurs à {wavelength} nm:")
+# for capteur, valeur in valeurs_brutes.items():
+#     print(f"{capteur}: {valeur:.6f}")

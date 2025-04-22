@@ -1,10 +1,9 @@
 import pyb # normal error here
 from machine import I2C # normal error here
 from startindicator import startIndicator
-
+from PhotodiodeClass import PhotoDiode
 from LTR390Class import LTR_390
 from VELM6040Class import VEML6040
-
 
 # Start up of the MCU
 print("Pyboard start up...")
@@ -23,7 +22,7 @@ i2c = I2C(2, freq=400000)
     #           18 bits (integration time = 100ms), 
     #           19 bits (integration time = 200ms),
     #           20 bits (integration time = 400ms)
-ltr390_resolution = 20
+ltr390_resolution = 13
 
 # Choices for gain: 
     #           x1, 
@@ -31,7 +30,7 @@ ltr390_resolution = 20
     #           x6, 
     #           x9,
     #           x18
-ltr390_gain = 3
+ltr390_gain = 1
 
 ltr390 = LTR_390(i2c, ltr390_resolution, ltr390_gain)
 
@@ -48,12 +47,27 @@ ltr390 = LTR_390(i2c, ltr390_resolution, ltr390_gain)
     #           320 ms, 
     #           640 ms,
     #           1280 ms
-integration_time = 1280
+integration_time = 40
 
 veml6040 = VEML6040(i2c, integration_time)
 
 
-names = ["R", "G", "B", "W", "UV", "ALS"]
+
+
+# pins
+photoDiode1Pin = "X20"  # MTPD2601T-100
+photoDiode2Pin = "X21"  # MTPD3001D3-030 sans verre
+photoDiode3Pin = "X22"  # MTPD3001D3-030 avec verre
+photoDiode4Pin = "X2"  # 019-101-411
+
+
+# Initialization of the sensors
+photoDiode1 = PhotoDiode(photoDiode1Pin)
+photoDiode2 = PhotoDiode(photoDiode2Pin)
+photoDiode3 = PhotoDiode(photoDiode3Pin)
+photoDiode4 = PhotoDiode(photoDiode4Pin)
+
+names = ["R", "G", "B", "UV", "IR2_#1", "IR1_#2", "IR1xP_#3", "UV_#4"]
 while True:
     start = pyb.millis()
 
@@ -67,14 +81,22 @@ while True:
     #          --- LTR-390 ---
     ltr390_als_reading, ltr390_uv_reading = ltr390.get_als_and_uv_readings()
 
+    # photodiode analog readings
+    readingPhotoDiode1 = photoDiode1.read()
+    readingPhotoDiode2 = photoDiode2.read()
+    readingPhotoDiode3 = photoDiode3.read()
+    readingPhotoDiode4 = photoDiode4.read()
+
     # List of wavelength readings
     I2CReadings = [
                     veml6040RedReading,
                     veml6040GreenReading,
                     veml6040BlueReading,
-                    veml6040WhiteReading,
                     ltr390_uv_reading,
-                    ltr390_als_reading]
+                    readingPhotoDiode1,
+                            readingPhotoDiode2, 
+                            readingPhotoDiode3,
+                            readingPhotoDiode4]
 
     print("--------------------")
     print(names)

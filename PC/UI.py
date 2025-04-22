@@ -22,7 +22,7 @@ class InterfaceWattpiti(tk.Tk):
         super().__init__()
 
         #Donnée du temps
-        self.startTime = time.time()
+        #self.startTime = time.time()
 
         #Création d'une instance de la classe DataContainer pour stocker les données
         self.dataContainer = DataContainer() #Instance de la classe DataContainer
@@ -143,7 +143,8 @@ class InterfaceWattpiti(tk.Tk):
 
         #Création d'un label pour le choix des données à enregistrer
         self.LabelDataChoice = ttk.Label(self, text = "Données à enregistrer:", style = "labelStyle.TLabel")
-        self.LabelDataChoice.place(x = 670, y= 100)
+        self.LabelDataChoice.place(x = 670, y= 80)
+                
         
 
 
@@ -151,17 +152,17 @@ class InterfaceWattpiti(tk.Tk):
         #Longueur d'onde
         self.wavelengthCheckButtonBool = tk.BooleanVar()
         self.wavelengthCheckButton = ttk.Checkbutton(self, text= "Longueur d'onde", variable = self.wavelengthCheckButtonBool)
-        self.wavelengthCheckButton.place(x=810, y=120)
+        self.wavelengthCheckButton.place(x=810, y=110)
         self.wavelengthCheckButtonBool.set(True)
         #Puissance
         self.powerCheckButtonBool = tk.BooleanVar()
         self.powerCheckButton = ttk.Checkbutton(self, text="Puissance", variable = self.powerCheckButtonBool)
-        self.powerCheckButton.place(x=810, y = 100)
+        self.powerCheckButton.place(x=810, y = 90)
         self.powerCheckButtonBool.set(True)
         #Position
         self.positionCheckButtonBool = tk.BooleanVar()
         self.positionCheckButton = ttk.Checkbutton(self, text="Position", variable = self.positionCheckButtonBool)
-        self.positionCheckButton.place(x = 810, y = 140)
+        self.positionCheckButton.place(x = 810, y = 130)
         self.positionCheckButtonBool.set(True)
 
         #Création d'un bouton pour enregister les données
@@ -174,7 +175,7 @@ class InterfaceWattpiti(tk.Tk):
 
 
         #Création d'un frame pour les résultats de la simulation
-        self.resultsFrame = ttk.Frame(self, width=400, height=200, borderwidth=3, style = "frameLabelStyle.TLabelframe")
+        self.resultsFrame = ttk.Frame(self, width=480, height=200, borderwidth=3, style = "frameLabelStyle.TLabelframe")
         self.resultsFrame.grid(row = 0, column = 4, padx=5, pady=5, sticky = "nsew")
         self.resultsFrame.grid_propagate(False)
 
@@ -190,7 +191,7 @@ class InterfaceWattpiti(tk.Tk):
         self.powerDisplayLabel = ttk.Label(self, text= "Puissance instantanée (W):", font = ("Inter", 14, "bold"))
         self.powerDisplayLabel.place(x=1050, y=58)                                                           
         self.powerDisplay = ttk.Label(self, textvariable = self.powerVar , font = ("Inter", 24, "bold"))
-        self.powerDisplay.place(x=1330, y =50)
+        self.powerDisplay.place(x=1380, y =50)
 
         #Création d'un display pour la longueur d'onde
         self.wavelenghtVar = tk.StringVar()
@@ -199,7 +200,7 @@ class InterfaceWattpiti(tk.Tk):
         self.wavelenghtDisplayLabel = ttk.Label(self, text= "Longueur d'onde (nm):", font = ("Inter", 14, "bold"))
         self.wavelenghtDisplayLabel.place(x=1050, y=108)                                                           
         self.wavelenghtDisplay = ttk.Label(self, textvariable = self.wavelenghtVar , font = ("Inter", 24, "bold"))
-        self.wavelenghtDisplay.place(x= 1330, y = 100)
+        self.wavelenghtDisplay.place(x= 1380, y = 100)
 
         #Création d'un display pour la position centrale du faisceau
         self.positionXVar = tk.StringVar() #Variable de la position sur l'axe x
@@ -211,26 +212,26 @@ class InterfaceWattpiti(tk.Tk):
         self.positionDisplayLabel.place(x = 1050, y = 158)
         
         self.positionXDisplay = ttk.Label(self, textvariable= self.positionXVar, font = ("Inter", 24, "bold"))
-        self.positionXDisplay.place(x = 1230, y= 150)
+        self.positionXDisplay.place(x = 1280, y= 150)
         self.positionYDisplay = ttk.Label(self, textvariable=self.positionYVar, font = ("Inter", 24, "bold"))
-        self.positionYDisplay.place(x = 1340, y= 150)
+        self.positionYDisplay.place(x = 1420, y= 150)
 
         self.positionXLabel = ttk.Label(self, text = "x :", font= ("Inter", 24, "bold"))
-        self.positionXLabel.place(x = 1190, y = 149)
+        self.positionXLabel.place(x = 1230, y = 149)
 
         self.positionYLabel = ttk.Label(self, text = "y :", font= ("Inter", 24, "bold"))
-        self.positionYLabel.place(x = 1300, y = 149)
+        self.positionYLabel.place(x = 1370, y = 149)
 
 
         ###Création du frame pour le graphique de la puissance en fonction du temps
-        self.powerPlotFrame = ttk.Frame(self, width=850, height=685, borderwidth=3, style = "frameLabelStyle.TLabelframe")
+        self.powerPlotFrame = ttk.Frame(self, width=925, height=700, borderwidth=3, style = "frameLabelStyle.TLabelframe")
         self.powerPlotFrame.grid(row = 2, column= 0 , columnspan = 3, rowspan = 1, padx = 5, pady = 5, sticky = "nsew")
 
         self.powerPlotLabel = ttk.Label(self, text= "Graphique de la puissance en fonction du temps", style = "frameLabelStyle.TLabelframe.Label")
         self.powerPlotLabel.place(x = 10, y = 230)
 
         #Création du graphique pour la puissance en fonction du temps
-        self.powerFig = Figure(figsize = (8, 5.8), dpi = 100)
+        self.powerFig = Figure(figsize = (8.9, 5.8), dpi = 100)
         self.axPow = self.powerFig.add_subplot(111)
         self.axPow.set_xlabel("Temps (s)")
         self.axPow.set_ylabel("Puissance (W)")
@@ -244,11 +245,11 @@ class InterfaceWattpiti(tk.Tk):
 
 
         ###Création du frame du graphique de la position centrale du faisceau
-        self.posPlotFrame = ttk.Frame(self, width=575, height=685, borderwidth=3, style = "frameLabelStyle.TLabelframe")
-        self.posPlotFrame.place(x = 860, y = 217)
+        self.posPlotFrame = ttk.Frame(self, width=575, height=700, borderwidth=3, style = "frameLabelStyle.TLabelframe")
+        self.posPlotFrame.place(x = 940, y = 217)
 
         self.posPlotLabel = ttk.Label(self, text= "Position centrale du faisceau", style = "frameLabelStyle.TLabelframe.Label")
-        self.posPlotLabel.place(x = 870, y = 230)
+        self.posPlotLabel.place(x = 950, y = 230)
 
         #Création du graphique pour la position centrale du faisceau
         self.posFig = Figure(figsize = (5, 5.8), dpi = 100)
@@ -259,7 +260,7 @@ class InterfaceWattpiti(tk.Tk):
 
         self.posCanvas = FigureCanvasTkAgg(self.posFig, master = self)
         self.posPlot = self.posCanvas.get_tk_widget()
-        self.posPlot.place(x = 900, y = 280)
+        self.posPlot.place(x = 970, y = 280)
 
         #Création d'un bouton pour calibrer les capteurs
         self.tareButton = ttk.Button(self, text= "Tare", style="saveButtonStyle.TButton", command = self.click_tare)
@@ -268,14 +269,14 @@ class InterfaceWattpiti(tk.Tk):
         self.tareLabel.place(x=250, y = 110)
 
 
-        #Première calibration des capteurs
-        #À faire
-
-
         #Gestion de la loop
         self.running = False
         self.dataArray = []
         self.powArray = []
+
+        #Si les ports sont nuls
+        if len(self.portList) == 0:
+            self.check_ports()
 
 
 
@@ -288,6 +289,7 @@ class InterfaceWattpiti(tk.Tk):
     def click_start(self):
         try:
         #Importation des classes externes pour stocker les données
+            self.startTime = time.time()
             self.serialManager.setPortName(self.selected_port.get().split(",")[0])
             if not self.running:
                 self.running = True
@@ -313,9 +315,10 @@ class InterfaceWattpiti(tk.Tk):
                 self.rawTemperatureMatrix = self.dataContainer.rawTemperatureMatrix
 
 
-                self.dataArray.append((self.currentTime, self.newpower, self.newWaveLenght, self.newposition)) #Importer les données dans une liste
-                #self.dataArray = np.array(self.dataArray) #Convertir la liste en tableau numpy
-                self.powerVar.set(str(self.rawTemperatureMatrix[0][0])) #liste des différentes puissances (à changer)
+                #Importer les données dans une liste
+                self.dataArray.append((self.currentTime, self.newpower, self.newWaveLenght, self.newposition))
+
+                
 
 
                 #Formater les données pour les afficher dans l'interface graphique
@@ -324,10 +327,10 @@ class InterfaceWattpiti(tk.Tk):
                 self.newposition = [round(x, 2) for x in self.newposition] #Formater la position centrale du faisceau
                 
                 #Mettre à jour les labels dans l'interface graphique
-                #self.powerVar.set(str(self.newpower))
-                self.wavelenghtVar.set(str(self.newWaveLenght))
-                self.positionXVar.set(str(self.newposition[0]))
-                self.positionYVar.set(str(self.newposition[1]))
+                self.powerVar.set(str(self.newpower)) #Puissance
+                self.wavelenghtVar.set(str(self.newWaveLenght)) #Longueur d'onde
+                self.positionXVar.set(str(self.newposition[0])) #Positon x
+                self.positionYVar.set(str(self.newposition[1])) #Position y
                 
 
                 #Graphique de la position centrale du faisceau
@@ -355,15 +358,12 @@ class InterfaceWattpiti(tk.Tk):
                 if len(self.dataArray) > 20: #limiter le nombre de points sur le graphique
                     self.axPow.set_xlim(self.dataArray[-20][0], self.dataArray[-1][0])
 
-
-                #À changer (mettre des vraies valeurs de temps)
-                self.powArray.append(self.rawTemperatureMatrix[0][0])
-
                 self.timeArray = list(zip(* self.dataArray))[0]
                 self.powValues = list(zip(* self.dataArray))[1]
-                self.axPow.plot(list(self.timeArray), self.powArray, color = "blue")
+                self.axPow.plot(list(self.timeArray), list(self.powValues), color = "blue")
                 self.powerCanvas.draw()
                 self.powerCanvas.get_tk_widget().update()
+                self.check_ports() #Vérifier si le port est toujours connecté
 
         self.after(1, self.loop)
 
@@ -382,13 +382,16 @@ class InterfaceWattpiti(tk.Tk):
         #Réinitialiser les variables
         self.dataArray = []
         self.powArray = []
+        self.timeArray = []
         self.powerVar.set("00.00")
         self.wavelenghtVar.set("000.0")
         self.positionXVar.set("0")
         self.positionYVar.set("0") 
         self.axPos.clear()
         self.axPow.clear()
-        self.click_start()
+
+
+        self.click_start() 
         
 
 
@@ -429,31 +432,31 @@ class InterfaceWattpiti(tk.Tk):
 
         if self.choiceArray == [True, True, True]:
             with open(self.file_name, 'w') as file:
-                file.write("Temps (s), Puissance (W),Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
+                file.write("Temps (s),Puissance (W),Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
                 for i in self.dataArray:
                     file.write(f"{i[0]},{i[1]},{i[2]},{i[3][0]},{i[3][1]}\n")
         
         elif self.choiceArray == [True, True, False]:
             with open(self.file_name, 'w') as file:
-                file.write("Temps (s), Puissance (W),Longueur d'onde (nm)\n")
+                file.write("Temps (s),Puissance (W),Longueur d'onde (nm)\n")
                 for i in self.dataArray:
                     file.write(f"{i[0]},{i[1]},{i[2]}\n")
         
         elif self.choiceArray == [True, False, True]:
             with open(self.file_name, 'w') as file:
-                file.write("Temps (s), Puissance (W),Position x (mm),Position y (mm)\n")   
+                file.write("Temps (s),Puissance (W),Position x (mm),Position y (mm)\n")   
                 for i in self.dataArray:
                     file.write(f"{i[0]},{i[1]},{i[3][0]},{i[3][1]}\n")
 
         elif self.choiceArray == [False, True, True]:
             with open(self.file_name, 'w') as file:
-                file.write("Temps (s), Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
+                file.write("Temps (s),Longueur d'onde (nm),Position x (mm),Position y (mm)\n")
                 for i in self.dataArray:
                     file.write(f"{i[0]},{i[2]},{i[3][0]},{i[3][1]}\n")
             
         elif self.choiceArray == [True, False, False]:
             with open(self.file_name, 'w') as file:
-                file.write("Temps (s), Puissance (W)\n")
+                file.write("Temps (s),Puissance (W)\n")
                 for i in self.dataArray:
                     file.write(f"{i[0]}, {i[1]}\n")
             
@@ -555,6 +558,51 @@ class InterfaceWattpiti(tk.Tk):
         if self.serialManager.serialListener is not None: #Déconnecte le port série
             self.serialManager.closePort()
         self.destroy() #Ferme la fenêtre
+
+
+    def check_ports(self):
+        # Start checking for port updates
+        if len(self.portList) == 0:
+
+            self.update_ports()
+        else:
+            check_ports = serial.tools.list_ports.comports()
+            for port in check_ports:
+                if "Bluetooth" not in port.description:
+                    check_ports = [f"{port.device}, {port.description}"]
+            if len(check_ports) != len(self.portList):        
+                self.update_ports()
+            else:
+                pass
+
+
+
+    def update_ports(self):
+        if self.running == True:
+            self.click_stop()
+        current_ports = serial.tools.list_ports.comports()
+        updated_port_list = []
+        for port in current_ports:
+            if "Bluetooth" not in port.description:
+                updated_port_list.append(f"{port.device}, {port.description}")
+
+        if updated_port_list != self.portList:  
+            self.portList = updated_port_list
+            self.portComboBox['values'] = self.portList
+            if len(self.portList) == 1:  
+                self.selected_port.set(self.portList[0])
+            else:
+                self.selected_port.set("")  
+
+        self.after(1000, self.update_ports)  
+
+
+
+        
+
+
+            
+                
 
 
 

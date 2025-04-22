@@ -14,7 +14,7 @@ numberOfDataPoints = 1
 numberOfLoops = 100
 
 # Open the serial connection (replace with the correct port name)
-portName = "/dev/cu.usbmodem334E355C31332"
+portName = "COM5"
 print(f"Port name: {portName}")
 
 # Initialisation
@@ -50,7 +50,6 @@ for i in range(numberOfLoops):
     # print(f"La nouvelle valeur de puissance est {newPower}")
     # print(f"La température du heatsink est {dataContainer.temperature[-1]}")
 
-    time.sleep(0.001)  # 1ms delay to simulate the time between each loop
 
 
 
