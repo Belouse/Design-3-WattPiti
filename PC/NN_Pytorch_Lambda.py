@@ -487,7 +487,7 @@ if __name__ == '__main__':
                                  )
 
     #torch.save(trained_model.state_dict(), "modele_nn_pytroch.pt")
-    # torch.save(model.state_dict(), 'model_nn_pytorch_weights.pth')
+    torch.save(model.state_dict(), 'model_nn_pytorch_weights3.pth')
 
     # Temps total d'exécution
     print(f"Temps d'exécution total : {perf_counter() - start_total_time}")
