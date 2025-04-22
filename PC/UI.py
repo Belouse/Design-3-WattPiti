@@ -15,6 +15,7 @@ from AlgorithmManagerClass import AlgorithmManager
 from SerialManagerClass import SerialManager
 import serial.tools.list_ports
 from datetime import datetime
+from SerialListenerClass import SerialListener
 
 
 class InterfaceWattpiti(tk.Tk):
@@ -29,6 +30,7 @@ class InterfaceWattpiti(tk.Tk):
         self.algorithmManager = AlgorithmManager(self.dataContainer) #Instance de la classe AlgorithmManager
         self.algoPosition = AlgoPosition() #Instance de la classe Algoposition (pour le graphique de la position)
         self.serialManager = SerialManager(self.dataContainer, maxData=1) #Instance de la classe SerialManager
+        
 
         #création de l'interface
         self.title("Puissance-mètre Wattpiti")
@@ -280,7 +282,7 @@ class InterfaceWattpiti(tk.Tk):
 
 
 
-
+        self.startTime = time.time()
 
 
 
@@ -289,7 +291,6 @@ class InterfaceWattpiti(tk.Tk):
     def click_start(self):
         try:
         #Importation des classes externes pour stocker les données
-            self.startTime = time.time()
             self.serialManager.setPortName(self.selected_port.get().split(",")[0])
             if not self.running:
                 self.running = True
@@ -301,71 +302,73 @@ class InterfaceWattpiti(tk.Tk):
 
     def loop(self):
         if self.running: #Vérifier si une simulation est en cours
-            for i  in range(1): # initialisation de la loop
-                self.currentTime = time.time() - self.startTime #Calculer le temps écoulé depuis l'ouverture de l'interface
+            self.currentTime = time.time() - self.startTime #Calculer le temps écoulé depuis l'ouverture de l'interface
 
-                #Importation des données de dataContainer
-                self.serialManager.updateDataFromMCU(1)
-                self.algorithmManager.calculatePosition()
-                self.algorithmManager.calculateWavelength()
-                self.algorithmManager.calculatePower()
-                self.newposition = self.dataContainer.position
-                self.newWaveLenght = self.dataContainer.wavelength
-                self.newpower = self.dataContainer.power    
-                self.rawTemperatureMatrix = self.dataContainer.rawTemperatureMatrix
+            #Importation des données de dataContainer
+            self.serialManager.updateDataFromMCU(1) #Mettre à jour les données de la carte mère
+            self.algorithmManager.calculatePosition()
+            self.algorithmManager.calculateWavelength()
+            self.algorithmManager.calculatePower()
+            self.newposition = self.dataContainer.position
+            self.newWaveLenght = self.dataContainer.wavelength
+            self.newpower = self.dataContainer.power  
+            self.rawTemperatureMatrix = self.dataContainer.rawTemperatureMatrix
+            self.rawData = self.serialManager.serialListener.readData(1, printExecutionTime=False) #Lire les données du port série
+            print(self.rawData)
+
+            #Importer les données dans une liste
+            self.dataArray.append((self.currentTime, self.newpower, self.newWaveLenght, self.newposition))
+
+            
 
 
-                #Importer les données dans une liste
-                self.dataArray.append((self.currentTime, self.newpower, self.newWaveLenght, self.newposition))
+            #Formater les données pour les afficher dans l'interface graphique
+            self.newpower = "{:.2f}".format(self.newpower) #Formater la puissance
+            self.newWaveLenght = "{:.1f}".format(self.newWaveLenght) #Formater la longueur d'onde
+            self.newposition = [round(x, 2) for x in self.newposition] #Formater la position centrale du faisceau
+            
+            #Mettre à jour les labels dans l'interface graphique
+            self.powerVar.set(str(self.newpower)) #Puissance
+            self.wavelenghtVar.set(str(self.newWaveLenght)) #Longueur d'onde
+            self.positionXVar.set(str(self.newposition[0])) #Positon x
+            self.positionYVar.set(str(self.newposition[1])) #Position y
+            
 
-                
+            #Graphique de la position centrale du faisceau
+            self.axPos.clear()
+            self.axPos.set_xlabel("Position x (mm)")
+            self.axPos.set_ylabel("Position y (mm)")
+            AlgoPosition.calculatePosition(self.algoPosition, self.dataContainer)
+            contour = self.axPos.contourf(self.dataContainer.interpolatedTemperatureGrid[0], 
+                            self.dataContainer.interpolatedTemperatureGrid[1], 
+                            self.dataContainer.interpolatedTemperatureGrid[2], 
+                            levels=150,
+                            cmap='turbo')
+            
+            for row in self.dataContainer.thermalCaptorPosition: #Affichage de la grille de capteurs sur le graphique
+                for (x, y) in row:
+                    rect = patches.Rectangle((x - 1.5, y - 1.5), 0.75, 0.75, linewidth=1.5, edgecolor='white', facecolor='none', alpha=0.5)
+                    self.axPos.add_patch(rect)
+            self.posCanvas.draw()
+            self.posCanvas.get_tk_widget().update()
 
+            #Graphique de la puissance en fonction du temps
+            self.axPow.clear()
+            self.axPow.set_xlabel("Temps (s)")
+            self.axPow.set_ylabel("Puissance (W)")
+            if len(self.dataArray) > 20: #limiter le nombre de points sur le graphique
+                self.axPow.set_xlim(self.dataArray[-20][0], self.dataArray[-1][0])
 
-                #Formater les données pour les afficher dans l'interface graphique
-                self.newpower = "{:.2f}".format(self.newpower) #Formater la puissance
-                self.newWaveLenght = "{:.1f}".format(self.newWaveLenght) #Formater la longueur d'onde
-                self.newposition = [round(x, 2) for x in self.newposition] #Formater la position centrale du faisceau
-                
-                #Mettre à jour les labels dans l'interface graphique
-                self.powerVar.set(str(self.newpower)) #Puissance
-                self.wavelenghtVar.set(str(self.newWaveLenght)) #Longueur d'onde
-                self.positionXVar.set(str(self.newposition[0])) #Positon x
-                self.positionYVar.set(str(self.newposition[1])) #Position y
-                
+            self.timeArray = list(zip(* self.dataArray))[0]
+            self.powValues = list(zip(* self.dataArray))[1]
+            self.axPow.plot(list(self.timeArray), list(self.powValues), color = "blue")
 
-                #Graphique de la position centrale du faisceau
-                self.axPos.clear()
-                self.axPos.set_xlabel("Position x (mm)")
-                self.axPos.set_ylabel("Position y (mm)")
-                AlgoPosition.calculatePosition(self.algoPosition, self.dataContainer)
-                contour = self.axPos.contourf(self.dataContainer.interpolatedTemperatureGrid[0], 
-                                self.dataContainer.interpolatedTemperatureGrid[1], 
-                                self.dataContainer.interpolatedTemperatureGrid[2], 
-                                levels=150,
-                                cmap='turbo')
-                
-                for row in self.dataContainer.thermalCaptorPosition: #Affichage de la grille de capteurs sur le graphique
-                    for (x, y) in row:
-                        rect = patches.Rectangle((x - 1.5, y - 1.5), 0.75, 0.75, linewidth=1.5, edgecolor='white', facecolor='none', alpha=0.5)
-                        self.axPos.add_patch(rect)
-                self.posCanvas.draw()
-                self.posCanvas.get_tk_widget().update()
-
-                #Graphique de la puissance en fonction du temps
-                self.axPow.clear()
-                self.axPow.set_xlabel("Temps (s)")
-                self.axPow.set_ylabel("Puissance (W)")
-                if len(self.dataArray) > 20: #limiter le nombre de points sur le graphique
-                    self.axPow.set_xlim(self.dataArray[-20][0], self.dataArray[-1][0])
-
-                self.timeArray = list(zip(* self.dataArray))[0]
-                self.powValues = list(zip(* self.dataArray))[1]
-                self.axPow.plot(list(self.timeArray), list(self.powValues), color = "blue")
-                self.powerCanvas.draw()
-                self.powerCanvas.get_tk_widget().update()
-                self.check_ports() #Vérifier si le port est toujours connecté
-
-        self.after(1, self.loop)
+            self.powerCanvas.draw()
+            self.powerCanvas.get_tk_widget().update()
+            self.check_ports() #Vérifier si le port est toujours connecté
+        
+            print(self.dataContainer.max_temperature)
+            self.loop()
 
 
     
@@ -373,6 +376,8 @@ class InterfaceWattpiti(tk.Tk):
     
     def click_stop(self): #Permet de mettre sur pause la simulation
         self.running = False
+        self.axPos.clear()
+        self.axPow.clear()
 
     #Fontion du bouton pour réinitialiser la simulation
     def click_reset(self):
@@ -599,13 +604,6 @@ class InterfaceWattpiti(tk.Tk):
 
 
         
-
-
-            
-                
-
-
-
 if __name__ == "__main__":
     app = InterfaceWattpiti()
     app.protocol("WM_DELETE_WINDOW", app.on_close)  # Handle window close event
