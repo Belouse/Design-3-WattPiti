@@ -328,9 +328,10 @@ class InterfaceWattpiti(tk.Tk):
                 self.rawTemperatureMatrix = self.dataContainer.rawTemperatureMatrix
 
 
-                self.dataArray.append((self.currentTime, self.newpower, self.newWaveLenght, self.newposition)) #Importer les données dans une liste
-                #self.dataArray = np.array(self.dataArray) #Convertir la liste en tableau numpy
-                self.powerVar.set(str(self.rawTemperatureMatrix[0][0])) #liste des différentes puissances (à changer)
+                #Importer les données dans une liste
+                self.dataArray.append((self.currentTime, self.newpower, self.newWaveLenght, self.newposition))
+
+                
 
 
                 #Formater les données pour les afficher dans l'interface graphique
@@ -339,10 +340,10 @@ class InterfaceWattpiti(tk.Tk):
                 self.newposition = [round(x, 2) for x in self.newposition] #Formater la position centrale du faisceau
                 
                 #Mettre à jour les labels dans l'interface graphique
-                #self.powerVar.set(str(self.newpower))
-                self.wavelenghtVar.set(str(self.newWaveLenght))
-                self.positionXVar.set(str(self.newposition[0]))
-                self.positionYVar.set(str(self.newposition[1]))
+                self.powerVar.set(str(self.newpower)) #Puissance
+                self.wavelenghtVar.set(str(self.newWaveLenght)) #Longueur d'onde
+                self.positionXVar.set(str(self.newposition[0])) #Positon x
+                self.positionYVar.set(str(self.newposition[1])) #Position y
                 
 
                 #Graphique de la position centrale du faisceau
@@ -370,9 +371,7 @@ class InterfaceWattpiti(tk.Tk):
                 if len(self.dataArray) > 20: #limiter le nombre de points sur le graphique
                     self.axPow.set_xlim(self.dataArray[-20][0], self.dataArray[-1][0])
 
-
-                #À changer (mettre des vraies valeurs de temps)
-                self.powArray.append(self.rawTemperatureMatrix[0][0])
+                self.powArray.append(self.newpower)
 
                 self.timeArray = list(zip(* self.dataArray))[0]
                 self.powValues = list(zip(* self.dataArray))[1]
