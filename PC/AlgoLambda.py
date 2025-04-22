@@ -265,10 +265,10 @@ class AlgoWavelength:
 # exemple de dataset pour tester ici
 if __name__ == "__main__":
     # mettre dequoi de cohérent comme valeur ici
-    data = DataContainer(wavelengthCounts=np.array([1,2,3,4,5,6,7,8]))
+    data = DataContainer(rawWavelengthMatrix=np.array([[100,20,3,4,5,600,7,8]]))
 
     algo = AlgoWavelength()
-    wavelength = algo.calculateWavelength(data.wavelengthCounts,
+    wavelength = algo.calculateWavelength(data,
                                            faisceau_pos=(0, 0, 0),
                                            correction_factor_ind=0,
                                            moving_window_size=3,
