@@ -14,7 +14,7 @@ numberOfDataPoints = 1
 numberOfLoops = 100
 
 # Open the serial connection (replace with the correct port name)
-portName = "COM5"
+portName = "/dev/cu.usbmodem334E355C31332"
 print(f"Port name: {portName}")
 
 # Initialisation

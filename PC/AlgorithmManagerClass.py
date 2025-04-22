@@ -54,7 +54,7 @@ class AlgorithmManager():
 
         Associate the result of the calculation to the DataContainer.power
         """
-        power = self.algoPower.calculatePower(self.dataContainer)
+        power = self.algoPower.calculer_puissance(self.dataContainer)
         self.dataContainer.power = power
     
     def calculateWavelength(self):

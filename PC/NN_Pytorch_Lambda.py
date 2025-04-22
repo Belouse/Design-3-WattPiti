@@ -135,21 +135,21 @@ class WavelengthPredictor(nn.Module):
             # Première hidden layer
             nn.Linear(in_features=8, out_features=512, bias=True),  # 8 in -> 64 out
             nn.ReLU(),                                           # Fonction d'activation ReLU
-            #nn.BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+            # nn.BatchNorm1d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
             nn.LayerNorm(512, eps=1e-05, elementwise_affine=True),
             nn.Dropout(dropout_rate, inplace=False),             # Dropout pour régularisation
 
             # Deuxième hidden layer
             nn.Linear(in_features=512, out_features=1024, bias=True),
             nn.ReLU(),
-            #nn.BatchNorm1d(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+            # nn.BatchNorm1d(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
             nn.LayerNorm(1024, eps=1e-05, elementwise_affine=True),
             nn.Dropout(dropout_rate, inplace=False),
 
             # Troisième hidden layer
             nn.Linear(in_features=1024, out_features=512, bias=True),
             nn.ReLU(),
-            #nn.BatchNorm1d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+            # nn.BatchNorm1d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
             nn.LayerNorm(512, eps=1e-05, elementwise_affine=True),
             nn.Dropout(dropout_rate, inplace=False),
 
@@ -185,7 +185,9 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, epochs =
 
     # Scheduler pour ajuster le taux d'apprentissage
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='min', factor=0.2, patience=5, min_lr=1e-6)
+        optimizer, mode='min', factor=0.5, patience=10, min_lr=1e-6)
+    #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        #optimizer, mode='min', factor=0.2, patience=5, min_lr=1e-6)
 
 
     train_losses = []   # Liste pour stocker les pertes d'entraînement
@@ -378,7 +380,7 @@ def plot_test_results(model, test_loader):
     rmse = np.sqrt(np.mean((predictions - actual_values) ** 2))
 
     # Créer la figure avec deux sous-graphiques
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6,6),
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12,10),
                                    gridspec_kw={'height_ratios': [3, 2]})
 
     # 1er graph : Prédictions vs Valeurs réelles
@@ -390,7 +392,7 @@ def plot_test_results(model, test_loader):
     ax1.plot([min_val, max_val], [min_val, max_val], 'r-', label='Prédiction parfaite')
     ax1.set_xlabel('Longueur d\'onde réelle (nm)')
     ax1.set_ylabel('Longueur d\'onde prédite (nm)')
-    ax1.set_xlim(250, 2500)
+    ax1.set_xlim(0, 2700)
     ax1.set_title(f'Prédictions vs Valeurs réelles\nMAE: {mae:.2f} nm, RMSE: {rmse:.2f} nm')
     ax1.grid(True)
     ax1.legend()
@@ -412,17 +414,17 @@ def plot_test_results(model, test_loader):
         smoothed_wavelengths = sorted_wavelengths
 
     # Tracer la courbe avec aire remplie
-    ax2.plot(smoothed_wavelengths, smoothed_errors, linewidth=2)
+    ax2.plot(smoothed_wavelengths, smoothed_errors, 'b-', linewidth=2)
     ax2.fill_between(smoothed_wavelengths, 0, smoothed_errors, alpha=0.3,
-                     color='lightblue', label='Erreur absolue')
+                     color='orange', label='Erreur absolue')
     # Courbe d'erreur acceptable
-    ax2.plot(smoothed_wavelengths, smoothed_wavelengths * 0.1, 'r-', label='Erreur acceptable (10%)')
+    ax2.plot(smoothed_wavelengths, smoothed_wavelengths * 0.1, 'g--', label='Erreur acceptable (10%)')
     ax2.axhline(y=mae, color='k', linestyle='-', label=f'MAE moyenne: {mae:.2f} nm')
     ax2.set_xlabel('Longueur d\'onde (nm)')
     ax2.set_ylabel('Erreur absolue (nm)')
     ax2.set_title('Erreur absolue en fonction de la longueur d\'onde')
-    ax2.set_xlim(250, 2500)
-    ax2.set_ylim(0, 300)
+    ax2.set_xlim(0, 2700)
+    # ax2.set_ylim(0, 300)
     ax2.grid(True)
     ax2.legend()
 
@@ -448,7 +450,7 @@ if __name__ == '__main__':
     dataset = CapteursDataset(reponses_capteurs)
 
     # Paramètres
-    batch_size = 128                         # Taille des batches pour le DataLoader
+    batch_size = 64                         # Taille des batches pour le DataLoader
     test_size = 0.2                         # Proportion de données de test
     random_seed = 42                        # Graine pour la reproductibilité
     learning_rate = 0.0031701443704886616   # Taux d'apprentissage
@@ -487,7 +489,7 @@ if __name__ == '__main__':
                                  )
 
     #torch.save(trained_model.state_dict(), "modele_nn_pytroch.pt")
-    torch.save(model.state_dict(), 'model_nn_pytorch_weights3.pth')
+    torch.save(model.state_dict(), 'model_nn_pytorch_weights4.pth')
 
     # Temps total d'exécution
     print(f"Temps d'exécution total : {perf_counter() - start_total_time}")

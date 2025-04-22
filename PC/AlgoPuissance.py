@@ -120,11 +120,11 @@ class AlgoPower:
 
         P = T_t / K + (tau / K) * dT_dt
 
-        print(f"T(t) = {T_t:.5f}")
-        print(f"dT/dt = {dT_dt:.5f}")
-        print(f"K(T) = {K:.5f}")
-        print(f"tau(T) = {tau:.5f}")
-        print(f"Puissance P(t) = {P:.5f} W")
+        #print(f"T(t) = {T_t:.5f}")
+        #print(f"dT/dt = {dT_dt:.5f}")
+        #print(f"K(T) = {K:.5f}")
+        #print(f"tau(T) = {tau:.5f}")
+        #print(f"Puissance P(t) = {P:.5f} W")
 
         return P
 

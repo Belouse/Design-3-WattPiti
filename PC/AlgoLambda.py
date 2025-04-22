@@ -18,7 +18,7 @@ class AlgoWavelength:
     à partir des valeurs des capteurs.
     """
 
-    def __init__(self, model_path: str = 'model_nn_pytorch_weights3.pth'):
+    def __init__(self, model_path: str = 'model_nn_pytorch_weights4.pth'):
         """
         Initialise l'algorithme de prédiction de longueur d'onde en chargeant le modèle préentraîné.
 
@@ -270,7 +270,7 @@ class AlgoWavelength:
         return averaged_values
 
 
-=======
+
     def plot_spectral_ratios(self):
         """
         Affiche les courbes de réponse spectrale des capteurs.
@@ -343,127 +343,127 @@ class AlgoWavelength:
         return responses_dict, responses_list
 
 
-# # exemple de dataset pour tester ici
-# if __name__ == "__main__": 
-#     # Capteurs: ["R","G","B","UV","IR2_#1","IR1_#2","IR1xP_#3","UV_#4"]
-#     mis_a_zero_1976 = [10,10,3,0,3.75,3.33,5.25,10.75]
-#     mesure_1976_5W_20mm = [8.89,9,3,0,4.56,1627.44,1802.56,12.67] # centre
-#     mesure_1976_5W_19mm = [9.69,9.54,2.69,0,4,1594.15,1798.31,18.62]
-#     mesure_1976_5W_18mm = [8.17,8,1.5,0,5.58,1575.75,1817,13.33]
+# exemple de dataset pour tester ici
+if __name__ == "__main__":
+    # Capteurs: ["R","G","B","UV","IR2_#1","IR1_#2","IR1xP_#3","UV_#4"]
+    mis_a_zero_1976 = [10,10,3,0,3.75,3.33,5.25,10.75]
+    mesure_1976_5W_20mm = [8.89,9,3,0,4.56,1627.44,1802.56,12.67] # centre
+    mesure_1976_5W_19mm = [9.69,9.54,2.69,0,4,1594.15,1798.31,18.62]
+    mesure_1976_5W_18mm = [8.17,8,1.5,0,5.58,1575.75,1817,13.33]
     
-#     mis_a_zero_976 = [8,8,0,0,3.63,4.38,6.25,11]
-#     mesure_976_2_5W = [0,0,0,0,999,153.5,183.13,624]
-#     mesure_976_5W = [0,0,0,0.67,2031.56,306.56,351.67,1250.44]
-#     mesure_976_7_5W = [0,0,0,2,3093.44,456,523.56,1912.78]
-#     mesure_976_10W = [0,0,0,2,4094.54,607.77,690.77,2551]
+    mis_a_zero_976 = [8,8,0,0,3.63,4.38,6.25,11]
+    mesure_976_2_5W = [0,0,0,0,999,153.5,183.13,624]
+    mesure_976_5W = [0,0,0,0.67,2031.56,306.56,351.67,1250.44]
+    mesure_976_7_5W = [0,0,0,2,3093.44,456,523.56,1912.78]
+    mesure_976_10W = [0,0,0,2,4094.54,607.77,690.77,2551]
     
-#     mis_a_zero_450 = [11,10.54,3,0,3.23,3.92,5.31,13]
-#     mesure_450_2_5W = [3819,5065.63,18840.56,0,13.63,21.44,36.19,224.19]
-#     mesure_450_5W = [8543.88,11574.25,34747,0,34.13,45.31,70.56,495.81]
-#     mesure_450_7_5W = [11224.42,14078.17,42298.75,0,48.42,61.33,88.42,681.5]
-#     mesure_450_10W = [14716.17,19816.5,49570.75,0,66.08,81.83,112.83,907.58]
-    
-    
-#     def re_order(array):
-#         # Capteurs: ["R","G","B","UV","IR2_#1","IR1_#2","IR1xP_#3","UV_#4"]
-#         # vers =>
-#         # ['P_IR1', 'P_IR1xP', 'P_IR2', 'P_UV', 'C_UV', 'C_VISG', 'C_VISB', 'C_VISR']
-#         return np.array([array[5], array[6], array[4], array[7], array[3], array[1], array[2], array[0]])
-    
-#     # [MTPD2601T-100,
-#     # MTPD3001D3-030 sans verre, 
-#     # MTPD3001D3-030 avec verre, 
-#     # VEML6040A3OG R,
-#     # VEML6040A3OG G,
-#     # VEML6040A3OG B,
-#     # VEML6040A3OG W,
-#     # 019-101-411, 
-#     # LTR-390-UV-01 UVS,
-#     # LTR-390-UV-01 ALS]
-    
-#     def mis_a_zero(array, mis_a_zero):
-#         soustrai = np.array(array) - np.array(mis_a_zero)
-#         # remplace les valeurs négatives par 0
-#         soustrai[soustrai < 0] = 0
-#         return soustrai
+    mis_a_zero_450 = [11,10.54,3,0,3.23,3.92,5.31,13]
+    mesure_450_2_5W = [3819,5065.63,18840.56,0,13.63,21.44,36.19,224.19]
+    mesure_450_5W = [8543.88,11574.25,34747,0,34.13,45.31,70.56,495.81]
+    mesure_450_7_5W = [11224.42,14078.17,42298.75,0,48.42,61.33,88.42,681.5]
+    mesure_450_10W = [14716.17,19816.5,49570.75,0,66.08,81.83,112.83,907.58]
     
     
+    def re_order(array):
+        # Capteurs: ["R","G","B","UV","IR2_#1","IR1_#2","IR1xP_#3","UV_#4"]
+        # vers =>
+        # ['P_IR1', 'P_IR1xP', 'P_IR2', 'P_UV', 'C_UV', 'C_VISG', 'C_VISB', 'C_VISR']
+        return np.array([array[5], array[6], array[4], array[7], array[3], array[1], array[2], array[0]])
+    
+    # [MTPD2601T-100,
+    # MTPD3001D3-030 sans verre,
+    # MTPD3001D3-030 avec verre,
+    # VEML6040A3OG R,
+    # VEML6040A3OG G,
+    # VEML6040A3OG B,
+    # VEML6040A3OG W,
+    # 019-101-411,
+    # LTR-390-UV-01 UVS,
+    # LTR-390-UV-01 ALS]
+    
+    def mis_a_zero(array, mis_a_zero):
+        soustrai = np.array(array) - np.array(mis_a_zero)
+        # remplace les valeurs négatives par 0
+        soustrai[soustrai < 0] = 0
+        return soustrai
     
     
-#     mesure_450_2_5W = re_order(mis_a_zero(mesure_450_2_5W, mis_a_zero_450))
-#     mesure_450_5W = re_order(mis_a_zero(mesure_450_5W, mis_a_zero_450))
-#     mesure_450_7_5W = re_order(mis_a_zero(mesure_450_7_5W, mis_a_zero_450))
-#     mesure_450_10W = re_order(mis_a_zero(mesure_450_10W, mis_a_zero_450))
     
-#     mesure_976_2_5W = re_order(mis_a_zero(mesure_976_2_5W, mis_a_zero_976))
-#     mesure_976_5W = re_order(mis_a_zero(mesure_976_5W, mis_a_zero_976))
-#     mesure_976_7_5W = re_order(mis_a_zero(mesure_976_7_5W, mis_a_zero_976))
-#     mesure_976_10W = re_order(mis_a_zero(mesure_976_10W, mis_a_zero_976))
     
-#     mesure_1976_5W_20mm = re_order(mis_a_zero(mesure_1976_5W_20mm, mis_a_zero_1976))
-#     mesure_1976_5W_19mm = re_order(mis_a_zero(mesure_1976_5W_19mm, mis_a_zero_1976))
-#     mesure_1976_5W_18mm = re_order(mis_a_zero(mesure_1976_5W_18mm, mis_a_zero_1976))
+    mesure_450_2_5W = re_order(mis_a_zero(mesure_450_2_5W, mis_a_zero_450))
+    mesure_450_5W = re_order(mis_a_zero(mesure_450_5W, mis_a_zero_450))
+    mesure_450_7_5W = re_order(mis_a_zero(mesure_450_7_5W, mis_a_zero_450))
+    mesure_450_10W = re_order(mis_a_zero(mesure_450_10W, mis_a_zero_450))
+    
+    mesure_976_2_5W = re_order(mis_a_zero(mesure_976_2_5W, mis_a_zero_976))
+    mesure_976_5W = re_order(mis_a_zero(mesure_976_5W, mis_a_zero_976))
+    mesure_976_7_5W = re_order(mis_a_zero(mesure_976_7_5W, mis_a_zero_976))
+    mesure_976_10W = re_order(mis_a_zero(mesure_976_10W, mis_a_zero_976))
+    
+    mesure_1976_5W_20mm = re_order(mis_a_zero(mesure_1976_5W_20mm, mis_a_zero_1976))
+    mesure_1976_5W_19mm = re_order(mis_a_zero(mesure_1976_5W_19mm, mis_a_zero_1976))
+    mesure_1976_5W_18mm = re_order(mis_a_zero(mesure_1976_5W_18mm, mis_a_zero_1976))
 
 
-#     donnees = [mesure_450_2_5W, mesure_450_5W, mesure_450_7_5W, mesure_450_10W,
-#               mesure_976_2_5W, mesure_976_5W, mesure_976_7_5W, mesure_976_10W,
-#               mesure_1976_5W_20mm, mesure_1976_5W_19mm, mesure_1976_5W_18mm]
+    donnees = [mesure_450_2_5W, mesure_450_5W, mesure_450_7_5W, mesure_450_10W,
+              mesure_976_2_5W, mesure_976_5W, mesure_976_7_5W, mesure_976_10W,
+              mesure_1976_5W_20mm, mesure_1976_5W_19mm, mesure_1976_5W_18mm]
     
     
-#     def plot_reponses_et_ratios():
-#         algo = AlgoWavelength()
+    def plot_reponses_et_ratios():
+        algo = AlgoWavelength()
     
-#         # Afficher les courbes de réponse spectrale
-#         algo.plot_spectral_response()
-#         algo.plot_spectral_ratios()
+        # Afficher les courbes de réponse spectrale
+        algo.plot_spectral_response()
+        algo.plot_spectral_ratios()
         
         
-#     predicted_wavelengths = []
-#     for i in donnees:
-#         data = DataContainer(rawWavelengthMatrix=np.array([i]))
+    predicted_wavelengths = []
+    for i in donnees:
+        data = DataContainer(rawWavelengthMatrix=np.array([i]))
     
-#         algo = AlgoWavelength()
-#         wavelength = algo.calculateWavelength(data,
-#                                                faisceau_pos=(0, 0, 0),
-#                                                correction_factor_ind=0,
-#                                                moving_window_size=3,
-#                                                enable_print=False)
-#         predicted_wavelengths.append(wavelength)
-    
-    
-#     predictions_450 = np.array(predicted_wavelengths[0:4])
-#     predictions_976 = np.array(predicted_wavelengths[4:8])
-#     predictions_1976 = np.array(predicted_wavelengths[8:11])
+        algo = AlgoWavelength()
+        wavelength = algo.calculateWavelength(data,
+                                               faisceau_pos=(0, 0, 0),
+                                               correction_factor_ind=0,
+                                               moving_window_size=3,
+                                               enable_print=False)
+        predicted_wavelengths.append(wavelength)
     
     
+    predictions_450 = np.array(predicted_wavelengths[0:4])
+    predictions_976 = np.array(predicted_wavelengths[4:8])
+    predictions_1976 = np.array(predicted_wavelengths[8:11])
     
-#     print(predictions_450, predictions_976, predictions_1976)
     
-#     plt.figure(figsize=(8,4))
-#     plt.xlabel("Puissance [W]")	
-#     plt.ylabel("Erreur relative [%]")
     
-#     puissance = [2.5, 5, 7.5, 10]
+    print(predictions_450, predictions_976, predictions_1976)
     
-#     wavelength = 450
-#     plt.plot(puissance,abs(predictions_450-wavelength)/wavelength*100, 'o-', label='450nm')
-#     wavelength = 976
-#     plt.plot(puissance,abs(predictions_976-wavelength)/wavelength*100, 'o-', label='976nm')
-#     plt.grid(True)
-#     plt.legend()
-#     plt.show()
+    plt.figure(figsize=(8,4))
+    plt.xlabel("Puissance [W]")
+    plt.ylabel("Erreur relative [%]")
+    
+    puissance = [2.5, 5, 7.5, 10]
+    
+    wavelength = 450
+    plt.plot(puissance,abs(predictions_450-wavelength)/wavelength*100, 'o-', label='450nm')
+    wavelength = 976
+    plt.plot(puissance,abs(predictions_976-wavelength)/wavelength*100, 'o-', label='976nm')
+    plt.grid(True)
+    plt.legend()
+    plt.show()
 
-#     plt.figure(figsize=(8,4))
-#     plt.xlabel("Position du faisceau par rapport au centre [mm]")
-#     plt.ylabel("Erreur relative [%]")
+    plt.figure(figsize=(8,4))
+    plt.xlabel("Position du faisceau par rapport au centre [mm]")
+    plt.ylabel("Erreur relative [%]")
     
-#     position = [0, 1, 2]
+    position = [0, 1, 2]
 
-#     wavelength = 1976
-#     plt.plot(position,abs(predictions_1976-wavelength)/wavelength*100, 'o-', label='1976nm')
-#     plt.grid(True)
-#     plt.legend()
-#     plt.show()
+    wavelength = 1976
+    plt.plot(position,abs(predictions_1976-wavelength)/wavelength*100, 'o-', label='1976nm')
+    plt.grid(True)
+    plt.legend()
+    plt.show()
     
     # data = DataContainer(rawWavelengthMatrix=np.array([mesure_1976_5W_18mm]))
 
@@ -478,3 +478,6 @@ class AlgoWavelength:
         
         
     # plot_reponses_et_ratios()
+
+
+# [448.70535278 452.73553467 449.08227539 450.92053223] [1003.13439941 1006.01727295 1006.20556641 1005.59545898] [2000.13928223 2006.32531738 1989.59484863]

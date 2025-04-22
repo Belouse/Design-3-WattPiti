@@ -211,13 +211,15 @@ for capteur in capteurs:
     coef = model.coef_
     intercept = model.intercept_
 
+    print(f"{capteur} = {np.flip(coef)}")
+
     # Construction de l'équation polynomiale
     equation = f"température = {intercept:.6f}"
 
     # Vérifier si coef est un array 1D ou 2D
     if len(coef.shape) == 1:
         # Cas régression polynomiale où coef est un array 1D
-        for i in range(degree):
+        for i in range(len(coef)):
             coefficient = coef[i]
             if coefficient >= 0:
                 equation += f" + {coefficient}×counts"
@@ -225,10 +227,10 @@ for capteur in capteurs:
                 equation += f" - {abs(coefficient)}×counts"
 
             if i > 0:  # Commencer les exposants à partir du deuxième terme
-                equation += f"^{i + 1}"
+                equation += f"^{i}"
     else:
         # Cas où coef est un array 2D (PolynomialFeatures)
-        for i in range(1, len(coef[0])):  # Ignorer le terme constant
+        for i in range(1, coef.shape[1]):  # Ignorer le terme constant
             coefficient = coef[0][i]
             if coefficient >= 0:
                 equation += f" + {coefficient}×counts"
@@ -238,6 +240,6 @@ for capteur in capteurs:
             # Pour PolynomialFeatures, les puissances ne suivent pas un ordre linéaire simple
             # On peut utiliser cette approximation, mais ce n'est pas toujours exact
             if i > 1:
-                equation += f"^{i}"
+                equation += f"^{i-1}"
 
     print(f"{capteur}: {equation}")

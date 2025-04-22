@@ -6,6 +6,8 @@ from tqdm import tqdm
 
 from SerialListenerClass import SerialListener
 from SerialManagerClass import SerialManager
+from DataContainerClass import DataContainer
+from AlgorithmManagerClass import AlgorithmManager
 
 # Définir le nom du port série
 portName = "/dev/cu.usbmodem334E355C31332"
@@ -15,6 +17,10 @@ print(f"Port name: {portName}")
 ## Initialisation
 serialListener = SerialListener(portName)
 # serialManager = SerialManager(maxData=1000)
+dataContainer = DataContainer()
+algorithmManager = AlgorithmManager(dataContainer)
+serialManager = SerialManager(dataContainer, maxData=100)
+serialManager.setPortName(portName)
 
 
 # Vérifier si le port série est défini
@@ -48,7 +54,7 @@ numberOfData = 1
 numberOfLoops = 12000
 timeStep = 0.1
 
-duree_minutes = 10
+duree_minutes = 0.2
 duree_secondes = duree_minutes * 60
 temps_debut = time.time()
 temps_fin = temps_debut + duree_secondes
@@ -65,6 +71,7 @@ with tqdm(total=duree_secondes, desc="Acquisition de données", unit="s") as pba
         # Lire les données brutes du port série
         rawData = serialListener.readData(numberOfData, printExecutionTime=False)
         #print(rawData)
+        #serialManager.updateDataFromMCU(numberOfDataPoints)
 
 
         # Isoler les données thermiques (1 ligne = 1 x 17)
@@ -108,7 +115,7 @@ with tqdm(total=duree_secondes, desc="Acquisition de données", unit="s") as pba
 
 
 # ======== Save les données en CSV (une colonne pour chaque thermistance) ========
-save = True
+save = False
 
 if save:
     df = pd.DataFrame(values_thermistances)
