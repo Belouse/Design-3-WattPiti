@@ -268,6 +268,9 @@ class AlgoWavelength:
         averaged_values = np.mean(sensor_values[:window_size], axis=0)
 
         return averaged_values
+
+
+=======
     def plot_spectral_ratios(self):
         """
         Affiche les courbes de réponse spectrale des capteurs.
