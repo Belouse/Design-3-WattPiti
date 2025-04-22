@@ -22,7 +22,7 @@ class InterfaceWattpiti(tk.Tk):
         super().__init__()
 
         #Donnée du temps
-        self.startTime = time.time()
+        #self.startTime = time.time()
 
         #Création d'une instance de la classe DataContainer pour stocker les données
         self.dataContainer = DataContainer() #Instance de la classe DataContainer
@@ -269,28 +269,14 @@ class InterfaceWattpiti(tk.Tk):
         self.tareLabel.place(x=250, y = 110)
 
 
-        #Rejouer données
-        """self.save_dir = os.path.join(os.path.dirname(__file__), "savedData")
-        if not os.path.exists(self.save_dir):
-            os.makedirs(self.save_dir)
-
-
-        self.saved_files = [f for f in os.listdir(self.save_dir) if os.path.isfile(os.path.join(self.save_dir, f))]"""
-
-
-        """self.replayFile = ttk.Combobox(self, values=self.saved_files, width=10)
-        self.replayFile.place(x=820, y=90)
-        self.replayFile.configure(state="disabled")
-
-        self.replayButton = ttk.Button(self, text="Rejouer", style="saveButtonStyle.TButton", command=self.replay_data_button)
-        self.replayButton.place(x=900, y=90)
-        self.replayButton.configure(state="disabled")"""
-
-
         #Gestion de la loop
         self.running = False
         self.dataArray = []
         self.powArray = []
+
+        #Si les ports sont nuls
+        if len(self.portList) == 0:
+            self.check_ports()
 
 
 
@@ -303,6 +289,7 @@ class InterfaceWattpiti(tk.Tk):
     def click_start(self):
         try:
         #Importation des classes externes pour stocker les données
+            self.startTime = time.time()
             self.serialManager.setPortName(self.selected_port.get().split(",")[0])
             if not self.running:
                 self.running = True
@@ -328,9 +315,10 @@ class InterfaceWattpiti(tk.Tk):
                 self.rawTemperatureMatrix = self.dataContainer.rawTemperatureMatrix
 
 
-                self.dataArray.append((self.currentTime, self.newpower, self.newWaveLenght, self.newposition)) #Importer les données dans une liste
-                #self.dataArray = np.array(self.dataArray) #Convertir la liste en tableau numpy
-                self.powerVar.set(str(self.rawTemperatureMatrix[0][0])) #liste des différentes puissances (à changer)
+                #Importer les données dans une liste
+                self.dataArray.append((self.currentTime, self.newpower, self.newWaveLenght, self.newposition))
+
+                
 
 
                 #Formater les données pour les afficher dans l'interface graphique
@@ -339,10 +327,10 @@ class InterfaceWattpiti(tk.Tk):
                 self.newposition = [round(x, 2) for x in self.newposition] #Formater la position centrale du faisceau
                 
                 #Mettre à jour les labels dans l'interface graphique
-                #self.powerVar.set(str(self.newpower))
-                self.wavelenghtVar.set(str(self.newWaveLenght))
-                self.positionXVar.set(str(self.newposition[0]))
-                self.positionYVar.set(str(self.newposition[1]))
+                self.powerVar.set(str(self.newpower)) #Puissance
+                self.wavelenghtVar.set(str(self.newWaveLenght)) #Longueur d'onde
+                self.positionXVar.set(str(self.newposition[0])) #Positon x
+                self.positionYVar.set(str(self.newposition[1])) #Position y
                 
 
                 #Graphique de la position centrale du faisceau
@@ -370,15 +358,12 @@ class InterfaceWattpiti(tk.Tk):
                 if len(self.dataArray) > 20: #limiter le nombre de points sur le graphique
                     self.axPow.set_xlim(self.dataArray[-20][0], self.dataArray[-1][0])
 
-
-                #À changer (mettre des vraies valeurs de temps)
-                self.powArray.append(self.rawTemperatureMatrix[0][0])
-
                 self.timeArray = list(zip(* self.dataArray))[0]
                 self.powValues = list(zip(* self.dataArray))[1]
-                self.axPow.plot(list(self.timeArray), self.powArray, color = "blue")
+                self.axPow.plot(list(self.timeArray), list(self.powValues), color = "blue")
                 self.powerCanvas.draw()
                 self.powerCanvas.get_tk_widget().update()
+                self.check_ports() #Vérifier si le port est toujours connecté
 
         self.after(1, self.loop)
 
@@ -397,13 +382,16 @@ class InterfaceWattpiti(tk.Tk):
         #Réinitialiser les variables
         self.dataArray = []
         self.powArray = []
+        self.timeArray = []
         self.powerVar.set("00.00")
         self.wavelenghtVar.set("000.0")
         self.positionXVar.set("0")
         self.positionYVar.set("0") 
         self.axPos.clear()
         self.axPow.clear()
-        self.click_start()
+
+
+        self.click_start() 
         
 
 
@@ -571,6 +559,42 @@ class InterfaceWattpiti(tk.Tk):
             self.serialManager.closePort()
         self.destroy() #Ferme la fenêtre
 
+
+    def check_ports(self):
+        # Start checking for port updates
+        if len(self.portList) == 0:
+
+            self.update_ports()
+        else:
+            check_ports = serial.tools.list_ports.comports()
+            for port in check_ports:
+                if "Bluetooth" not in port.description:
+                    check_ports = [f"{port.device}, {port.description}"]
+            if len(check_ports) != len(self.portList):        
+                self.update_ports()
+            else:
+                pass
+
+
+
+    def update_ports(self):
+        if self.running == True:
+            self.click_stop()
+        current_ports = serial.tools.list_ports.comports()
+        updated_port_list = []
+        for port in current_ports:
+            if "Bluetooth" not in port.description:
+                updated_port_list.append(f"{port.device}, {port.description}")
+
+        if updated_port_list != self.portList:  
+            self.portList = updated_port_list
+            self.portComboBox['values'] = self.portList
+            if len(self.portList) == 1:  
+                self.selected_port.set(self.portList[0])
+            else:
+                self.selected_port.set("")  
+
+        self.after(1000, self.update_ports)  
 
 
 
