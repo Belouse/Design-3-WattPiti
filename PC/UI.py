@@ -235,6 +235,7 @@ class InterfaceWattpiti(tk.Tk):
         self.axPow = self.powerFig.add_subplot(111)
         self.axPow.set_xlabel("Temps (s)")
         self.axPow.set_ylabel("Puissance (W)")
+        self.axPow.set_ylim(0, 10)
 
         self.powerCanvas = FigureCanvasTkAgg(self.powerFig, master = self)
         self.powerCanvas.draw()
@@ -296,11 +297,11 @@ class InterfaceWattpiti(tk.Tk):
             #Importation des données de dataContainer
             self.serialManager.updateDataFromMCU(1)
             self.algorithmManager.calculatePosition()
-            #self.algorithmManager.calculateWavelength()
+            self.algorithmManager.calculateWavelength()
             #self.algorithmManager.calculatePower()
             self.newposition = self.dataContainer.position
             self.newWaveLength = self.dataContainer.wavelength
-            self.newpower = self.dataContainer.power    
+            self.newpower = self.dataContainer.photoPower    
             self.rawTemperatureMatrix = self.dataContainer.rawTemperatureMatrix
 
 
@@ -330,7 +331,7 @@ class InterfaceWattpiti(tk.Tk):
             self.axPos.set_ylim(-30, 30)
 
 
-            self.plaque = patches.Circle((0,0), 30, color = "b", alpha = 0.1, fill = True)
+            self.plaque = patches.Circle((0,0), 30, color = "b", fill = True)
             self.axPos.add_patch(self.plaque)
             
             for row in self.dataContainer.thermalCaptorPosition: #Affichage de la grille de capteurs sur le graphique
@@ -349,8 +350,6 @@ class InterfaceWattpiti(tk.Tk):
             if len(self.dataArray) > 50: #limiter le nombre de points sur le graphique
                 self.axPow.set_xlim(self.dataArray[-50][0], self.dataArray[-1][0])
 
-            self.axPow.set_ylim(0, 10)
-
 
             self.powArray.append(self.newpower)
 
@@ -360,7 +359,7 @@ class InterfaceWattpiti(tk.Tk):
             self.powerCanvas.draw()
             self.powerCanvas.get_tk_widget().update()
 
-        self.loop()
+        self.after(500, self.loop())
 
 
     
