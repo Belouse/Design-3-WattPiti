@@ -296,8 +296,8 @@ class InterfaceWattpiti(tk.Tk):
             #Importation des données de dataContainer
             self.serialManager.updateDataFromMCU(1)
             self.algorithmManager.calculatePosition()
-            self.algorithmManager.calculateWavelength()
-            self.algorithmManager.calculatePower()
+            #self.algorithmManager.calculateWavelength()
+            #self.algorithmManager.calculatePower()
             self.newposition = self.dataContainer.position
             self.newWaveLength = self.dataContainer.wavelength
             self.newpower = self.dataContainer.power    
@@ -330,7 +330,7 @@ class InterfaceWattpiti(tk.Tk):
             self.axPos.set_ylim(-30, 30)
 
 
-            self.plaque = patches.Circle((0,0), 30, color = "black", alpha = 0.1, fill = False)
+            self.plaque = patches.Circle((0,0), 30, color = "b", alpha = 0.1, fill = True)
             self.axPos.add_patch(self.plaque)
             
             for row in self.dataContainer.thermalCaptorPosition: #Affichage de la grille de capteurs sur le graphique
