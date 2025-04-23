@@ -16,7 +16,7 @@ print("Pyboard start up...")
 startIndicator() # lights will blink on the MCU to show that the code excution is starting
 
 # ----- ACQUISITION -----
-period = 360
+period = 100
 numberOfDataPoints = 40
 
 # ------- PINS -------
