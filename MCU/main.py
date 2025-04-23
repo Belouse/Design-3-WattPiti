@@ -16,8 +16,8 @@ print("Pyboard start up...")
 startIndicator() # lights will blink on the MCU to show that the code excution is starting
 
 # ----- ACQUISITION -----
-period = 100
-numberOfDataPoints = 40
+period = 495
+numberOfDataPoints = 50
 
 # ------- PINS -------
 photoDiode1Pin = "X20"  # MTPD2601T-100
