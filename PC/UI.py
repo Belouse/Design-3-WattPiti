@@ -361,6 +361,8 @@ class InterfaceWattpiti(tk.Tk):
                     for (x, y) in row:
                         rect = patches.Rectangle((x - 1.5, y - 1.5), 0.75, 0.75, linewidth=1.5, edgecolor='white', facecolor='none', alpha=0.5)
                         self.axPos.add_patch(rect)
+                self.circ = patches.Circle(self.newposition, 1.5, color = "red", alpha = 0.5)
+                self.axPos.add_patch(self.circ)
                 self.posCanvas.draw()
                 self.posCanvas.get_tk_widget().update()
 
@@ -379,7 +381,7 @@ class InterfaceWattpiti(tk.Tk):
                 self.powerCanvas.draw()
                 self.powerCanvas.get_tk_widget().update()
 
-        self.after(1, self.loop)
+        self.loop()
 
 
     
