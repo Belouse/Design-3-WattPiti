@@ -15,6 +15,8 @@ from AlgorithmManagerClass import AlgorithmManager
 from SerialManagerClass import SerialManager
 import serial.tools.list_ports
 from datetime import datetime
+import sys
+
 
 
 class InterfaceWattpiti(tk.Tk):
@@ -23,6 +25,8 @@ class InterfaceWattpiti(tk.Tk):
 
         #Donnée du temps
         self.startTime = time.time()
+        sys.setrecursionlimit(2000)
+
 
         #Création d'une instance de la classe DataContainer pour stocker les données
         self.dataContainer = DataContainer() #Instance de la classe DataContainer
@@ -276,6 +280,8 @@ class InterfaceWattpiti(tk.Tk):
         self.dataArray = []
         self.powArray = []
 
+        self.check_ports()
+
         #Tarer l'algorithme des longueurs d'onde
         self.algorithmManager.algoWavelength.mise_a_zero()
 
@@ -299,6 +305,7 @@ class InterfaceWattpiti(tk.Tk):
             # print(self.dataContainer.rawWavelengthMatrix)
             # print(type(self.dataContainer.rawWavelengthMatrix))
             self.currentTime = time.time() - self.startTime #Calculer le temps écoulé depuis l'ouverture de l'interface
+            #print(self.dataContainer.rawTemperatureMatrix)
 
             #Importation des données de dataContainer
             self.serialManager.updateDataFromMCU(1)
@@ -388,6 +395,7 @@ class InterfaceWattpiti(tk.Tk):
     #Fontion du bouton pour réinitialiser la simulation
     def click_reset(self):
         if self.running == True:
+            self.startTime = time.time()
             self.click_stop()
 
         #Réinitialiser les variables
