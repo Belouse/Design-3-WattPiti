@@ -116,7 +116,7 @@ class AlgoPower:
         dT_dt = ((container.max_temperature - temperature_ailette) -(container.old_max_temperature - temperature_ailette)) / container.Delta_t
 
         K = 2.704
-        tau = 0.4553
+        tau = 1631
 
         P = T_t / K + (tau / K) * dT_dt
 
