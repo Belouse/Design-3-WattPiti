@@ -78,19 +78,19 @@ class InterfaceWattpiti(tk.Tk):
         startButtonStyle = ttk.Style()
         startButtonStyle.configure("startButtonStyle.TButton", background = "#00FF00", relief = "raised", font = ("Inter", 10, "bold"))
         self.startButton = ttk.Button(self, text="Commencer",style="startButtonStyle.TButton", command=self.click_start)
-        self.startButton.place(x = 470, y= 150)
+        self.startButton.place(x = 470, y= 125)
 
         #Création d'un bouton pour arrêter la simulation
         stopButtonStyle = ttk.Style()
         stopButtonStyle.configure("stopButtonStyle.TButton", background = "red", relief = "raised",  font = ("Inter", 10, "bold"))
         self.stopButton = ttk.Button(self, text="Arrêt", style="stopButtonStyle.TButton", command=self.click_stop)
-        self.stopButton.place(x=270, y=150)
+        self.stopButton.place(x=270, y=125)
 
         #Création d'un bouton pour réinitialiser la simulation
         resetButtonStyle = ttk.Style()
         resetButtonStyle.configure("resetButtonStyle.TButton", background = "yellow", relief = "raised",  font = ("Inter", 10, "bold"))
         self.resetButton = ttk.Button(self, text='Reset', style = "resetButtonStyle.TButton", command=self.click_reset)
-        self.resetButton.place(x=370, y=150)
+        self.resetButton.place(x=370, y= 125)
 
 
         #Création d'une liste déroulante pour choisir le port
@@ -112,14 +112,14 @@ class InterfaceWattpiti(tk.Tk):
 
 
         #Choix de la longueur d'onde
-        self.waveLengthList = ["À déterminer", "450", "976", "1976"]
+        """self.waveLengthList = ["À déterminer", "450", "976", "1976"]
         self.waveLengthComboBox = ttk.Combobox(self, values=self.waveLengthList, width=20)
         self.waveLengthComboBox.place(x=440, y=80)
-        self.waveLengthComboBox.current(0) 
+        self.waveLengthComboBox.current(0) """
 
         #Label pour le choix de la longueur d'onde
-        self.labelWaveLength = ttk.Label(self, text="Longueur d'onde (nm):", style = "labelStyle.TLabel")
-        self.labelWaveLength.place(x=250, y=80)
+        #self.labelWaveLength = ttk.Label(self, text="Longueur d'onde (nm):", style = "labelStyle.TLabel")
+        #self.labelWaveLength.place(x=250, y=80)
 
 
 
@@ -238,9 +238,9 @@ class InterfaceWattpiti(tk.Tk):
         self.axPow.set_ylim(0, 10)
 
         self.powerCanvas = FigureCanvasTkAgg(self.powerFig, master = self)
-        self.powerCanvas.draw()
         self.powerPlot = self.powerCanvas.get_tk_widget()
         self.powerPlot.place(x=20, y=280)
+        
 
 
 
@@ -264,10 +264,10 @@ class InterfaceWattpiti(tk.Tk):
         self.posPlot.place(x = 970, y = 280)
 
         #Création d'un bouton pour calibrer les capteurs
-        self.tareButton = ttk.Button(self, text= "Tare", style="saveButtonStyle.TButton", command = self.click_tare)
+        """ self.tareButton = ttk.Button(self, text= "Tare", style="saveButtonStyle.TButton", command = self.click_tare)
         self.tareButton.place(x = 420, y = 110)
         self.tareLabel = ttk.Label(self, text = "Calibration des capteurs:", style = "labelStyle.TLabel")
-        self.tareLabel.place(x=250, y = 110)
+        self.tareLabel.place(x=250, y = 110) """
 
 
 
@@ -275,6 +275,9 @@ class InterfaceWattpiti(tk.Tk):
         self.running = False
         self.dataArray = []
         self.powArray = []
+
+        #Tarer l'algorithme des longueurs d'onde
+        self.algorithmManager.algoWavelength.mise_a_zero()
 
     #Fonction du bouton pour démarrer la simulation
     def click_start(self):
@@ -344,18 +347,29 @@ class InterfaceWattpiti(tk.Tk):
             self.posCanvas.get_tk_widget().update()
 
             #Graphique de la puissance en fonction du temps
+            # Réappliquer les limites fixes
             self.axPow.clear()
             self.axPow.set_xlabel("Temps (s)")
             self.axPow.set_ylabel("Puissance (W)")
-            if len(self.dataArray) > 50: #limiter le nombre de points sur le graphique
-                self.axPow.set_xlim(self.dataArray[-50][0], self.dataArray[-1][0])
+            self.axPow.set_ylim(0, 10) # Limites fixes pour l'axe des x
+
+            # Fenêtre X glissante de 10 secondes
+            # if len(self.dataArray) > 0:
+            #     current_time = self.dataArray[-1][0]
+            #     self.axPow.set_xlim(max(0, current_time - 10), current_time)
+
+            # self.axPow.set_ylim(0, 0.1)
+            # Mise à jour des données
+            self.powArray.append(float(self.newpower))
+            self.timeArray = list(zip(*self.dataArray))[0]
 
 
-            self.powArray.append(self.newpower)
 
-            self.timeArray = list(zip(* self.dataArray))[0]
-            self.powValues = list(zip(* self.dataArray))[1]
-            self.axPow.plot(list(self.timeArray), self.powArray, color = "blue")
+            self.axPow.plot(list(self.timeArray)[-20:], self.powArray[-20:], color="blue")
+        
+            
+
+            # Redraw
             self.powerCanvas.draw()
             self.powerCanvas.get_tk_widget().update()
 
@@ -386,12 +400,7 @@ class InterfaceWattpiti(tk.Tk):
         
 
 
-    def click_tare(self):
-        #Fonction pour calibrer les capteurs
-        if self.running == True:
-            self.click_stop()
-
-        self.algorithmManager.algoWavelength.mise_a_zero()
+    
 
     #Fonction pour enregistrer les données
     def save_data(self):
@@ -492,8 +501,6 @@ class InterfaceWattpiti(tk.Tk):
         self.wavelengthCheckButton.configure(state = "disabled") 
         self.powerCheckButton.configure(state = "disabled")
         self.positionCheckButton.configure(state = "disabled")
-        self.waveLengthComboBox.configure(state = "disabled")
-        self.tareButton.configure(state= "disabled")
         self.fileName.configure(state = "disabled")
 
     def enable_widgets(self):
@@ -506,8 +513,6 @@ class InterfaceWattpiti(tk.Tk):
         self.wavelengthCheckButton.configure(state = "normal") 
         self.powerCheckButton.configure(state = "normal")
         self.positionCheckButton.configure(state = "normal")
-        self.waveLengthComboBox.configure(state = "normal")
-        self.tareButton.configure(state= "normal")
         self.fileName.configure(state = "normal")
 
 
