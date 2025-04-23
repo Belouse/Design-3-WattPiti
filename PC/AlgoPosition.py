@@ -22,7 +22,7 @@ class AlgoPosition():
 
       # To use mean
       #temp = self.moyennage_temperature(100)      
-      temp = dataContainer.temperature
+      temp = np.mean(dataContainer.rawTemperatureMatrix, axis=0)
 
       # Create the 4x4 matrix 
       temp = temp[:16].reshape(4, 4)
