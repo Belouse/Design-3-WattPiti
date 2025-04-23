@@ -369,7 +369,7 @@ if __name__ == "__main__":
     mesure_450_10W = [14716.17,19816.5,49570.75,0,66.08,81.83,112.83,907.58]
 
     test976 = [0, 0, 0, 2, 11, 431, 304, 1073]
-    test_976 = [431, 304, 1073, 2, 0, 0, 0]
+    # test_976 = [431, 304, 1073, 2, 0, 0, 0]
     
     
     def re_order(array):
@@ -412,20 +412,19 @@ if __name__ == "__main__":
     mesure_1976_5W_19mm = re_order(mis_a_zero(mesure_1976_5W_19mm, mis_a_zero_1976))
     mesure_1976_5W_18mm = re_order(mis_a_zero(mesure_1976_5W_18mm, mis_a_zero_1976))
 
-    test = re_order(mis_a_zero(test976, mis_a_zero_976))
 
 
     donnees = [mesure_450_2_5W, mesure_450_5W, mesure_450_7_5W, mesure_450_10W,
               mesure_976_2_5W, mesure_976_5W, mesure_976_7_5W, mesure_976_10W,
-              mesure_1976_5W_20mm, mesure_1976_5W_19mm, mesure_1976_5W_18mm, test]
+              mesure_1976_5W_20mm, mesure_1976_5W_19mm, mesure_1976_5W_18mm]
     
     
-    def plot_reponses_et_ratios():
-        algo = AlgoWavelength()
-    
-        # Afficher les courbes de réponse spectrale
-        algo.plot_spectral_response()
-        algo.plot_spectral_ratios()
+    # def plot_reponses_et_ratios():
+    #     algo = AlgoWavelength()
+    #
+    #     # Afficher les courbes de réponse spectrale
+    #     algo.plot_spectral_response()
+    #     algo.plot_spectral_ratios()
         
         
     predicted_wavelengths = []
@@ -433,10 +432,12 @@ if __name__ == "__main__":
     test_450 = [2, 73, 64, 8651, 9735, 38995, 23683, 409, 23, 64]
     test_1976 = [4, 2059, 1332, 4, 5, 0, 28, 10, 0, 79]
     test_1976_2 = [4, 2063, 1326, 4, 5, 0, 28, 10, 0, 77]
+    # test_976 = re_order(test976)
+    test_976 = [431, 304, 1073, 2, 0, 0, 0]
 
     a = [3, 7, 4, 229, 173, 73, 477, 10, 0, 99]
 
-    data = DataContainer(rawWavelengthMatrix=np.array([a]))
+    data = DataContainer(rawWavelengthMatrix=np.array([test_976]))
 
     algo = AlgoWavelength()
     wavelength = algo.calculateWavelength(data,
@@ -494,7 +495,7 @@ if __name__ == "__main__":
         
         
         
-    plot_reponses_et_ratios()
+    # plot_reponses_et_ratios()
 
 
 # [448.70535278 452.73553467 449.08227539 450.92053223] [1003.13439941 1006.01727295 1006.20556641 1005.59545898] [2000.13928223 2006.32531738 1989.59484863]

@@ -524,6 +524,3 @@ class DataPreProcess:
 # print(f"\nValeurs brutes des capteurs à {wavelength} nm:")
 # for capteur, valeur in valeurs_brutes.items():
 #     print(f"{capteur}: {valeur:.6f}")
-
-data = DataPreProcess()
-data.plot_response(data.all_sensors)
