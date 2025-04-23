@@ -395,7 +395,6 @@ class InterfaceWattpiti(tk.Tk):
     #Fontion du bouton pour réinitialiser la simulation
     def click_reset(self):
         if self.running == True:
-            self.startTime = time.time()
             self.click_stop()
 
         #Réinitialiser les variables

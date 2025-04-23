@@ -147,10 +147,10 @@ class AlgoWavelength:
     
         if closest_wavelength == 450:
             # Estimation de la puissance à 450 nm
-            return self.estimer_puissance_450(reponse_vector[self.indices_450], self.coeff_450)
+            return self.estimer_puissance_450(reponse_vector[self.indices_450], self.coeff_450) * (1-0.1)
         if closest_wavelength == 976:
             # Estimation de la puissance à 976 nm
-            return self.estimer_puissance_976(reponse_vector[self.indices_976], self.coeff_976)
+            return self.estimer_puissance_976(reponse_vector[self.indices_976], self.coeff_976) * (1-0.08)
         if closest_wavelength == 1976:
             counts_IR1 = reponse_vector[0]
             return self.estimer_puissance_1976(counts_IR1)
