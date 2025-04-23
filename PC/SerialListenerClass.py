@@ -14,6 +14,7 @@ class SerialListener():
     def readData(self, numberOfData, printExecutionTime):
         dataRead = []
         start = time.time()
+        self.port.reset_input_buffer()
         while len(dataRead) < numberOfData:
             line = self.port.readline().decode('utf-8').strip()
             if line:
