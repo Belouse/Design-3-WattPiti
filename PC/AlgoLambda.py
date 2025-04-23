@@ -18,7 +18,7 @@ class AlgoWavelength:
     à partir des valeurs des capteurs.
     """
 
-    def __init__(self, model_path: str = 'model_nn_pytorch_weights4.pth'):
+    def __init__(self, model_path: str = 'model_nn_pytorch_weights6.pth'):
         """
         Initialise l'algorithme de prédiction de longueur d'onde en chargeant le modèle préentraîné.
 
@@ -52,7 +52,7 @@ class AlgoWavelength:
             raise Exception(f"Erreur lors du chargement du modèle: {str(e)}")
 
         # Stocker l'ordre des capteurs pour référence
-        self.sensor_order = ['P_IR1', 'P_IR1xP', 'P_IR2', 'P_UV', 'C_UV', 'C_VISG','C_VISB', 'C_VISR']
+        self.sensor_order = ['P_IR1', 'P_IR1xP', 'P_UV', 'C_UV', 'C_VISG', 'C_VISB', 'C_VISR']
 
         # Offset pour mise à zéro
         self.zero_offset = np.zeros(len(self.sensor_order))
@@ -132,11 +132,16 @@ class AlgoWavelength:
         :param raw_data: Données brutes des 10 capteurs (array de taille 10 ou matrice Nx10)
         :return: Données organisées des 8 capteurs dans l'ordre défini par self.sensor_order
         """
+
+        # Vérifier si les données sont déjà au format attendu (même nombre de colonnes que sensor_order)
+        if raw_data.shape[-1] == len(self.sensor_order):
+            # Les données sont déjà au bon format
+            return raw_data
+
         # Mapping entre l'indice dans raw_data et le nom du capteur
         raw_to_sensor_map = {
             1: 'P_IR1',  # MTPD3001D3-030 sans verre
             2: 'P_IR1xP',  # MTPD3001D3-030 avec verre
-            0: 'P_IR2',  # MTPD2601T-100
             7: 'P_UV',  # 019-101-411
             8: 'C_UV',  # LTR-390-UV-01 UVS
             4: 'C_VISG',  # VEML6040A3OG G
@@ -362,6 +367,9 @@ if __name__ == "__main__":
     mesure_450_5W = [8543.88,11574.25,34747,0,34.13,45.31,70.56,495.81]
     mesure_450_7_5W = [11224.42,14078.17,42298.75,0,48.42,61.33,88.42,681.5]
     mesure_450_10W = [14716.17,19816.5,49570.75,0,66.08,81.83,112.83,907.58]
+
+    test976 = [0, 0, 0, 2, 11, 431, 304, 1073]
+    test_976 = [431, 304, 1073, 2, 0, 0, 0]
     
     
     def re_order(array):
@@ -404,10 +412,12 @@ if __name__ == "__main__":
     mesure_1976_5W_19mm = re_order(mis_a_zero(mesure_1976_5W_19mm, mis_a_zero_1976))
     mesure_1976_5W_18mm = re_order(mis_a_zero(mesure_1976_5W_18mm, mis_a_zero_1976))
 
+    test = re_order(mis_a_zero(test976, mis_a_zero_976))
+
 
     donnees = [mesure_450_2_5W, mesure_450_5W, mesure_450_7_5W, mesure_450_10W,
               mesure_976_2_5W, mesure_976_5W, mesure_976_7_5W, mesure_976_10W,
-              mesure_1976_5W_20mm, mesure_1976_5W_19mm, mesure_1976_5W_18mm]
+              mesure_1976_5W_20mm, mesure_1976_5W_19mm, mesure_1976_5W_18mm, test]
     
     
     def plot_reponses_et_ratios():
@@ -419,52 +429,59 @@ if __name__ == "__main__":
         
         
     predicted_wavelengths = []
-    for i in donnees:
-        data = DataContainer(rawWavelengthMatrix=np.array([i]))
-    
-        algo = AlgoWavelength()
-        wavelength = algo.calculateWavelength(data,
-                                               faisceau_pos=(0, 0, 0),
-                                               correction_factor_ind=0,
-                                               moving_window_size=3,
-                                               enable_print=False)
-        predicted_wavelengths.append(wavelength)
-    
-    
-    predictions_450 = np.array(predicted_wavelengths[0:4])
-    predictions_976 = np.array(predicted_wavelengths[4:8])
-    predictions_1976 = np.array(predicted_wavelengths[8:11])
-    
-    
-    
-    print(predictions_450, predictions_976, predictions_1976)
-    
-    plt.figure(figsize=(8,4))
-    plt.xlabel("Puissance [W]")
-    plt.ylabel("Erreur relative [%]")
-    
-    puissance = [2.5, 5, 7.5, 10]
-    
-    wavelength = 450
-    plt.plot(puissance,abs(predictions_450-wavelength)/wavelength*100, 'o-', label='450nm')
-    wavelength = 976
-    plt.plot(puissance,abs(predictions_976-wavelength)/wavelength*100, 'o-', label='976nm')
-    plt.grid(True)
-    plt.legend()
-    plt.show()
 
-    plt.figure(figsize=(8,4))
-    plt.xlabel("Position du faisceau par rapport au centre [mm]")
-    plt.ylabel("Erreur relative [%]")
-    
-    position = [0, 1, 2]
+    test_450 = [2, 73, 64, 8651, 9735, 38995, 23683, 409, 23, 64]
+    test_1976 = [4, 2059, 1332, 4, 5, 0, 28, 10, 0, 79]
+    test_1976_2 = [4, 2063, 1326, 4, 5, 0, 28, 10, 0, 77]
 
-    wavelength = 1976
-    plt.plot(position,abs(predictions_1976-wavelength)/wavelength*100, 'o-', label='1976nm')
-    plt.grid(True)
-    plt.legend()
-    plt.show()
+    a = [3, 7, 4, 229, 173, 73, 477, 10, 0, 99]
+
+    data = DataContainer(rawWavelengthMatrix=np.array([a]))
+
+    algo = AlgoWavelength()
+    wavelength = algo.calculateWavelength(data,
+                                           faisceau_pos=(0, 0, 0),
+                                           correction_factor_ind=0,
+                                           moving_window_size=3,
+                                           enable_print=False)
+    print(wavelength)
+    predicted_wavelengths.append(wavelength)
     
+    
+    # predictions_450 = np.array(predicted_wavelengths[0:4])
+    # predictions_976 = np.array(predicted_wavelengths[4:8])
+    # predictions_1976 = np.array(predicted_wavelengths[8:11])
+    #
+    #
+    #
+    # print(predictions_450, predictions_976, predictions_1976)
+    #
+    # plt.figure(figsize=(8,4))
+    # plt.xlabel("Puissance [W]")
+    # plt.ylabel("Erreur relative [%]")
+    #
+    # puissance = [2.5, 5, 7.5, 10]
+    #
+    # wavelength = 450
+    # plt.plot(puissance,abs(predictions_450-wavelength)/wavelength*100, 'o-', label='450nm')
+    # wavelength = 976
+    # plt.plot(puissance,abs(predictions_976-wavelength)/wavelength*100, 'o-', label='976nm')
+    # plt.grid(True)
+    # plt.legend()
+    # plt.show()
+    #
+    # plt.figure(figsize=(8,4))
+    # plt.xlabel("Position du faisceau par rapport au centre [mm]")
+    # plt.ylabel("Erreur relative [%]")
+    #
+    # position = [0, 1, 2]
+    #
+    # wavelength = 1976
+    # plt.plot(position,abs(predictions_1976-wavelength)/wavelength*100, 'o-', label='1976nm')
+    # plt.grid(True)
+    # plt.legend()
+    # plt.show()
+    #
     # data = DataContainer(rawWavelengthMatrix=np.array([mesure_1976_5W_18mm]))
 
     # algo = AlgoWavelength()
@@ -477,7 +494,7 @@ if __name__ == "__main__":
         
         
         
-    # plot_reponses_et_ratios()
+    plot_reponses_et_ratios()
 
 
 # [448.70535278 452.73553467 449.08227539 450.92053223] [1003.13439941 1006.01727295 1006.20556641 1005.59545898] [2000.13928223 2006.32531738 1989.59484863]

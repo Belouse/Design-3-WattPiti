@@ -29,10 +29,17 @@ class DataPreProcess:
             #                      'point3':{'puissance#W':1, 'longueur_donde#nm':1976, 'counts':[2734.6400, 2214.5632, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000]},
             #                      'gains': [1, 1, 1, 1, 1, 1, 1, 1]}
             # ['P_IR1', 'P_IR1xP', 'P_IR2', 'P_UV', 'C_UV', 'C_VISG', 'C_VISB', 'C_VISR']
-            self.callibration = {'point1':{'puissance#W':5, 'longueur_donde#nm':450, 'counts':[4.139000e+01, 6.525000e+01, 3.090000e+01, 4.828100e+02, 0.000000e+00, 1.156371e+04, 3.474400e+04, 8.532880e+03]},
-                                 'point2':{'puissance#W':5, 'longueur_donde#nm':976, 'counts':[3.02180e+02, 3.45420e+02, 2.02793e+03, 1.23944e+03, 6.70000e-01, 0.00000e+00, 0.00000e+00, 0.00000e+00]},
-                                 'point3':{'puissance#W':5, 'longueur_donde#nm':1976, 'counts':[1.62411e+03, 1.79731e+03, 8.10000e-01, 1.92000e+00, 0.00000e+00, 0.00000e+00, 0.00000e+00, 0.00000e+00]},
-                                 'gains': [1, 1, 1, 1, 0.03, 0.03, 0.03, 0.03]}
+            # self.callibration = {'point1':{'puissance#W':5, 'longueur_donde#nm':450, 'counts':[4.139000e+01, 6.525000e+01, 3.090000e+01, 4.828100e+02, 0.000000e+00, 1.156371e+04, 3.474400e+04, 8.532880e+03]},
+            #                      'point2':{'puissance#W':5, 'longueur_donde#nm':976, 'counts':[3.02180e+02, 3.45420e+02, 2.02793e+03, 1.23944e+03, 6.70000e-01, 0.00000e+00, 0.00000e+00, 0.00000e+00]},
+            #                      'point3':{'puissance#W':5, 'longueur_donde#nm':1976, 'counts':[1.62411e+03, 1.79731e+03, 8.10000e-01, 1.92000e+00, 0.00000e+00, 0.00000e+00, 0.00000e+00, 0.00000e+00]},
+            #                      'gains': [1, 1, 1, 1, 0.03, 0.03, 0.03, 0.03]}
+            # ['P_IR1', 'P_IR1xP', 'P_UV', 'C_UV', 'C_VISG', 'C_VISB', 'C_VISR']
+            self.callibration = {'point1':{'puissance#W':5, 'longueur_donde#nm':450, 'counts':[4.139000e+01, 6.525000e+01, 4.828100e+02, 0.000000e+00, 1.156371e+04, 3.474400e+04, 8.532880e+03]},
+                                 'point2':{'puissance#W':5, 'longueur_donde#nm':976, 'counts':[431, 304, 1073, 4, 0.00000e+00, 0.00000e+00, 0.00000e+00]},
+                                 'point3':{'puissance#W':5, 'longueur_donde#nm':1976, 'counts':[2059, 1332, 28, 0, 5, 0, 4]},
+                                 'gains': [1, 1, 1, 0.03, 0.03, 0.03, 0.03]}
+            # [MTPD2601T-100, MTPD3001D3-030 sans verre, MTPD3001D3-030 avec verre, VEML6040A3OG R, VEML6040A3OG G, VEML6040A3OG B, VEML6040A3OG W, 019-101-411, LTR-390-UV-01 UVS, LTR-390-UV-01 ALS]
+            # [4, 2059, 1332, 4, 5, 0, 28, 10, 0, 79]
             #'gains': [1, 1, 1, 1, 0.0629, 0.0629, 0.0629, 0.0629]}
             
         else:
@@ -45,7 +52,7 @@ class DataPreProcess:
         self.VIS_Blue = None  # Courbe de réponse capteur VIS_Blue
         self.VIS_red = None  # Courbe de réponse capteur VIS_red
         self.IR = None  # Courbe de réponse capteur IR
-        self.IR2 = None  # Courbe de réponse capteur IR2
+        # self.IR2 = None  # Courbe de réponse capteur IR2
         self.plastic_transmission = None  # Courbe de transmission du plastique (petri)
 
         self.plastic_t_file = None  # Courbes de transmission de tous les plastiques
@@ -54,7 +61,6 @@ class DataPreProcess:
         # Initialiser les positions des capteurs (x, y, z)
         self.P_IR1_pos = (-9.7, 21.34, -23.16)  # Position du capteur IR1 [mm]
         self.P_IR1xP_pos = (9.25, 21.18, -23.238)  # Position du capteur IR1xP [mm]
-        self.P_IR2_pos = (0, 23.63, -20.66)  # Position du capteur IR2 [mm]
         self.P_UV_pos = (-0.63, 20.56, -26.89)  # Position du capteur UV [mm]
         self.C_UV_pos = (-5.36, 26.86, -30.14)  # Position du capteur UV I2C [mm]
         self.C_VISG_pos = (5.97, 16.97, -29.91)  # Position du capteur VIS I2C Green [mm]
@@ -64,20 +70,18 @@ class DataPreProcess:
         # Utiliser les gains fournis
         self.gain_IR1 = self.callibration['gains'][0]
         self.gain_IR1xP = self.callibration['gains'][1]
-        self.gain_IR2 = self.callibration['gains'][2]
-        self.gain_UV = self.callibration['gains'][3]
-        self.gain_C_UV = self.callibration['gains'][4]
-        self.gain_C_VISG = self.callibration['gains'][5]
-        self.gain_C_VISB = self.callibration['gains'][6]
-        self.gain_C_VISR = self.callibration['gains'][7]
+        self.gain_UV = self.callibration['gains'][2]
+        self.gain_C_UV = self.callibration['gains'][3]
+        self.gain_C_VISG = self.callibration['gains'][4]
+        self.gain_C_VISB = self.callibration['gains'][5]
+        self.gain_C_VISR = self.callibration['gains'][6]
 
-        self.sensor_order = ['P_IR1', 'P_IR1xP', 'P_IR2', 'P_UV', 'C_UV', 'C_VISG', 'C_VISB', 'C_VISR']
+        self.sensor_order = ['P_IR1', 'P_IR1xP', 'P_UV', 'C_UV', 'C_VISG', 'C_VISB', 'C_VISR']
 
         # Créé un dictionnaire pour les capteurs
         self.dict_capteurs = {
             'P_IR1': {'gain': self.gain_IR1, 'position': self.P_IR1_pos, 'geo_factor': [1, 1, 1],},
             'P_IR1xP': {'gain': self.gain_IR1xP, 'position': self.P_IR1xP_pos, 'geo_factor': [1, 1, 1],},
-            'P_IR2': {'gain': self.gain_IR2, 'position': self.P_IR2_pos, 'geo_factor': [1, 1, 1],},
             'P_UV': {'gain': self.gain_UV, 'position': self.P_UV_pos, 'geo_factor': [1, 1, 1],},
             'C_UV': {'gain': self.gain_C_UV, 'position': self.C_UV_pos, 'geo_factor': [1, 1, 1],},
             'C_VISG': {'gain': self.gain_C_VISG, 'position': self.C_VISG_pos, 'geo_factor': [1, 1, 1],},
@@ -216,7 +220,7 @@ class DataPreProcess:
         self.VIS_Blue = pd.read_csv(os.path.join(script_dir, "Blue.csv"), header=None)
         self.VIS_red = pd.read_csv(os.path.join(script_dir, "Red.csv"), header=None)
         self.IR = pd.read_csv(os.path.join(script_dir, "IR.csv"), header=None)
-        self.IR2 = pd.read_csv(os.path.join(script_dir, "IR2.csv"), header=None)
+        # self.IR2 = pd.read_csv(os.path.join(script_dir, "IR2.csv"), header=None)
         self.plastic_t_file = pd.read_csv(os.path.join(script_dir, "TransmissionsPlastiques.csv"))
 
         # Extraction des données de transmission du plastique de petri
@@ -244,7 +248,6 @@ class DataPreProcess:
             ('VIS_Blue', self.VIS_Blue),
             ('VIS_red', self.VIS_red),
             ('IR', self.IR),
-            ('IR2', self.IR2),
             ('plastic_transmission', self.plastic_transmission)
         ]
 
@@ -387,22 +390,22 @@ class DataPreProcess:
         ref_wavelength = self.callibration[point]['longueur_donde#nm']
 
         # ------------ P_IR2 --------------
-        P_IR2_interp = self._QE2ApW(self.IR2)
-        P_IR2_interp[:, 1] = P_IR2_interp[:, 1]/np.max(P_IR2_interp[:, 1])
-        
-        ref_value = self.callibration[point]['counts'][2] / self.callibration[point]['puissance#W']
-        
-        P_IR2_interp = self._denormalize_curve(P_IR2_interp,
-                                               ref_wavelength, 
-                                               ref_value,
-                                               self.dict_capteurs['P_IR2']['gain'])
-        
+        # P_IR2_interp = self._QE2ApW(self.IR2)
+        # P_IR2_interp[:, 1] = P_IR2_interp[:, 1]/np.max(P_IR2_interp[:, 1])
+        #
+        # ref_value = self.callibration[point]['counts'][2] / self.callibration[point]['puissance#W']
+        #
+        # P_IR2_interp = self._denormalize_curve(P_IR2_interp,
+        #                                        ref_wavelength,
+        #                                        ref_value,
+        #                                        self.dict_capteurs['P_IR2']['gain'])
+        #
 
         # ------------ P_UV ---------------
         P_UV_interp = self._QE2ApW(self.UV2)
         P_UV_interp[:, 1] = P_UV_interp[:, 1]/np.max(P_UV_interp[:, 1])
         
-        ref_value = self.callibration[point]['counts'][3] / self.callibration[point]['puissance#W']
+        ref_value = self.callibration[point]['counts'][2] / self.callibration[point]['puissance#W']
         
         P_UV_interp = self._denormalize_curve(P_UV_interp,
                                               ref_wavelength, 
@@ -413,14 +416,14 @@ class DataPreProcess:
         ref_wavelength = self.callibration[point]['longueur_donde#nm']
 
         # ------------ C_UV ---------------
-        ref_value = self.callibration[point]['counts'][4] / self.callibration[point]['puissance#W']
+        ref_value = self.callibration[point]['counts'][3] / self.callibration[point]['puissance#W']
         
         C_UV_interp = self._denormalize_curve(self.UV1, 
                                               ref_wavelength, ref_value,
                                               self.dict_capteurs['C_UV']['gain'])
 
         # ------------ C_VISG -------------
-        ref_value = self.callibration[point]['counts'][5] / self.callibration[point]['puissance#W']
+        ref_value = self.callibration[point]['counts'][4] / self.callibration[point]['puissance#W']
         
         C_VISG_interp = abs(self._denormalize_curve(self.VIS_green, 
                                                     ref_wavelength, 
@@ -428,7 +431,7 @@ class DataPreProcess:
                                                     self.dict_capteurs['C_VISG']['gain']))
 
         # ------------ C_VISB -------------
-        ref_value = self.callibration[point]['counts'][6] / self.callibration[point]['puissance#W']
+        ref_value = self.callibration[point]['counts'][5] / self.callibration[point]['puissance#W']
         
         C_VISB_interp = self._denormalize_curve(self.VIS_Blue, 
                                                 ref_wavelength, 
@@ -436,7 +439,7 @@ class DataPreProcess:
                                                 self.dict_capteurs['C_VISB']['gain'])
         
         # ------------ C_VISR -------------
-        ref_value = self.callibration[point]['counts'][7] / self.callibration[point]['puissance#W']
+        ref_value = self.callibration[point]['counts'][6] / self.callibration[point]['puissance#W']
         
         C_VISR_interp = self._denormalize_curve(self.VIS_red, 
                                                 ref_wavelength, 
@@ -446,7 +449,7 @@ class DataPreProcess:
         # Ajouter les valeurs au dict_capteurs pour chaque capteur
         self.dict_capteurs['P_IR1']['data'] = P_IR1_interp
         self.dict_capteurs['P_IR1xP']['data'] = P_IR1xP_interp
-        self.dict_capteurs['P_IR2']['data'] = P_IR2_interp
+        # self.dict_capteurs['P_IR2']['data'] = P_IR2_interp
         self.dict_capteurs['P_UV']['data'] = P_UV_interp
         self.dict_capteurs['C_UV']['data'] = C_UV_interp
         self.dict_capteurs['C_VISG']['data'] = C_VISG_interp
@@ -455,21 +458,20 @@ class DataPreProcess:
 
         # Normaliser les données
         normalized_data_list= self._spectral_normalization(
-            [P_IR1_interp, P_IR1xP_interp, P_IR2_interp, P_UV_interp,
+            [P_IR1_interp, P_IR1xP_interp, P_UV_interp,
              C_UV_interp,C_VISG_interp, C_VISB_interp, C_VISR_interp])
 
         P_IR1_N = normalized_data_list[0]
         P_IR1xP_N = normalized_data_list[1]
-        P_IR2_N = normalized_data_list[2]
-        P_UV_N = normalized_data_list[3]
-        C_UV_N = normalized_data_list[4]
-        C_VISG_N = normalized_data_list[5]
-        C_VISB_N = normalized_data_list[6]
-        C_VISR_N = normalized_data_list[7]
+        # P_IR2_N = normalized_data_list[2]
+        P_UV_N = normalized_data_list[2]
+        C_UV_N = normalized_data_list[3]
+        C_VISG_N = normalized_data_list[4]
+        C_VISB_N = normalized_data_list[5]
+        C_VISR_N = normalized_data_list[6]
 
         self.all_sensors = {'P_IR1': P_IR1_N,
                             'P_IR1xP': P_IR1xP_N,
-                            'P_IR2': P_IR2_N,
                             'P_UV': P_UV_N,
                             'C_UV': C_UV_N,
                             'C_VISG': C_VISG_N,
@@ -478,7 +480,6 @@ class DataPreProcess:
 
         self.Photodiodes_sensors = {'P_IR1': P_IR1_N,
                                     'P_IR1xP': P_IR1xP_N,
-                                    'P_IR2': P_IR2_N,
                                     'P_UV': P_UV_N}
 
         self.I2C_sensors = {'C_UV': C_UV_N,
@@ -523,3 +524,6 @@ class DataPreProcess:
 # print(f"\nValeurs brutes des capteurs à {wavelength} nm:")
 # for capteur, valeur in valeurs_brutes.items():
 #     print(f"{capteur}: {valeur:.6f}")
+
+data = DataPreProcess()
+data.plot_response(data.all_sensors)

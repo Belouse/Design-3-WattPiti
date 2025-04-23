@@ -124,7 +124,7 @@ class WavelengthPredictor(nn.Module):
     def __init__(self, dropout_rate):
         super(WavelengthPredictor, self).__init__()
 
-        num_sensors = 8 # Nombre de capteurs (input size)
+        num_sensors = 7 # Nombre de capteurs (input size)
 
         #hidden_layer_sizes = (512, 512)
 
@@ -133,7 +133,7 @@ class WavelengthPredictor(nn.Module):
         # Définition des couches
         self.layers = nn.Sequential(
             # Première hidden layer
-            nn.Linear(in_features=8, out_features=512, bias=True),  # 8 in -> 64 out
+            nn.Linear(in_features=7, out_features=512, bias=True),  # 8 in -> 64 out
             nn.ReLU(),                                           # Fonction d'activation ReLU
             # nn.BatchNorm1d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
             nn.LayerNorm(512, eps=1e-05, elementwise_affine=True),
@@ -185,9 +185,9 @@ def train_model(model, train_loader, test_loader, criterion, optimizer, epochs =
 
     # Scheduler pour ajuster le taux d'apprentissage
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='min', factor=0.5, patience=10, min_lr=1e-6)
-    #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        #optimizer, mode='min', factor=0.2, patience=5, min_lr=1e-6)
+         optimizer, mode='min', factor=0.5, patience=10, min_lr=1e-6)
+    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    #     optimizer, mode='min', factor=0.2, patience=5, min_lr=1e-6)
 
 
     train_losses = []   # Liste pour stocker les pertes d'entraînement
@@ -489,7 +489,7 @@ if __name__ == '__main__':
                                  )
 
     #torch.save(trained_model.state_dict(), "modele_nn_pytroch.pt")
-    torch.save(model.state_dict(), 'model_nn_pytorch_weights4.pth')
+    torch.save(model.state_dict(), 'model_nn_pytorch_weights6.pth')
 
     # Temps total d'exécution
     print(f"Temps d'exécution total : {perf_counter() - start_total_time}")

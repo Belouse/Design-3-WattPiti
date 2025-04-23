@@ -88,10 +88,12 @@ with tqdm(total=duree_secondes, desc="Acquisition de données", unit="s") as pba
 
         temps_tot.append(time.time()-temps_debut)
 
-        print(f"Hot Spot: {hotSpot} °C")
+        #print(f"Hot Spot: {hotSpot} °C")
+        #print(f"Temp Ailette: {tempAilette} °C")
         print(f"Temp Ailette: {tempAilette} °C")
-        print(f"Longueur d'onde: {dataContainer.wavelength} nm")
-        print(f"Puissance: {puissance} W")
+        print(f" Longueur d'onde : {wavelength}")
+        #print(f"Longueur d'onde: {dataContainer.wavelength} nm")
+        #print(f"Puissance: {puissance} W")
         print("\n")
 
         temps_actuel = time.time()
@@ -100,8 +102,9 @@ with tqdm(total=duree_secondes, desc="Acquisition de données", unit="s") as pba
         derniere_maj = temps_actuel
 
 
+
 # ======== Save les données en CSV (une colonne pour chaque thermistance) ========
-save = True
+save = False
 
 if save:
     df = pd.DataFrame(results)
