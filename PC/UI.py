@@ -275,13 +275,6 @@ class InterfaceWattpiti(tk.Tk):
         self.dataArray = []
         self.powArray = []
 
-
-
-
-
-
-
-
     #Fonction du bouton pour démarrer la simulation
     def click_start(self):
         try:
@@ -297,72 +290,72 @@ class InterfaceWattpiti(tk.Tk):
 
     def loop(self):
         if self.running: #Vérifier si une simulation est en cours
-            for i  in range(1): # initialisation de la loop
-                self.currentTime = time.time() - self.startTime #Calculer le temps écoulé depuis l'ouverture de l'interface
 
-                #Importation des données de dataContainer
-                self.serialManager.updateDataFromMCU(1)
-                self.algorithmManager.calculatePosition()
-                self.algorithmManager.calculateWavelength()
-                self.algorithmManager.calculatePower()
-                self.newposition = self.dataContainer.position
-                self.newWaveLenght = self.dataContainer.wavelength
-                self.newpower = self.dataContainer.power    
-                self.rawTemperatureMatrix = self.dataContainer.rawTemperatureMatrix
+            self.currentTime = time.time() - self.startTime #Calculer le temps écoulé depuis l'ouverture de l'interface
 
-
-                #Importer les données dans une liste
-                self.dataArray.append((self.currentTime, self.newpower, self.newWaveLenght, self.newposition))
-
-                
+            #Importation des données de dataContainer
+            self.serialManager.updateDataFromMCU(1)
+            self.algorithmManager.calculatePosition()
+            self.algorithmManager.calculateWavelength()
+            self.algorithmManager.calculatePower()
+            self.newposition = self.dataContainer.position
+            self.newWaveLenght = self.dataContainer.wavelength
+            self.newpower = self.dataContainer.power    
+            self.rawTemperatureMatrix = self.dataContainer.rawTemperatureMatrix
 
 
-                #Formater les données pour les afficher dans l'interface graphique
-                self.newpower = "{:.2f}".format(self.newpower) #Formater la puissance
-                self.newWaveLenght = "{:.1f}".format(self.newWaveLenght) #Formater la longueur d'onde
-                self.newposition = [round(x, 2) for x in self.newposition] #Formater la position centrale du faisceau
-                
-                #Mettre à jour les labels dans l'interface graphique
-                self.powerVar.set(str(self.newpower)) #Puissance
-                self.wavelenghtVar.set(str(self.newWaveLenght)) #Longueur d'onde
-                self.positionXVar.set(str(self.newposition[0])) #Positon x
-                self.positionYVar.set(str(self.newposition[1])) #Position y
-                
+            #Importer les données dans une liste
+            self.dataArray.append((self.currentTime, self.newpower, self.newWaveLenght, self.newposition))
 
-                #Graphique de la position centrale du faisceau
-                self.axPos.clear()
-                self.axPos.set_xlabel("Position x (mm)")
-                self.axPos.set_ylabel("Position y (mm)")
-                AlgoPosition.calculatePosition(self.algoPosition, self.dataContainer)
-                contour = self.axPos.contourf(self.dataContainer.interpolatedTemperatureGrid[0], 
-                                self.dataContainer.interpolatedTemperatureGrid[1], 
-                                self.dataContainer.interpolatedTemperatureGrid[2], 
-                                levels=150,
-                                cmap='turbo')
-                
-                for row in self.dataContainer.thermalCaptorPosition: #Affichage de la grille de capteurs sur le graphique
-                    for (x, y) in row:
-                        rect = patches.Rectangle((x - 1.5, y - 1.5), 0.75, 0.75, linewidth=1.5, edgecolor='white', facecolor='none', alpha=0.5)
-                        self.axPos.add_patch(rect)
-                self.circ = patches.Circle(self.newposition, 1.5, color = "red", alpha = 0.5)
-                self.axPos.add_patch(self.circ)
-                self.posCanvas.draw()
-                self.posCanvas.get_tk_widget().update()
+            
 
-                #Graphique de la puissance en fonction du temps
-                self.axPow.clear()
-                self.axPow.set_xlabel("Temps (s)")
-                self.axPow.set_ylabel("Puissance (W)")
-                if len(self.dataArray) > 50: #limiter le nombre de points sur le graphique
-                    self.axPow.set_xlim(self.dataArray[-50][0], self.dataArray[-1][0])
 
-                self.powArray.append(self.newpower)
+            #Formater les données pour les afficher dans l'interface graphique
+            self.newpower = "{:.2f}".format(self.newpower) #Formater la puissance
+            self.newWaveLenght = "{:.1f}".format(self.newWaveLenght) #Formater la longueur d'onde
+            self.newposition = [round(x, 2) for x in self.newposition] #Formater la position centrale du faisceau
+            
+            #Mettre à jour les labels dans l'interface graphique
+            self.powerVar.set(str(self.newpower)) #Puissance
+            self.wavelenghtVar.set(str(self.newWaveLenght)) #Longueur d'onde
+            self.positionXVar.set(str(self.newposition[0])) #Positon x
+            self.positionYVar.set(str(self.newposition[1])) #Position y
+            
 
-                self.timeArray = list(zip(* self.dataArray))[0]
-                self.powValues = list(zip(* self.dataArray))[1]
-                self.axPow.plot(list(self.timeArray), self.powArray, color = "blue")
-                self.powerCanvas.draw()
-                self.powerCanvas.get_tk_widget().update()
+            #Graphique de la position centrale du faisceau
+            self.axPos.clear()
+            self.axPos.set_xlabel("Position x (mm)")
+            self.axPos.set_ylabel("Position y (mm)")
+            AlgoPosition.calculatePosition(self.algoPosition, self.dataContainer)
+            contour = self.axPos.contourf(self.dataContainer.interpolatedTemperatureGrid[0], 
+                            self.dataContainer.interpolatedTemperatureGrid[1], 
+                            self.dataContainer.interpolatedTemperatureGrid[2], 
+                            levels=150,
+                            cmap='turbo')
+            
+            for row in self.dataContainer.thermalCaptorPosition: #Affichage de la grille de capteurs sur le graphique
+                for (x, y) in row:
+                    rect = patches.Rectangle((x - 1.5, y - 1.5), 0.75, 0.75, linewidth=1.5, edgecolor='white', facecolor='none', alpha=0.5)
+                    self.axPos.add_patch(rect)
+            self.circ = patches.Circle(self.newposition, 1.5, color = "red", alpha = 0.5)
+            self.axPos.add_patch(self.circ)
+            self.posCanvas.draw()
+            self.posCanvas.get_tk_widget().update()
+
+            #Graphique de la puissance en fonction du temps
+            self.axPow.clear()
+            self.axPow.set_xlabel("Temps (s)")
+            self.axPow.set_ylabel("Puissance (W)")
+            if len(self.dataArray) > 50: #limiter le nombre de points sur le graphique
+                self.axPow.set_xlim(self.dataArray[-50][0], self.dataArray[-1][0])
+
+            self.powArray.append(self.newpower)
+
+            self.timeArray = list(zip(* self.dataArray))[0]
+            self.powValues = list(zip(* self.dataArray))[1]
+            self.axPow.plot(list(self.timeArray), self.powArray, color = "blue")
+            self.powerCanvas.draw()
+            self.powerCanvas.get_tk_widget().update()
 
         self.loop()
 
