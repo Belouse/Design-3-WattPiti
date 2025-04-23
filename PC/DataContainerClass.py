@@ -56,6 +56,7 @@ class DataContainer:
     wavelengthCounts: np.ndarray  = field(default_factory=lambda: np.array([]))
     position: tuple = (0,0)
     power : float = 1
+    photoPower : float = 1
     wavelength: float = 1000
     Delta_t: float = 0.1 # in seconds, time between each update of max_temperature
 
