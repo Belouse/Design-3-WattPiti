@@ -15,6 +15,10 @@ from VELM6040Class import VEML6040
 print("Pyboard start up...")
 startIndicator() # lights will blink on the MCU to show that the code excution is starting
 
+# ----- ACQUISITION -----
+period = 360
+numberOfDataPoints = 40
+
 # ------- PINS -------
 photoDiode1Pin = "X20"  # MTPD2601T-100
 photoDiode2Pin = "X21"  # MTPD3001D3-030 sans verre
@@ -96,49 +100,128 @@ jsonFormatter = JSONFormatter()
 
 
 while True:
+    # ------ TOTAL LAMBDA ------
+    totalPhoto1 = 0
+    totalPhoto2 = 0
+    totalPhoto3 = 0
+    totalPhoto4 = 0
+    totalvemlR = 0
+    totalvemlG = 0
+    totalvemlB = 0
+    totalvemlW = 0
+    totalltrUV = 0
+    totalltrALS = 0
+
+    # ------ TOTAL THERMAL ------
+    therm1 = 0
+    therm2 = 0
+    therm3 = 0
+    therm4 = 0
+    therm5 = 0
+    therm6 = 0
+    therm7 = 0
+    therm8 = 0
+    therm9 = 0
+    therm10 = 0
+    therm11 = 0
+    therm12 = 0
+    therm13 = 0
+    therm14 = 0
+    therm15 = 0
+    therm16 = 0
+    mcptot = 0
+
     start = pyb.millis()
-    #   ---------- λ SENSORS ----------
+    for i in range(numberOfDataPoints):
+        #   ---------- λ SENSORS ----------
 
-    #       ----- PHOTODIODES -----
-    readingPhotoDiode1 = photoDiode1.read()
-    readingPhotoDiode2 = photoDiode2.read()
-    readingPhotoDiode3 = photoDiode3.read()
-    readingPhotoDiode4 = photoDiode4.read()
+        #       ----- PHOTODIODES -----
+        totalPhoto1 += photoDiode1.read()
+        totalPhoto2 += photoDiode2.read()
+        totalPhoto3 += photoDiode3.read()
+        totalPhoto4 += photoDiode4.read()
 
-    #      ----- I2C λ SENSORS -----
-    #          --- VEML6040 ---
-    veml6040.update_data()
-    veml6040RedReading = veml6040.red_reading
-    veml6040GreenReading = veml6040.green_reading
-    veml6040BlueReading = veml6040.blue_reading
-    veml6040WhiteReading = veml6040.white_reading
-    #          --- LTR-390 ---
-    ltr390_als_reading, ltr390_uv_reading = ltr390.get_als_and_uv_readings()
+        #      ----- I2C λ SENSORS -----
+        #          --- VEML6040 ---
+        veml6040.update_data()
+        totalvemlR += veml6040.red_reading
+        totalvemlG += veml6040.green_reading
+        totalvemlB += veml6040.blue_reading
+        totalvemlW += veml6040.white_reading
+        #          --- LTR-390 ---
+        ltr390_als_reading, ltr390_uv_reading = ltr390.get_als_and_uv_readings()
+
+        totalltrUV += ltr390_uv_reading
+        totalltrALS += ltr390_als_reading
+
+        # ---------- THERMAL SENSORS ----------
+
+        #       ----- THERMAL MATRIX -----
+        thermalData = thermalMatrix.readMatrix(delay=delayBetweenReadings)
+
+        therm1 += thermalData[0]
+        therm2 += thermalData[1]
+        therm3 += thermalData[2]
+        therm4 += thermalData[3]
+        therm5 += thermalData[4]
+        therm6 += thermalData[5]
+        therm7 += thermalData[6]
+        therm8 += thermalData[7]
+        therm9 += thermalData[8]
+        therm10 += thermalData[9]
+        therm11 += thermalData[10]
+        therm12 += thermalData[11]
+        therm13 += thermalData[12]
+        therm14 += thermalData[13]
+        therm15 += thermalData[14]
+        therm16 += thermalData[15]
+        #  ----- MCP9808 -----
+        mcptot += mcp9808.readTemperature()
 
     # List of wavelength readings
-    wavelengthReadings = [readingPhotoDiode1,
-                            readingPhotoDiode2, 
-                            readingPhotoDiode3,
-                            veml6040RedReading,
-                            veml6040GreenReading,
-                            veml6040BlueReading,
-                            veml6040WhiteReading,
-                            readingPhotoDiode4,
-                            ltr390_uv_reading,
-                            ltr390_als_reading]
+    wavelengthTotal = [
+                        totalPhoto1,
+                        totalPhoto2, 
+                        totalPhoto3,
+                        totalvemlR,
+                        totalvemlG,
+                        totalvemlB,
+                        totalvemlW,
+                        totalPhoto4,
+                        totalltrUV,
+                        totalltrALS]
+    
+    # List of thermal total
+    thermalTotal = [
+                    therm1,
+                    therm2,
+                    therm3,
+                    therm4,
+                    therm5,
+                    therm6,
+                    therm7,
+                    therm8,
+                    therm9,
+                    therm10,
+                    therm11,
+                    therm12,
+                    therm13,
+                    therm14,
+                    therm15,
+                    therm16,
+                    mcptot]
 
-    # ---------- THERMAL SENSORS ----------
 
-    #       ----- THERMAL MATRIX -----
-    thermalReadings = thermalMatrix.readMatrix(delay=delayBetweenReadings)
+    for i, lambdaData in enumerate(wavelengthTotal):
+        wavelengthTotal[i] = lambdaData/numberOfDataPoints
 
-    #          ----- MCP9808 -----
-    mcp9808Temp = mcp9808.readTemperature()
+    for i, thermalData in enumerate(thermalTotal):
+        thermalTotal[i] = thermalData/numberOfDataPoints
 
-    # List of thermal readings
-    thermalReadings.append(mcp9808Temp)
-
+    executionTime = pyb.millis() - start
+    pyb.delay(period - executionTime)
 
     # ---------- DATA TRANSMISSION ----------
-    formattedData = jsonFormatter.format_data(thermalReadings, wavelengthReadings)
+    formattedData = jsonFormatter.format_data(thermalTotal, wavelengthTotal)
     serialPort.send(formattedData)
+    print(f"Period: {pyb.millis() - start}")
