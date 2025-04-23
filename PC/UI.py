@@ -112,10 +112,10 @@ class InterfaceWattpiti(tk.Tk):
 
 
         #Choix de la longueur d'onde
-        self.waveLenghtList = ["À déterminer", "450", "976", "1976"]
-        self.waveLenghtComboBox = ttk.Combobox(self, values=self.waveLenghtList, width=20)
-        self.waveLenghtComboBox.place(x=440, y=80)
-        self.waveLenghtComboBox.current(0) 
+        self.waveLengthList = ["À déterminer", "450", "976", "1976"]
+        self.waveLengthComboBox = ttk.Combobox(self, values=self.waveLengthList, width=20)
+        self.waveLengthComboBox.place(x=440, y=80)
+        self.waveLengthComboBox.current(0) 
 
         #Label pour le choix de la longueur d'onde
         self.labelWaveLength = ttk.Label(self, text="Longueur d'onde (nm):", style = "labelStyle.TLabel")
@@ -194,13 +194,13 @@ class InterfaceWattpiti(tk.Tk):
         self.powerDisplay.place(x=1380, y =50)
 
         #Création d'un display pour la longueur d'onde
-        self.wavelenghtVar = tk.StringVar()
-        self.wavelenghtVar.set("000.0")
+        self.wavelengthVar = tk.StringVar()
+        self.wavelengthVar.set("000.0")
 
-        self.wavelenghtDisplayLabel = ttk.Label(self, text= "Longueur d'onde (nm):", font = ("Inter", 14, "bold"))
-        self.wavelenghtDisplayLabel.place(x=1050, y=108)                                                           
-        self.wavelenghtDisplay = ttk.Label(self, textvariable = self.wavelenghtVar , font = ("Inter", 24, "bold"))
-        self.wavelenghtDisplay.place(x= 1380, y = 100)
+        self.wavelengthDisplayLabel = ttk.Label(self, text= "Longueur d'onde (nm):", font = ("Inter", 14, "bold"))
+        self.wavelengthDisplayLabel.place(x=1050, y=108)                                                           
+        self.wavelengthDisplay = ttk.Label(self, textvariable = self.wavelengthVar , font = ("Inter", 24, "bold"))
+        self.wavelengthDisplay.place(x= 1380, y = 100)
 
         #Création d'un display pour la position centrale du faisceau
         self.positionXVar = tk.StringVar() #Variable de la position sur l'axe x
@@ -299,25 +299,25 @@ class InterfaceWattpiti(tk.Tk):
             self.algorithmManager.calculateWavelength()
             self.algorithmManager.calculatePower()
             self.newposition = self.dataContainer.position
-            self.newWaveLenght = self.dataContainer.wavelength
+            self.newWaveLength = self.dataContainer.wavelength
             self.newpower = self.dataContainer.power    
             self.rawTemperatureMatrix = self.dataContainer.rawTemperatureMatrix
 
 
             #Importer les données dans une liste
-            self.dataArray.append((self.currentTime, self.newpower, self.newWaveLenght, self.newposition))
+            self.dataArray.append((self.currentTime, self.newpower, self.newWaveLength, self.newposition))
 
             
 
 
             #Formater les données pour les afficher dans l'interface graphique
             self.newpower = "{:.2f}".format(self.newpower) #Formater la puissance
-            self.newWaveLenght = "{:.1f}".format(self.newWaveLenght) #Formater la longueur d'onde
+            self.newWaveLength = "{:.1f}".format(self.newWaveLength) #Formater la longueur d'onde
             self.newposition = [round(x, 2) for x in self.newposition] #Formater la position centrale du faisceau
             
             #Mettre à jour les labels dans l'interface graphique
             self.powerVar.set(str(self.newpower)) #Puissance
-            self.wavelenghtVar.set(str(self.newWaveLenght)) #Longueur d'onde
+            self.wavelengthVar.set(str(self.newWaveLength)) #Longueur d'onde
             self.positionXVar.set(str(self.newposition[0])) #Positon x
             self.positionYVar.set(str(self.newposition[1])) #Position y
             
@@ -326,12 +326,12 @@ class InterfaceWattpiti(tk.Tk):
             self.axPos.clear()
             self.axPos.set_xlabel("Position x (mm)")
             self.axPos.set_ylabel("Position y (mm)")
-            AlgoPosition.calculatePosition(self.algoPosition, self.dataContainer)
-            contour = self.axPos.contourf(self.dataContainer.interpolatedTemperatureGrid[0], 
-                            self.dataContainer.interpolatedTemperatureGrid[1], 
-                            self.dataContainer.interpolatedTemperatureGrid[2], 
-                            levels=150,
-                            cmap='turbo')
+            self.axPos.set_xlim(-30, 30)
+            self.axPos.set_ylim(-30, 30)
+
+            
+            self.plaque = patches.Circle((0,0), 30, color = "black", alpha = 0.1, fill = False)
+            self.axPos.add_patch(self.plaque)
             
             for row in self.dataContainer.thermalCaptorPosition: #Affichage de la grille de capteurs sur le graphique
                 for (x, y) in row:
@@ -375,7 +375,7 @@ class InterfaceWattpiti(tk.Tk):
         self.dataArray = []
         self.powArray = []
         self.powerVar.set("00.00")
-        self.wavelenghtVar.set("000.0")
+        self.wavelengthVar.set("000.0")
         self.positionXVar.set("0")
         self.positionYVar.set("0") 
         self.axPos.clear()
@@ -386,7 +386,10 @@ class InterfaceWattpiti(tk.Tk):
 
     def click_tare(self):
         #Fonction pour calibrer les capteurs
-        pass
+        if self.running == True:
+            self.click_stop()
+
+        self.algorithmManager.algoWavelength.mise_a_zero()
 
     #Fonction pour enregistrer les données
     def save_data(self):
@@ -487,7 +490,7 @@ class InterfaceWattpiti(tk.Tk):
         self.wavelengthCheckButton.configure(state = "disabled") 
         self.powerCheckButton.configure(state = "disabled")
         self.positionCheckButton.configure(state = "disabled")
-        self.waveLenghtComboBox.configure(state = "disabled")
+        self.waveLengthComboBox.configure(state = "disabled")
         self.tareButton.configure(state= "disabled")
         self.fileName.configure(state = "disabled")
 
@@ -501,7 +504,7 @@ class InterfaceWattpiti(tk.Tk):
         self.wavelengthCheckButton.configure(state = "normal") 
         self.powerCheckButton.configure(state = "normal")
         self.positionCheckButton.configure(state = "normal")
-        self.waveLenghtComboBox.configure(state = "normal")
+        self.waveLengthComboBox.configure(state = "normal")
         self.tareButton.configure(state= "normal")
         self.fileName.configure(state = "normal")
 
@@ -547,16 +550,6 @@ class InterfaceWattpiti(tk.Tk):
         if self.serialManager.serialListener is not None: #Déconnecte le port série
             self.serialManager.closePort()
         self.destroy() #Ferme la fenêtre
-
-
-
-
-        
-
-
-            
-                
-
 
 
 if __name__ == "__main__":
