@@ -294,7 +294,10 @@ class InterfaceWattpiti(tk.Tk):
 
     def loop(self):
         if self.running: #Vérifier si une simulation est en cours
-
+            # print(self.dataContainer.rawTemperatureMatrix)
+            # print(type(self.dataContainer.rawTemperatureMatrix))
+            # print(self.dataContainer.rawWavelengthMatrix)
+            # print(type(self.dataContainer.rawWavelengthMatrix))
             self.currentTime = time.time() - self.startTime #Calculer le temps écoulé depuis l'ouverture de l'interface
 
             #Importation des données de dataContainer
@@ -351,7 +354,7 @@ class InterfaceWattpiti(tk.Tk):
             self.axPow.clear()
             self.axPow.set_xlabel("Temps (s)")
             self.axPow.set_ylabel("Puissance (W)")
-            self.axPow.set_ylim(0, 10) # Limites fixes pour l'axe des x
+            self.axPow.set_ylim(0, 11) # Limites fixes pour l'axe des x
 
             # Fenêtre X glissante de 10 secondes
             # if len(self.dataArray) > 0:
@@ -365,7 +368,7 @@ class InterfaceWattpiti(tk.Tk):
 
 
 
-            self.axPow.plot(list(self.timeArray)[-20:], self.powArray[-20:], color="blue")
+            self.axPow.plot(list(self.timeArray)[-50:], self.powArray[-50:], color="blue")
         
             
 
