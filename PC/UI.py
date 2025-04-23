@@ -329,7 +329,7 @@ class InterfaceWattpiti(tk.Tk):
             self.axPos.set_xlim(-30, 30)
             self.axPos.set_ylim(-30, 30)
 
-            
+
             self.plaque = patches.Circle((0,0), 30, color = "black", alpha = 0.1, fill = False)
             self.axPos.add_patch(self.plaque)
             
@@ -348,6 +348,9 @@ class InterfaceWattpiti(tk.Tk):
             self.axPow.set_ylabel("Puissance (W)")
             if len(self.dataArray) > 50: #limiter le nombre de points sur le graphique
                 self.axPow.set_xlim(self.dataArray[-50][0], self.dataArray[-1][0])
+
+            self.axPow.set_ylim(0, 10)
+
 
             self.powArray.append(self.newpower)
 
@@ -550,6 +553,43 @@ class InterfaceWattpiti(tk.Tk):
         if self.serialManager.serialListener is not None: #Déconnecte le port série
             self.serialManager.closePort()
         self.destroy() #Ferme la fenêtre
+        
+
+    def check_ports(self):
+        # Start checking for port updates
+        if len(self.portList) == 0:
+
+            self.update_ports()
+        else:
+            check_ports = serial.tools.list_ports.comports()
+            for port in check_ports:
+                if "Bluetooth" not in port.description:
+                    check_ports = [f"{port.device}, {port.description}"]
+            if len(check_ports) != len(self.portList):        
+                self.update_ports()
+            else:
+                pass
+
+
+
+    def update_ports(self):
+        if self.running == True:
+            self.click_stop()
+        current_ports = serial.tools.list_ports.comports()
+        updated_port_list = []
+        for port in current_ports:
+            if "Bluetooth" not in port.description:
+                updated_port_list.append(f"{port.device}, {port.description}")
+
+        if updated_port_list != self.portList:  
+            self.portList = updated_port_list
+            self.portComboBox['values'] = self.portList
+            if len(self.portList) == 1:  
+                self.selected_port.set(self.portList[0])
+            else:
+                self.selected_port.set("")  
+
+        self.after(1000, self.update_ports)  
 
 
 if __name__ == "__main__":
